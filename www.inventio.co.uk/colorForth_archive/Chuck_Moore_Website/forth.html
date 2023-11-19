@@ -1,0 +1,76 @@
+<html><head></head><body bgcolor="#d0ffd0">
+Updated 2001 July 12
+
+<h1>Pentium <font color="red">color</font><font color="green">Forth</font></h1>
+Boots into 32-bit mode with a flat address space. Segment registers are
+based at zero; essentially unused. Interrupts off. Protections off.
+<p>Data are addressed as 32-bit words, not bytes. But ESP and ESI hold
+byte addresses, for optimization. Instructions are optimized if
+agruments are literals.
+</p><p>Registers are assigned:</p><ul type="none">
+<li>0 EAX: stack (1st number on Data stack)
+</li><li>1 ECX: string counter, scratch
+</li><li>2 EDX: address register A, I/O port, scratch
+</li><li>3 EBX: unused
+</li><li>4 ESP: byte pointer to top of Return stack
+</li><li>5 EBP: unused
+</li><li>6 ESI: byte pointer to 2nd number on Data stack
+</li><li>7 EDI: dword pointer to next word to be interpreted</li></ul>
+
+<p>27 chip primitives
+<table border="1">
+<tbody><tr><td>Op</td><td>Word</td><td>Pentium</td><td>Action
+</td></tr><tr><td>0</td><td>word ;</td><td>jmp</td><td>Jump to word; tail recursion
+</td></tr><tr><td>1</td><td>if</td><td>jz</td><td>Jump to 'then' if zero
+</td></tr><tr><td>2</td><td>word</td><td>call</td><td>Call word
+</td></tr><tr><td>3</td><td>-if</td><td>jns</td><td>Jump to 'then' if not negative
+</td></tr><tr><td>6</td><td>;</td><td>ret</td><td>Return to calling word
+
+</td></tr><tr><td>8</td><td>@</td><td>mov EAX, [EAX*4]</td><td>Fetch from address on stack
+</td></tr><tr><td></td><td></td><td>dup; mov EAX, a
+</td></tr><tr><td>9</td><td>@+</td><td>dup; mov EAX, [EDX*4]<br>inc EDX</td><td>Fetch from address in A; increment A
+</td></tr><tr><td>a</td><td>n</td><td>dup; mov EAX, n</td><td>Fetch number
+</td></tr><tr><td>b</td><td>@r</td><td></td><td>Fetch from address in R
+</td></tr><tr><td>c</td><td>!</td><td>a!; mov [EDX*4], EAX; drop</td><td>Store to address on stack
+</td></tr><tr><td></td><td></td><td>mov a*4, EAX; drop
+</td></tr><tr><td></td><td></td><td>mov a*4, n
+</td></tr><tr><td>d
+</td></tr><tr><td>e</td><td>!+</td><td>mov [EDX*4], EAX; inc EDX</td><td>Store to address in A; increment A
+</td></tr><tr><td>f</td><td>!r</td><td></td><td>Store to address in R; increment R
+
+</td></tr><tr><td>10</td><td>2*</td><td>shl EAX, 1</td><td>Shift stack left
+</td></tr><tr><td>11</td><td>2/</td><td>sar EAX, 1</td><td>Shift stack right, propagate sign
+</td></tr><tr><td>12</td><td>-</td><td>not EAX</td><td>Ones complement stack
+</td></tr><tr><td>14</td><td>and</td><td>and EAX, [ESI]; nip</td><td>And to stack
+</td></tr><tr><td></td><td></td><td>and EAX, n
+</td></tr><tr><td>15</td><td>or</td><td>xor EAX, [ESI]; nip</td><td>Exclusive-or to stack
+</td></tr><tr><td></td><td></td><td>xor EAX, n
+</td></tr><tr><td>16</td><td>+</td><td>add EAX, [ESI]; nip</td><td>Add to stack
+</td></tr><tr><td></td><td></td><td>add EAX, n
+</td></tr><tr><td>17</td><td>*+</td><td></td><td>Multiply step
+</td></tr><tr><td>18</td><td>push</td><td>push EAX; drop</td><td>Push stack onto Return
+</td></tr><tr><td>19</td><td>a</td><td></td><td>Load A register onto stack
+</td></tr><tr><td>1a</td><td>dup</td><td>lea ESI, ESI-4; mov [ESI], EAX</td><td>Duplicate stack
+</td></tr><tr><td>1b</td><td>over</td><td>dup; mov EAX, [ESI+4]</td><td>Load 2nd datum onto stack
+</td></tr><tr><td>1c</td><td>pop</td><td>dup; pop EAX</td><td>Pop Return onto stack
+</td></tr><tr><td>1d</td><td>a!</td><td>mov EDX, EAX; drop</td><td>Store stack into A register
+</td></tr><tr><td>1e</td><td>drop</td><td>lodsd</td><td>Discard stack
+</td></tr><tr><td>1f</td><td>nop</td><td>nop</td><td>Do nothing</td></tr></tbody></table>
+
+</p><p>Other Pentium macros:
+<table border="1">
+<tbody><tr><td>Word</td><td>Pentium</td><td>Action
+</td></tr><tr><td>nip</td><td>lea ESI, ESI+4</td><td>Discard 2nd stack item; preserve flags
+</td></tr><tr><td>swap</td><td>mov EDX, EAX; <br>mov EAX, [ESI]; mov [ESI], EDX</td><td>Exchange stack with 2nd number
+</td></tr><tr><td>+!</td><td>a!; add [EDX], EAX; drop</td><td>Add to address on stack
+</td></tr><tr><td></td><td>add a*4, EAX; drop
+</td></tr><tr><td></td><td>add a*4, n
+</td></tr><tr><td>*</td><td>imul EAX, [ESI]; nip</td><td>Multiply with stack
+</td></tr><tr><td></td><td>imul EAX, n
+</td></tr><tr><td>*/</td><td>mov ECX, EAX; drop<br>imul [ESI]; idiv [ECX]; nip</td><td>Multiply 2 numbers, divide by stack</td></tr></tbody></table>
+
+</p><p></p><ul>
+<li>The word - is the unary ones-complement, not the binary subtract. Its result is 1 less than negate, and much faster in hardware.
+</li><li>The word or is exclusive-or. Inclusive-or is rarely needed.
+</li><li>The word */ multiplies by a ratio, with a double-length intermediate product. It eliminates the need for floating-point.<ul>
+</ul></li></ul></body></html>
