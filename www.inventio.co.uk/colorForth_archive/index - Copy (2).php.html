@@ -1,0 +1,1268 @@
+<!doctype html>
+<html>
+<!-- index.php 2022 Nov 02 -->
+<head>
+<meta charset="UTF-8">
+<!-- link rel="shortcut icon" href="../.favicon.ico" -->
+<title>Folder Contents</title>
+<style>
+*
+    {padding:0;
+         margin:0;
+         -o-transition:all 200ms linear;
+         -moz-transition:all 200ms linear;
+         -webkit-transition:all 200ms linear;
+         transition:all 200ms linear;}
+
+html,body
+    {color:#333;
+         font-family: "Lucida Console", Courier, monospace;
+         font-size:14px;}
+
+#container
+    {margin:0 auto;
+         width:900px;
+         margin-top:20px;
+         padding-top:10px;
+         border:1px solid #EEE;
+         border-radius:10px;
+         position:relative;}
+
+table
+    {background-color:#F3F3F3;
+         border-collapse:collapse;
+         width:100%;
+         margin:15px 0;}
+
+th
+    {text-align:left;
+         background-color:#FF00AA;
+         color:#FFF;
+         font-weight:bold;
+         padding:7px 0 5px 22px;
+         font-size:14px;
+         letter-spacing:1px;
+         font-family: Verdana, Arial, Helvetica, sans-serif;
+         margin-bottom:5px;}
+
+th span
+{font-size:9px;
+          letter-spacing:0;}
+td
+    {padding:0px 0;
+         position:relative;
+         overflow:hidden;}
+
+a
+    {text-decoration:none;
+         font-weight:bold;}
+
+table a
+    {padding: 6px 0 6px 24px;
+         color:#663300;
+         display:block;
+         width:100%;
+         height:100%;}
+
+table tr td:first-of-type a
+    {background: url(.images/file.png) no-repeat left 50%;}
+
+table tr td:not(:first-of-type) a
+    {background-image:none !important;}
+
+tr:nth-of-type(odd)
+{background-color:#E6E6E6;}
+
+tr:hover td
+{background-color:#CACACA;}
+
+tr:hover a
+{color:#000;}
+
+h1
+    {font-size:40px;
+         font-weight:bold;
+         padding:0 0 10px 10px;
+         text-align:center;}
+
+h2
+    {font-size:20px;
+         text-align:center;}
+
+/* icons for file types (icons by famfamfam.) */
+
+/* images */
+table tr td:first-of-type a[href$=".jpg"],
+table tr td:first-of-type a[href$=".png"],
+table tr td:first-of-type a[href$=".gif"],
+table tr td:first-of-type a[href$=".svg"],
+table tr td:first-of-type a[href$=".jpeg"]
+        {background-image: url(.images/image.png);}
+
+/* pdfs */
+table tr td:first-of-type a[href$=".pdf"],
+table tr td:first-of-type a[href$=".PDF"]
+        {background-image: url(https://www.inventio.co.uk/colorForth_archive/.images/pdf.gif);}
+
+/* zips */
+table tr td:first-of-type a[href$=".zip"],
+table tr td:first-of-type a[href$=".ZIP"]
+        {background-image: url(.images/zip.png);}
+
+/* css */
+table tr td:first-of-type a[href$=".css"]
+        {background-image: url(.images/css.png);}
+
+/* docs */
+table tr td:first-of-type a[href$=".doc"],
+table tr td:first-of-type a[href$=".docx"],
+table tr td:first-of-type a[href$=".ppt"],
+table tr td:first-of-type a[href$=".pptx"],
+table tr td:first-of-type a[href$=".pps"],
+table tr td:first-of-type a[href$=".ppsx"],
+table tr td:first-of-type a[href$=".xls"],
+table tr td:first-of-type a[href$=".xlsx"]
+        {background-image: url(.images/office.png)}
+
+/* videos */
+table tr td:first-of-type a[href$=".avi"],
+table tr td:first-of-type a[href$=".wmv"],
+table tr td:first-of-type a[href$=".mp4"],
+table tr td:first-of-type a[href$=".mov"],
+table tr td:first-of-type a[href$=".m4a"]
+        {background-image: url(.images/video.png);}
+
+/* audio */
+table tr td:first-of-type a[href$=".mp3"],
+table tr td:first-of-type a[href$=".ogg"],
+table tr td:first-of-type a[href$=".aac"],
+table tr td:first-of-type a[href$=".wma"]
+        {background-image: url(https://www.inventio.co.uk/colorForth_archive/.images/audio.png);}
+
+/* web pages */
+table tr td:first-of-type a[href$=".html"],
+table tr td:first-of-type a[href$=".htm"],
+table tr td:first-of-type a[href$=".xml"],
+table tr td:first-of-type a[href$=".HTML"],
+table tr td:first-of-type a[href$=".HTM"],
+table tr td:first-of-type a[href$=".XML"]
+        {background-image: url(.images/xml.png);}
+
+table tr td:first-of-type a[href$=".php"]
+        {background-image: url(.images/php.png);}
+
+table tr td:first-of-type a[href$=".js"]
+        {background-image: url(.images/script.png);}
+
+/* blks */
+table tr td:first-of-type a[href$=".blk"],
+     table tr td:first-of-type a[href$=".com"],
+table tr td:first-of-type a[href$=".BLK"],
+     table tr td:first-of-type a[href$=".COM"],
+     table tr td:first-of-type a[href$=".cf"],
+     table tr td:first-of-type a[href$=".CF"]
+        {background-image: url(.images/blk.png);}
+
+/* bat */
+table tr td:first-of-type a[href$=".bat"],
+     table tr td:first-of-type a[href$=".BAT"]
+        {background-image: url(.images/office.png);}
+
+/* txt */
+table tr td:first-of-type a[href$=".txt"],
+     table tr td:first-of-type a[href$=".lst"],
+     table tr td:first-of-type a[href$=".TXT"],
+     table tr td:first-of-type a[href$=".LST"]
+        {background-image: url(.images/txt.png);}
+
+/* asms */
+table tr td:first-of-type a[href$=".asm"],
+     table tr td:first-of-type a[href$=".nasm"],
+table tr td:first-of-type a[href$=".masm"],
+     table tr td:first-of-type a[href$=".s"],
+table tr td:first-of-type a[href$=".ASM"],
+     table tr td:first-of-type a[href$=".NASM"],
+table tr td:first-of-type a[href$=".MASM"],
+     table tr td:first-of-type a[href$=".S"]
+        {background-image: url(.images/asm.png);}
+
+/* directories */
+table tr.dir td:first-of-type a
+        {background-image: url(.images/folder.png);}
+
+</style>
+</head>
+
+<body>
+<div id="container">
+
+    <span style=text-align:center;font-size:48.0pt;font-family:'Arial',sans-serif;color:red>color</span><span style=text-align:center;font-size:48.0pt;font-family:'Arial',sans-serif;color:green>Forth</span><span style=text-align:center;font-size:48.0pt;font-family:'Arial',sans-serif;color:blue>&nbspArchive</span><br><span text-align:center; style=text-align:center;font-size:24.0pt;font-family:'Arial',sans-serif;color:blue>&nbsp</span></br><span style=text-align:center;font-size:24.0pt;font-family:'Arial',sans-serif;color:blue>&nbspcolorForth_archive</span><span style=text-align:center;font-size:16.0pt;font-family:'Arial',sans-serif;color:red><br><br>Most of the executables here will not run on Windows 7 or higher. Use at your own risk!!!<br></span><span style=text-align:center;font-size:12.0pt;font-family:'Arial',sans-serif;color:blue><br>Howerd Oakford : my latest <a href='../colorforth.html'>colorForth</a><br>Dropbox download link (~221MB) : <a href='https://www.dropbox.com/s/3y23yoz8n1q26ne/colorForth_archive_2022Nov03.7z?dl=0'>colorForth_archive_2022Nov03.7z</a><br><br>Chuck Moore's original colorForth website : <a href='Chuck_Moore_Website/index.html'>www.colorforth.com</a><br>Chuck Moore's excellent summary of Forth : <a href='Chuck_Moore_Website/binding.html'>Early Binding</a></span> 
+        <table>
+            <tr>
+                <th>Filename</th>
+                <th>Type</th>
+                <th>Size <span>(bytes)</span></th>
+                <th>Date Modified</th>
+            </tr>
+        
+                            <tr class='dir'>
+                            <td><a href='0_cf2023_beta.html'>0_cf2023_beta</a></td>
+                            <td><a href='0_cf2023_beta.html'>&lt;dir&gt;</a></td>
+                            <td><a href='0_cf2023_beta.html'>&lt;dir&gt;</a></td>
+                            <td><a href='0_cf2023_beta.html'>Aug 22 2023 5:40 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='0_cf2023_dev_src.html'>0_cf2023_dev_src</a></td>
+                            <td><a href='0_cf2023_dev_src.html'>&lt;dir&gt;</a></td>
+                            <td><a href='0_cf2023_dev_src.html'>&lt;dir&gt;</a></td>
+                            <td><a href='0_cf2023_dev_src.html'>Aug 19 2023 11:00 AM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='0_cf2023_latest.html'>0_cf2023_latest</a></td>
+                            <td><a href='0_cf2023_latest.html'>&lt;dir&gt;</a></td>
+                            <td><a href='0_cf2023_latest.html'>&lt;dir&gt;</a></td>
+                            <td><a href='0_cf2023_latest.html'>Aug 19 2023 10:59 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='0_colorForth_2023Sep02_full_archive.7z'>0_colorForth_2023Sep02_full_archive.7z</a></td>
+                            <td><a href='0_colorForth_2023Sep02_full_archive.7z'>7Z File</a></td>
+                            <td><a href='0_colorForth_2023Sep02_full_archive.7z'>1,615,606,761</a></td>
+                            <td><a href='0_colorForth_2023Sep02_full_archive.7z'>Sep 2 2023 4:32 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='0__000000_cf2023_dev&#32;2023Aug16zzz&#32;VGD1&#32;working.7z'>0__000000_cf2023_dev 2023Aug16zzz VGD1 working.7z</a></td>
+                            <td><a href='0__000000_cf2023_dev&#32;2023Aug16zzz&#32;VGD1&#32;working.7z'>7Z File</a></td>
+                            <td><a href='0__000000_cf2023_dev&#32;2023Aug16zzz&#32;VGD1&#32;working.7z'>9,883,024</a></td>
+                            <td><a href='0__000000_cf2023_dev&#32;2023Aug16zzz&#32;VGD1&#32;working.7z'>Aug 16 2023 9:18 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='0000_cf2023_2023Apr04_roomed-zebra.7z'>0000_cf2023_2023Apr04_roomed-zebra.7z</a></td>
+                            <td><a href='0000_cf2023_2023Apr04_roomed-zebra.7z'>7Z File</a></td>
+                            <td><a href='0000_cf2023_2023Apr04_roomed-zebra.7z'>9,070,913</a></td>
+                            <td><a href='0000_cf2023_2023Apr04_roomed-zebra.7z'>Apr 4 2023 8:43 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='0000_cf2023_dev&#32;2023Aug12&#32;stains-parkland&#32;GD1&#32;wip.7z'>0000_cf2023_dev 2023Aug12 stains-parkland GD1 wip.7z</a></td>
+                            <td><a href='0000_cf2023_dev&#32;2023Aug12&#32;stains-parkland&#32;GD1&#32;wip.7z'>7Z File</a></td>
+                            <td><a href='0000_cf2023_dev&#32;2023Aug12&#32;stains-parkland&#32;GD1&#32;wip.7z'>13,391,187</a></td>
+                            <td><a href='0000_cf2023_dev&#32;2023Aug12&#32;stains-parkland&#32;GD1&#32;wip.7z'>Aug 12 2023 11:56 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='0000_Chuck_Moore_Website_2023Jan01.7z'>0000_Chuck_Moore_Website_2023Jan01.7z</a></td>
+                            <td><a href='0000_Chuck_Moore_Website_2023Jan01.7z'>7Z File</a></td>
+                            <td><a href='0000_Chuck_Moore_Website_2023Jan01.7z'>8,888,859</a></td>
+                            <td><a href='0000_Chuck_Moore_Website_2023Jan01.7z'>Jan 1 2023 4:03 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='0000_Documentation.html'>0000_Documentation</a></td>
+                            <td><a href='0000_Documentation.html'>&lt;dir&gt;</a></td>
+                            <td><a href='0000_Documentation.html'>&lt;dir&gt;</a></td>
+                            <td><a href='0000_Documentation.html'>Sep 2 2023 8:03 AM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='0000_latest_cf2022.html'>0000_latest_cf2022</a></td>
+                            <td><a href='0000_latest_cf2022.html'>&lt;dir&gt;</a></td>
+                            <td><a href='0000_latest_cf2022.html'>&lt;dir&gt;</a></td>
+                            <td><a href='0000_latest_cf2022.html'>Nov 3 2022 8:30 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='0000_SYNCAPP.html'>0000_SYNCAPP</a></td>
+                            <td><a href='0000_SYNCAPP.html'>&lt;dir&gt;</a></td>
+                            <td><a href='0000_SYNCAPP.html'>&lt;dir&gt;</a></td>
+                            <td><a href='0000_SYNCAPP.html'>Oct 31 2022 3:11 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='00000_cf2023_dev&#32;2023Aug14z&#32;VGD1&#32;orange&#32;X&#32;marks&#32;the&#32;spot&#32;dmp&#32;broken.7z'>00000_cf2023_dev 2023Aug14z VGD1 orange X marks the spot dmp broken.7z</a></td>
+                            <td><a href='00000_cf2023_dev&#32;2023Aug14z&#32;VGD1&#32;orange&#32;X&#32;marks&#32;the&#32;spot&#32;dmp&#32;broken.7z'>7Z File</a></td>
+                            <td><a href='00000_cf2023_dev&#32;2023Aug14z&#32;VGD1&#32;orange&#32;X&#32;marks&#32;the&#32;spot&#32;dmp&#32;broken.7z'>9,873,124</a></td>
+                            <td><a href='00000_cf2023_dev&#32;2023Aug14z&#32;VGD1&#32;orange&#32;X&#32;marks&#32;the&#32;spot&#32;dmp&#32;broken.7z'>Aug 14 2023 8:23 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='000000_cf2023_dev&#32;2023Aug5&#32;VGD1&#32;working.7z'>000000_cf2023_dev 2023Aug5 VGD1 working.7z</a></td>
+                            <td><a href='000000_cf2023_dev&#32;2023Aug5&#32;VGD1&#32;working.7z'>7Z File</a></td>
+                            <td><a href='000000_cf2023_dev&#32;2023Aug5&#32;VGD1&#32;working.7z'>9,875,572</a></td>
+                            <td><a href='000000_cf2023_dev&#32;2023Aug5&#32;VGD1&#32;working.7z'>Aug 15 2023 5:31 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='000000_cf2023_dev&#32;2023Aug15zzz&#32;VGD1&#32;working.7z'>000000_cf2023_dev 2023Aug15zzz VGD1 working.7z</a></td>
+                            <td><a href='000000_cf2023_dev&#32;2023Aug15zzz&#32;VGD1&#32;working.7z'>7Z File</a></td>
+                            <td><a href='000000_cf2023_dev&#32;2023Aug15zzz&#32;VGD1&#32;working.7z'>9,879,564</a></td>
+                            <td><a href='000000_cf2023_dev&#32;2023Aug15zzz&#32;VGD1&#32;working.7z'>Aug 15 2023 8:33 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='0000000_cf2023_dev&#32;2023Aug16zzz&#32;VGD1&#32;working.7z'>0000000_cf2023_dev 2023Aug16zzz VGD1 working.7z</a></td>
+                            <td><a href='0000000_cf2023_dev&#32;2023Aug16zzz&#32;VGD1&#32;working.7z'>7Z File</a></td>
+                            <td><a href='0000000_cf2023_dev&#32;2023Aug16zzz&#32;VGD1&#32;working.7z'>9,883,024</a></td>
+                            <td><a href='0000000_cf2023_dev&#32;2023Aug16zzz&#32;VGD1&#32;working.7z'>Aug 16 2023 9:18 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='0001_cf2023&#32;2023Feb13&#32;Issue&#32;words.7z'>0001_cf2023 2023Feb13 Issue words.7z</a></td>
+                            <td><a href='0001_cf2023&#32;2023Feb13&#32;Issue&#32;words.7z'>7Z File</a></td>
+                            <td><a href='0001_cf2023&#32;2023Feb13&#32;Issue&#32;words.7z'>5,568,439</a></td>
+                            <td><a href='0001_cf2023&#32;2023Feb13&#32;Issue&#32;words.7z'>Feb 13 2023 5:16 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='0001_cf2023&#32;2023Jan28&#32;GD1.7z'>0001_cf2023 2023Jan28 GD1.7z</a></td>
+                            <td><a href='0001_cf2023&#32;2023Jan28&#32;GD1.7z'>7Z File</a></td>
+                            <td><a href='0001_cf2023&#32;2023Jan28&#32;GD1.7z'>4,258,236</a></td>
+                            <td><a href='0001_cf2023&#32;2023Jan28&#32;GD1.7z'>Jan 28 2023 10:03 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='0001_cf2023&#32;2023Jan31&#32;Issue&#32;words.7z'>0001_cf2023 2023Jan31 Issue words.7z</a></td>
+                            <td><a href='0001_cf2023&#32;2023Jan31&#32;Issue&#32;words.7z'>7Z File</a></td>
+                            <td><a href='0001_cf2023&#32;2023Jan31&#32;Issue&#32;words.7z'>5,506,063</a></td>
+                            <td><a href='0001_cf2023&#32;2023Jan31&#32;Issue&#32;words.7z'>Jan 31 2023 4:33 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='0001_colorForth_archive_2022Nov03.7z'>0001_colorForth_archive_2022Nov03.7z</a></td>
+                            <td><a href='0001_colorForth_archive_2022Nov03.7z'>7Z File</a></td>
+                            <td><a href='0001_colorForth_archive_2022Nov03.7z'>226,981,569</a></td>
+                            <td><a href='0001_colorForth_archive_2022Nov03.7z'>Nov 3 2022 6:34 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='4word.html'>4word</a></td>
+                            <td><a href='4word.html'>&lt;dir&gt;</a></td>
+                            <td><a href='4word.html'>&lt;dir&gt;</a></td>
+                            <td><a href='4word.html'>Oct 31 2022 3:11 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='640.html'>640</a></td>
+                            <td><a href='640.html'>&lt;dir&gt;</a></td>
+                            <td><a href='640.html'>&lt;dir&gt;</a></td>
+                            <td><a href='640.html'>Oct 31 2022 3:11 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='640f.html'>640f</a></td>
+                            <td><a href='640f.html'>&lt;dir&gt;</a></td>
+                            <td><a href='640f.html'>&lt;dir&gt;</a></td>
+                            <td><a href='640f.html'>Oct 31 2022 3:11 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='1000_cf2023&#32;2023Jan31&#32;Issue&#32;words.7z'>1000_cf2023 2023Jan31 Issue words.7z</a></td>
+                            <td><a href='1000_cf2023&#32;2023Jan31&#32;Issue&#32;words.7z'>7Z File</a></td>
+                            <td><a href='1000_cf2023&#32;2023Jan31&#32;Issue&#32;words.7z'>5,506,063</a></td>
+                            <td><a href='1000_cf2023&#32;2023Jan31&#32;Issue&#32;words.7z'>Jan 31 2023 4:33 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='2000_cf2023&#32;2023Feb13&#32;Issue&#32;words.7z'>2000_cf2023 2023Feb13 Issue words.7z</a></td>
+                            <td><a href='2000_cf2023&#32;2023Feb13&#32;Issue&#32;words.7z'>7Z File</a></td>
+                            <td><a href='2000_cf2023&#32;2023Feb13&#32;Issue&#32;words.7z'>5,568,439</a></td>
+                            <td><a href='2000_cf2023&#32;2023Feb13&#32;Issue&#32;words.7z'>Feb 13 2023 5:16 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='2000_cf2023&#32;2023Mar08&#32;rebutted-calamine.7z'>2000_cf2023 2023Mar08 rebutted-calamine.7z</a></td>
+                            <td><a href='2000_cf2023&#32;2023Mar08&#32;rebutted-calamine.7z'>7Z File</a></td>
+                            <td><a href='2000_cf2023&#32;2023Mar08&#32;rebutted-calamine.7z'>5,624,486</a></td>
+                            <td><a href='2000_cf2023&#32;2023Mar08&#32;rebutted-calamine.7z'>Mar 8 2023 5:32 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='2000_cf2023&#32;2023Mar09&#32;reworks-atoll.7z'>2000_cf2023 2023Mar09 reworks-atoll.7z</a></td>
+                            <td><a href='2000_cf2023&#32;2023Mar09&#32;reworks-atoll.7z'>7Z File</a></td>
+                            <td><a href='2000_cf2023&#32;2023Mar09&#32;reworks-atoll.7z'>5,625,633</a></td>
+                            <td><a href='2000_cf2023&#32;2023Mar09&#32;reworks-atoll.7z'>Mar 9 2023 4:25 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='2000_colorForth_archive_2022Nov03.7z'>2000_colorForth_archive_2022Nov03.7z</a></td>
+                            <td><a href='2000_colorForth_archive_2022Nov03.7z'>7Z File</a></td>
+                            <td><a href='2000_colorForth_archive_2022Nov03.7z'>226,981,569</a></td>
+                            <td><a href='2000_colorForth_archive_2022Nov03.7z'>Nov 3 2022 6:34 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='2000_colorForth_archive_2023Jan01.7z'>2000_colorForth_archive_2023Jan01.7z</a></td>
+                            <td><a href='2000_colorForth_archive_2023Jan01.7z'>7Z File</a></td>
+                            <td><a href='2000_colorForth_archive_2023Jan01.7z'>480,720,888</a></td>
+                            <td><a href='2000_colorForth_archive_2023Jan01.7z'>Jan 1 2023 4:16 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='3000_cf2023&#32;2023Mar09&#32;mainmast-allude&#32;Issue.7z'>3000_cf2023 2023Mar09 mainmast-allude Issue.7z</a></td>
+                            <td><a href='3000_cf2023&#32;2023Mar09&#32;mainmast-allude&#32;Issue.7z'>7Z File</a></td>
+                            <td><a href='3000_cf2023&#32;2023Mar09&#32;mainmast-allude&#32;Issue.7z'>5,627,967</a></td>
+                            <td><a href='3000_cf2023&#32;2023Mar09&#32;mainmast-allude&#32;Issue.7z'>Mar 9 2023 1:30 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='4000_cf2023&#32;2023Mar19&#32;wisent-roebucks&#32;greenEnterAction&#32;wip.7z'>4000_cf2023 2023Mar19 wisent-roebucks greenEnterAction wip.7z</a></td>
+                            <td><a href='4000_cf2023&#32;2023Mar19&#32;wisent-roebucks&#32;greenEnterAction&#32;wip.7z'>7Z File</a></td>
+                            <td><a href='4000_cf2023&#32;2023Mar19&#32;wisent-roebucks&#32;greenEnterAction&#32;wip.7z'>5,630,457</a></td>
+                            <td><a href='4000_cf2023&#32;2023Mar19&#32;wisent-roebucks&#32;greenEnterAction&#32;wip.7z'>Mar 19 2023 4:56 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='5000_cf2023&#32;2023Mar21&#32;shutoff-Leone.7z'>5000_cf2023 2023Mar21 shutoff-Leone.7z</a></td>
+                            <td><a href='5000_cf2023&#32;2023Mar21&#32;shutoff-Leone.7z'>7Z File</a></td>
+                            <td><a href='5000_cf2023&#32;2023Mar21&#32;shutoff-Leone.7z'>5,825,065</a></td>
+                            <td><a href='5000_cf2023&#32;2023Mar21&#32;shutoff-Leone.7z'>Mar 21 2023 9:11 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='6000_cf2023&#32;2023Mar27&#32;quacking-aversely.7z'>6000_cf2023 2023Mar27 quacking-aversely.7z</a></td>
+                            <td><a href='6000_cf2023&#32;2023Mar27&#32;quacking-aversely.7z'>7Z File</a></td>
+                            <td><a href='6000_cf2023&#32;2023Mar27&#32;quacking-aversely.7z'>5,872,228</a></td>
+                            <td><a href='6000_cf2023&#32;2023Mar27&#32;quacking-aversely.7z'>Mar 27 2023 11:23 AM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/A.&#32;Hettinger&#32;(Onishenko)'>A. Hettinger (Onishenko)</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/A.&#32;Hettinger&#32;(Onishenko)'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/A.&#32;Hettinger&#32;(Onishenko)'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/A.&#32;Hettinger&#32;(Onishenko)'>Sep 2 2023 8:00 AM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='aha.html'>aha</a></td>
+                            <td><a href='aha.html'>&lt;dir&gt;</a></td>
+                            <td><a href='aha.html'>&lt;dir&gt;</a></td>
+                            <td><a href='aha.html'>Oct 31 2022 3:11 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Albert_van_der_Horst.html'>Albert_van_der_Horst</a></td>
+                            <td><a href='Albert_van_der_Horst.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Albert_van_der_Horst.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Albert_van_der_Horst.html'>Oct 31 2022 3:11 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='AlexThiel.html'>AlexThiel</a></td>
+                            <td><a href='AlexThiel.html'>&lt;dir&gt;</a></td>
+                            <td><a href='AlexThiel.html'>&lt;dir&gt;</a></td>
+                            <td><a href='AlexThiel.html'>Sep 2 2023 8:03 AM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='arrayForth.html'>arrayForth</a></td>
+                            <td><a href='arrayForth.html'>&lt;dir&gt;</a></td>
+                            <td><a href='arrayForth.html'>&lt;dir&gt;</a></td>
+                            <td><a href='arrayForth.html'>Oct 31 2022 3:12 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Ashley_Feniello.html'>Ashley_Feniello</a></td>
+                            <td><a href='Ashley_Feniello.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Ashley_Feniello.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Ashley_Feniello.html'>Aug 15 2023 5:35 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='BerndB.html'>BerndB</a></td>
+                            <td><a href='BerndB.html'>&lt;dir&gt;</a></td>
+                            <td><a href='BerndB.html'>&lt;dir&gt;</a></td>
+                            <td><a href='BerndB.html'>Oct 31 2022 3:12 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Bob_Shafer.html'>Bob_Shafer</a></td>
+                            <td><a href='Bob_Shafer.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Bob_Shafer.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Bob_Shafer.html'>Oct 31 2022 3:12 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='c4w.html'>c4w</a></td>
+                            <td><a href='c4w.html'>&lt;dir&gt;</a></td>
+                            <td><a href='c4w.html'>&lt;dir&gt;</a></td>
+                            <td><a href='c4w.html'>Oct 31 2022 3:12 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='CF2.html'>CF2</a></td>
+                            <td><a href='CF2.html'>&lt;dir&gt;</a></td>
+                            <td><a href='CF2.html'>&lt;dir&gt;</a></td>
+                            <td><a href='CF2.html'>Oct 31 2022 3:12 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2010bochs'>cf2010bochs</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2010bochs'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2010bochs'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2010bochs'>Oct 31 2022 3:12 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='cf2010_4v1.html'>cf2010_4v1</a></td>
+                            <td><a href='cf2010_4v1.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2010_4v1.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2010_4v1.html'>Jul 23 2023 6:41 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='cf2010_4v1.7z'>cf2010_4v1.7z</a></td>
+                            <td><a href='cf2010_4v1.7z'>7Z File</a></td>
+                            <td><a href='cf2010_4v1.7z'>4,201,696</a></td>
+                            <td><a href='cf2010_4v1.7z'>Jul 23 2023 6:46 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='cf2010_4v1_orig.zip'>cf2010_4v1_orig.zip</a></td>
+                            <td><a href='cf2010_4v1_orig.zip'>ZIP Archive</a></td>
+                            <td><a href='cf2010_4v1_orig.zip'>579,367</a></td>
+                            <td><a href='cf2010_4v1_orig.zip'>Jul 23 2023 6:27 AM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='cf2012bochs.html'>cf2012bochs</a></td>
+                            <td><a href='cf2012bochs.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2012bochs.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2012bochs.html'>Oct 31 2022 3:13 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='cf2017.html'>cf2017</a></td>
+                            <td><a href='cf2017.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2017.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2017.html'>Aug 21 2023 8:32 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='cf2018.html'>cf2018</a></td>
+                            <td><a href='cf2018.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2018.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2018.html'>Aug 21 2023 8:33 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='cf2018&#32;2018Nov17&#32;GD1&#32;WIP.7z'>cf2018 2018Nov17 GD1 WIP.7z</a></td>
+                            <td><a href='cf2018&#32;2018Nov17&#32;GD1&#32;WIP.7z'>7Z File</a></td>
+                            <td><a href='cf2018&#32;2018Nov17&#32;GD1&#32;WIP.7z'>3,349,796</a></td>
+                            <td><a href='cf2018&#32;2018Nov17&#32;GD1&#32;WIP.7z'>Nov 17 2018 7:03 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='cf2019.html'>cf2019</a></td>
+                            <td><a href='cf2019.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2019.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2019.html'>Oct 31 2022 3:13 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='cf2019_2022Mar14pre.html'>cf2019_2022Mar14pre</a></td>
+                            <td><a href='cf2019_2022Mar14pre.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2019_2022Mar14pre.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2019_2022Mar14pre.html'>Oct 31 2022 3:14 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='cf2019_docs.html'>cf2019_docs</a></td>
+                            <td><a href='cf2019_docs.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2019_docs.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2019_docs.html'>Oct 31 2022 3:14 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='cf2022.html'>cf2022</a></td>
+                            <td><a href='cf2022.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2022.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2022.html'>Nov 3 2022 8:31 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='cf2022&#32;2022Nov03.7z'>cf2022 2022Nov03.7z</a></td>
+                            <td><a href='cf2022&#32;2022Nov03.7z'>7Z File</a></td>
+                            <td><a href='cf2022&#32;2022Nov03.7z'>4,452,290</a></td>
+                            <td><a href='cf2022&#32;2022Nov03.7z'>Nov 3 2022 8:17 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='cf2022.7z'>cf2022.7z</a></td>
+                            <td><a href='cf2022.7z'>7Z File</a></td>
+                            <td><a href='cf2022.7z'>4,452,290</a></td>
+                            <td><a href='cf2022.7z'>Nov 3 2022 8:17 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='cf2022_2022Sep24pre.html'>cf2022_2022Sep24pre</a></td>
+                            <td><a href='cf2022_2022Sep24pre.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2022_2022Sep24pre.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2022_2022Sep24pre.html'>Oct 31 2022 3:14 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='cf2022_2022Sep29pre.html'>cf2022_2022Sep29pre</a></td>
+                            <td><a href='cf2022_2022Sep29pre.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2022_2022Sep29pre.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2022_2022Sep29pre.html'>Oct 31 2022 3:14 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='cf2022_Mar15.html'>cf2022_Mar15</a></td>
+                            <td><a href='cf2022_Mar15.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2022_Mar15.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2022_Mar15.html'>Oct 31 2022 3:15 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='cf2023.html'>cf2023</a></td>
+                            <td><a href='cf2023.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2023.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cf2023.html'>Aug 15 2023 5:35 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;-&#32;Copy'>cf2023 - Copy</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;-&#32;Copy'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;-&#32;Copy'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;-&#32;Copy'>Apr 4 2023 8:09 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='cf2023&#32;2023Feb22&#32;wip&#32;mag&#32;var&#32;bug&#32;fix.7z'>cf2023 2023Feb22 wip mag var bug fix.7z</a></td>
+                            <td><a href='cf2023&#32;2023Feb22&#32;wip&#32;mag&#32;var&#32;bug&#32;fix.7z'>7Z File</a></td>
+                            <td><a href='cf2023&#32;2023Feb22&#32;wip&#32;mag&#32;var&#32;bug&#32;fix.7z'>5,617,995</a></td>
+                            <td><a href='cf2023&#32;2023Feb22&#32;wip&#32;mag&#32;var&#32;bug&#32;fix.7z'>Feb 22 2023 6:42 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Feb22pre'>cf2023 2023Feb22pre</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Feb22pre'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Feb22pre'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Feb22pre'>Feb 22 2023 6:46 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='cf2023&#32;2023Feb27&#32;wip&#32;_a.7z'>cf2023 2023Feb27 wip _a.7z</a></td>
+                            <td><a href='cf2023&#32;2023Feb27&#32;wip&#32;_a.7z'>7Z File</a></td>
+                            <td><a href='cf2023&#32;2023Feb27&#32;wip&#32;_a.7z'>5,620,054</a></td>
+                            <td><a href='cf2023&#32;2023Feb27&#32;wip&#32;_a.7z'>Feb 27 2023 6:14 AM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Feb27pre'>cf2023 2023Feb27pre</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Feb27pre'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Feb27pre'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Feb27pre'>Feb 27 2023 6:18 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='cf2023&#32;2023Jan31&#32;Issue&#32;words.7z'>cf2023 2023Jan31 Issue words.7z</a></td>
+                            <td><a href='cf2023&#32;2023Jan31&#32;Issue&#32;words.7z'>7Z File</a></td>
+                            <td><a href='cf2023&#32;2023Jan31&#32;Issue&#32;words.7z'>5,506,063</a></td>
+                            <td><a href='cf2023&#32;2023Jan31&#32;Issue&#32;words.7z'>Jan 31 2023 4:33 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Jan31pre'>cf2023 2023Jan31pre</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Jan31pre'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Jan31pre'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Jan31pre'>Feb 13 2023 5:25 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='cf2023&#32;2023Mar08&#32;rebutted-calamine.7z'>cf2023 2023Mar08 rebutted-calamine.7z</a></td>
+                            <td><a href='cf2023&#32;2023Mar08&#32;rebutted-calamine.7z'>7Z File</a></td>
+                            <td><a href='cf2023&#32;2023Mar08&#32;rebutted-calamine.7z'>5,624,486</a></td>
+                            <td><a href='cf2023&#32;2023Mar08&#32;rebutted-calamine.7z'>Mar 8 2023 5:32 AM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar08pre'>cf2023 2023Mar08pre</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar08pre'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar08pre'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar08pre'>Feb 27 2023 6:17 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='cf2023&#32;2023Mar09&#32;mainmast-allude&#32;Issue.7z'>cf2023 2023Mar09 mainmast-allude Issue.7z</a></td>
+                            <td><a href='cf2023&#32;2023Mar09&#32;mainmast-allude&#32;Issue.7z'>7Z File</a></td>
+                            <td><a href='cf2023&#32;2023Mar09&#32;mainmast-allude&#32;Issue.7z'>5,627,967</a></td>
+                            <td><a href='cf2023&#32;2023Mar09&#32;mainmast-allude&#32;Issue.7z'>Mar 9 2023 1:30 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='cf2023&#32;2023Mar09&#32;reworks-atoll.7z'>cf2023 2023Mar09 reworks-atoll.7z</a></td>
+                            <td><a href='cf2023&#32;2023Mar09&#32;reworks-atoll.7z'>7Z File</a></td>
+                            <td><a href='cf2023&#32;2023Mar09&#32;reworks-atoll.7z'>5,625,633</a></td>
+                            <td><a href='cf2023&#32;2023Mar09&#32;reworks-atoll.7z'>Mar 9 2023 4:25 AM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar09pre'>cf2023 2023Mar09pre</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar09pre'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar09pre'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar09pre'>Mar 8 2023 5:36 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='cf2023&#32;2023Mar19&#32;riyal-0&#32;greenEnterAction&#32;wip.7z'>cf2023 2023Mar19 riyal-0 greenEnterAction wip.7z</a></td>
+                            <td><a href='cf2023&#32;2023Mar19&#32;riyal-0&#32;greenEnterAction&#32;wip.7z'>7Z File</a></td>
+                            <td><a href='cf2023&#32;2023Mar19&#32;riyal-0&#32;greenEnterAction&#32;wip.7z'>5,630,525</a></td>
+                            <td><a href='cf2023&#32;2023Mar19&#32;riyal-0&#32;greenEnterAction&#32;wip.7z'>Mar 19 2023 3:06 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='cf2023&#32;2023Mar19&#32;wisent-roebucks&#32;greenEnterAction&#32;wip.7z'>cf2023 2023Mar19 wisent-roebucks greenEnterAction wip.7z</a></td>
+                            <td><a href='cf2023&#32;2023Mar19&#32;wisent-roebucks&#32;greenEnterAction&#32;wip.7z'>7Z File</a></td>
+                            <td><a href='cf2023&#32;2023Mar19&#32;wisent-roebucks&#32;greenEnterAction&#32;wip.7z'>5,630,457</a></td>
+                            <td><a href='cf2023&#32;2023Mar19&#32;wisent-roebucks&#32;greenEnterAction&#32;wip.7z'>Mar 19 2023 4:56 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar19pre'>cf2023 2023Mar19pre</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar19pre'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar19pre'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar19pre'>Mar 9 2023 1:34 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar21pre'>cf2023 2023Mar21pre</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar21pre'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar21pre'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar21pre'>Mar 19 2023 5:01 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='cf2023&#32;2023Mar27&#32;quacking-aversely.7z'>cf2023 2023Mar27 quacking-aversely.7z</a></td>
+                            <td><a href='cf2023&#32;2023Mar27&#32;quacking-aversely.7z'>7Z File</a></td>
+                            <td><a href='cf2023&#32;2023Mar27&#32;quacking-aversely.7z'>5,872,228</a></td>
+                            <td><a href='cf2023&#32;2023Mar27&#32;quacking-aversely.7z'>Mar 27 2023 11:23 AM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar27pre'>cf2023 2023Mar27pre</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar27pre'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar27pre'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar27pre'>Mar 28 2023 2:44 AM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar28pre'>cf2023 2023Mar28pre</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar28pre'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar28pre'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;2023Mar28pre'>Mar 27 2023 11:29 AM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;colorForth&#32;Archive&#32;2023Apr04'>cf2023 colorForth Archive 2023Apr04</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;colorForth&#32;Archive&#32;2023Apr04'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;colorForth&#32;Archive&#32;2023Apr04'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023&#32;colorForth&#32;Archive&#32;2023Apr04'>Apr 4 2023 10:37 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='cf2023_2023Apr04_roomed-zebra.7z'>cf2023_2023Apr04_roomed-zebra.7z</a></td>
+                            <td><a href='cf2023_2023Apr04_roomed-zebra.7z'>7Z File</a></td>
+                            <td><a href='cf2023_2023Apr04_roomed-zebra.7z'>9,070,913</a></td>
+                            <td><a href='cf2023_2023Apr04_roomed-zebra.7z'>Apr 4 2023 8:43 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='cf2023_colorForth.docx'>cf2023_colorForth.docx</a></td>
+                            <td><a href='cf2023_colorForth.docx'>DOCX File</a></td>
+                            <td><a href='cf2023_colorForth.docx'>1,222,324</a></td>
+                            <td><a href='cf2023_colorForth.docx'>Apr 4 2023 5:41 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='cf2023_colorForth.pdf'>cf2023_colorForth.pdf</a></td>
+                            <td><a href='cf2023_colorForth.pdf'>PDF Document</a></td>
+                            <td><a href='cf2023_colorForth.pdf'>2,073,997</a></td>
+                            <td><a href='cf2023_colorForth.pdf'>Apr 4 2023 5:40 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='cf2023_dev&#32;2023Aug17&#32;fixed&#32;ss&#32;and&#32;uu&#32;VGD1.7z'>cf2023_dev 2023Aug17 fixed ss and uu VGD1.7z</a></td>
+                            <td><a href='cf2023_dev&#32;2023Aug17&#32;fixed&#32;ss&#32;and&#32;uu&#32;VGD1.7z'>7Z File</a></td>
+                            <td><a href='cf2023_dev&#32;2023Aug17&#32;fixed&#32;ss&#32;and&#32;uu&#32;VGD1.7z'>9,884,173</a></td>
+                            <td><a href='cf2023_dev&#32;2023Aug17&#32;fixed&#32;ss&#32;and&#32;uu&#32;VGD1.7z'>Aug 17 2023 5:13 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='cf2023_dev&#32;2023Jul19&#32;with&#32;yasm&#32;support&#32;wip.7z'>cf2023_dev 2023Jul19 with yasm support wip.7z</a></td>
+                            <td><a href='cf2023_dev&#32;2023Jul19&#32;with&#32;yasm&#32;support&#32;wip.7z'>7Z File</a></td>
+                            <td><a href='cf2023_dev&#32;2023Jul19&#32;with&#32;yasm&#32;support&#32;wip.7z'>9,043,606</a></td>
+                            <td><a href='cf2023_dev&#32;2023Jul19&#32;with&#32;yasm&#32;support&#32;wip.7z'>Jul 19 2023 5:23 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='cf2023_dev&#32;relocation&#32;2023Aug22&#32;VGD1&#32;Issue.7z'>cf2023_dev relocation 2023Aug22 VGD1 Issue.7z</a></td>
+                            <td><a href='cf2023_dev&#32;relocation&#32;2023Aug22&#32;VGD1&#32;Issue.7z'>7Z File</a></td>
+                            <td><a href='cf2023_dev&#32;relocation&#32;2023Aug22&#32;VGD1&#32;Issue.7z'>9,919,643</a></td>
+                            <td><a href='cf2023_dev&#32;relocation&#32;2023Aug22&#32;VGD1&#32;Issue.7z'>Aug 22 2023 5:38 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='cf2023_gr_demo.png'>cf2023_gr_demo.png</a></td>
+                            <td><a href='cf2023_gr_demo.png'>PNG Image</a></td>
+                            <td><a href='cf2023_gr_demo.png'>66,770</a></td>
+                            <td><a href='cf2023_gr_demo.png'>Mar 28 2023 5:25 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023_what_is_new_to_see_in_'23.docx'>cf2023_what_is_new_to_see_in_'23.docx</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023_what_is_new_to_see_in_'23.docx'>DOCX File</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023_what_is_new_to_see_in_'23.docx'>16,661</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023_what_is_new_to_see_in_'23.docx'>Apr 4 2023 6:37 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023_what_is_new_to_see_in_'23.pdf'>cf2023_what_is_new_to_see_in_'23.pdf</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023_what_is_new_to_see_in_'23.pdf'>PDF Document</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023_what_is_new_to_see_in_'23.pdf'>184,749</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/cf2023_what_is_new_to_see_in_'23.pdf'>Apr 4 2023 6:38 AM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='cfasm-Mark_Slicker.html'>cfasm-Mark_Slicker</a></td>
+                            <td><a href='cfasm-Mark_Slicker.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cfasm-Mark_Slicker.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cfasm-Mark_Slicker.html'>Oct 31 2022 3:15 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='cfasm-Terry_Loveall.html'>cfasm-Terry_Loveall</a></td>
+                            <td><a href='cfasm-Terry_Loveall.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cfasm-Terry_Loveall.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cfasm-Terry_Loveall.html'>Oct 31 2022 3:15 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='cfCfix.html'>cfCfix</a></td>
+                            <td><a href='cfCfix.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cfCfix.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cfCfix.html'>Oct 31 2022 3:15 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='cfdosref.html'>cfdosref</a></td>
+                            <td><a href='cfdosref.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cfdosref.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cfdosref.html'>Oct 31 2022 3:16 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='cfWin7.html'>cfWin7</a></td>
+                            <td><a href='cfWin7.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cfWin7.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cfWin7.html'>Oct 31 2022 3:16 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='cfWin7_original.html'>cfWin7_original</a></td>
+                            <td><a href='cfWin7_original.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cfWin7_original.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cfWin7_original.html'>Oct 31 2022 3:16 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='cfWin2011.html'>cfWin2011</a></td>
+                            <td><a href='cfWin2011.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cfWin2011.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cfWin2011.html'>Oct 31 2022 3:16 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='cfWin2017.html'>cfWin2017</a></td>
+                            <td><a href='cfWin2017.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cfWin2017.html'>&lt;dir&gt;</a></td>
+                            <td><a href='cfWin2017.html'>Oct 31 2022 3:16 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='chuck05-jg5.html'>chuck05-jg5</a></td>
+                            <td><a href='chuck05-jg5.html'>&lt;dir&gt;</a></td>
+                            <td><a href='chuck05-jg5.html'>&lt;dir&gt;</a></td>
+                            <td><a href='chuck05-jg5.html'>Oct 31 2022 3:17 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Chuck_Moore.html'>Chuck_Moore</a></td>
+                            <td><a href='Chuck_Moore.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Chuck_Moore.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Chuck_Moore.html'>Oct 31 2022 3:31 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Chuck_Moore_Website.html'>Chuck_Moore_Website</a></td>
+                            <td><a href='Chuck_Moore_Website.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Chuck_Moore_Website.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Chuck_Moore_Website.html'>Jul 23 2023 6:58 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='Chuck_Moore_Website.7z'>Chuck_Moore_Website.7z</a></td>
+                            <td><a href='Chuck_Moore_Website.7z'>7Z File</a></td>
+                            <td><a href='Chuck_Moore_Website.7z'>8,888,984</a></td>
+                            <td><a href='Chuck_Moore_Website.7z'>Jul 23 2023 7:18 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='colorForth.com_website.html'>colorForth.com_website</a></td>
+                            <td><a href='colorForth.com_website.html'>&lt;dir&gt;</a></td>
+                            <td><a href='colorForth.com_website.html'>&lt;dir&gt;</a></td>
+                            <td><a href='colorForth.com_website.html'>Oct 31 2022 3:17 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='colorForth&#32;and&#32;the&#32;Art&#32;of&#32;the&#32;Impossible.htm'>colorForth and the Art of the Impossible.htm</a></td>
+                            <td><a href='colorForth&#32;and&#32;the&#32;Art&#32;of&#32;the&#32;Impossible.htm'>HTML File</a></td>
+                            <td><a href='colorForth&#32;and&#32;the&#32;Art&#32;of&#32;the&#32;Impossible.htm'>69,146</a></td>
+                            <td><a href='colorForth&#32;and&#32;the&#32;Art&#32;of&#32;the&#32;Impossible.htm'>Jul 23 2023 6:34 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/colorForth&#32;and&#32;the&#32;Art&#32;of&#32;the&#32;Impossible_files'>colorForth and the Art of the Impossible_files</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/colorForth&#32;and&#32;the&#32;Art&#32;of&#32;the&#32;Impossible_files'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/colorForth&#32;and&#32;the&#32;Art&#32;of&#32;the&#32;Impossible_files'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/colorForth&#32;and&#32;the&#32;Art&#32;of&#32;the&#32;Impossible_files'>Aug 15 2023 5:33 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='colorForthWin.html'>colorForthWin</a></td>
+                            <td><a href='colorForthWin.html'>&lt;dir&gt;</a></td>
+                            <td><a href='colorForthWin.html'>&lt;dir&gt;</a></td>
+                            <td><a href='colorForthWin.html'>Oct 31 2022 3:17 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='colorForth_and_the_Art_of_the_Impossible.docx'>colorForth_and_the_Art_of_the_Impossible.docx</a></td>
+                            <td><a href='colorForth_and_the_Art_of_the_Impossible.docx'>DOCX File</a></td>
+                            <td><a href='colorForth_and_the_Art_of_the_Impossible.docx'>18,465</a></td>
+                            <td><a href='colorForth_and_the_Art_of_the_Impossible.docx'>Jul 23 2023 6:34 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='colorForth_and_the_Art_of_the_Impossible.htm'>colorForth_and_the_Art_of_the_Impossible.htm</a></td>
+                            <td><a href='colorForth_and_the_Art_of_the_Impossible.htm'>HTML File</a></td>
+                            <td><a href='colorForth_and_the_Art_of_the_Impossible.htm'>19,470</a></td>
+                            <td><a href='colorForth_and_the_Art_of_the_Impossible.htm'>Jul 23 2023 6:44 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='colorForth_and_the_Art_of_the_Impossible.html'>colorForth_and_the_Art_of_the_Impossible.html</a></td>
+                            <td><a href='colorForth_and_the_Art_of_the_Impossible.html'>HTML File</a></td>
+                            <td><a href='colorForth_and_the_Art_of_the_Impossible.html'>19,470</a></td>
+                            <td><a href='colorForth_and_the_Art_of_the_Impossible.html'>Jul 23 2023 6:44 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='colorForth_and_the_Art_of_the_Impossible.pdf'>colorForth_and_the_Art_of_the_Impossible.pdf</a></td>
+                            <td><a href='colorForth_and_the_Art_of_the_Impossible.pdf'>PDF Document</a></td>
+                            <td><a href='colorForth_and_the_Art_of_the_Impossible.pdf'>83,012</a></td>
+                            <td><a href='colorForth_and_the_Art_of_the_Impossible.pdf'>Jul 23 2023 6:34 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='colorforth_documentation.html'>colorforth_documentation</a></td>
+                            <td><a href='colorforth_documentation.html'>&lt;dir&gt;</a></td>
+                            <td><a href='colorforth_documentation.html'>&lt;dir&gt;</a></td>
+                            <td><a href='colorforth_documentation.html'>Oct 31 2022 2:23 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='colorForth_Magenta_Variable.docx'>colorForth_Magenta_Variable.docx</a></td>
+                            <td><a href='colorForth_Magenta_Variable.docx'>DOCX File</a></td>
+                            <td><a href='colorForth_Magenta_Variable.docx'>17,305</a></td>
+                            <td><a href='colorForth_Magenta_Variable.docx'>Jul 23 2023 7:00 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='colorForth_Magenta_Variable.htm'>colorForth_Magenta_Variable.htm</a></td>
+                            <td><a href='colorForth_Magenta_Variable.htm'>HTML File</a></td>
+                            <td><a href='colorForth_Magenta_Variable.htm'>13,969</a></td>
+                            <td><a href='colorForth_Magenta_Variable.htm'>Jul 23 2023 7:00 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='colorForth_Magenta_Variable.html'>colorForth_Magenta_Variable.html</a></td>
+                            <td><a href='colorForth_Magenta_Variable.html'>HTML File</a></td>
+                            <td><a href='colorForth_Magenta_Variable.html'>13,969</a></td>
+                            <td><a href='colorForth_Magenta_Variable.html'>Jul 23 2023 7:00 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='colorForth_Magenta_Variable.pdf'>colorForth_Magenta_Variable.pdf</a></td>
+                            <td><a href='colorForth_Magenta_Variable.pdf'>PDF Document</a></td>
+                            <td><a href='colorForth_Magenta_Variable.pdf'>108,925</a></td>
+                            <td><a href='colorForth_Magenta_Variable.pdf'>Jul 23 2023 7:00 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/colorForth_Magenta_Variable_files'>colorForth_Magenta_Variable_files</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/colorForth_Magenta_Variable_files'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/colorForth_Magenta_Variable_files'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/colorForth_Magenta_Variable_files'>Aug 15 2023 5:33 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='colorForth_original.html'>colorForth_original</a></td>
+                            <td><a href='colorForth_original.html'>&lt;dir&gt;</a></td>
+                            <td><a href='colorForth_original.html'>&lt;dir&gt;</a></td>
+                            <td><a href='colorForth_original.html'>Oct 31 2022 2:26 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Crynwr.html'>Crynwr</a></td>
+                            <td><a href='Crynwr.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Crynwr.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Crynwr.html'>Oct 31 2022 3:17 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Dave&#32;Kuehling'>Dave Kuehling</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Dave&#32;Kuehling'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Dave&#32;Kuehling'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Dave&#32;Kuehling'>Sep 2 2023 8:00 AM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='dd.html'>dd</a></td>
+                            <td><a href='dd.html'>&lt;dir&gt;</a></td>
+                            <td><a href='dd.html'>&lt;dir&gt;</a></td>
+                            <td><a href='dd.html'>Oct 31 2022 3:18 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='DennisRuffer.html'>DennisRuffer</a></td>
+                            <td><a href='DennisRuffer.html'>&lt;dir&gt;</a></td>
+                            <td><a href='DennisRuffer.html'>&lt;dir&gt;</a></td>
+                            <td><a href='DennisRuffer.html'>Oct 31 2022 3:18 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='etherForth.html'>etherForth</a></td>
+                            <td><a href='etherForth.html'>&lt;dir&gt;</a></td>
+                            <td><a href='etherForth.html'>&lt;dir&gt;</a></td>
+                            <td><a href='etherForth.html'>Oct 31 2022 12:06 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='EvilVM-master.html'>EvilVM-master</a></td>
+                            <td><a href='EvilVM-master.html'>&lt;dir&gt;</a></td>
+                            <td><a href='EvilVM-master.html'>&lt;dir&gt;</a></td>
+                            <td><a href='EvilVM-master.html'>Oct 31 2022 3:18 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Forth2020_Presentation_2021Mar13.html'>Forth2020_Presentation_2021Mar13</a></td>
+                            <td><a href='Forth2020_Presentation_2021Mar13.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Forth2020_Presentation_2021Mar13.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Forth2020_Presentation_2021Mar13.html'>Oct 31 2022 3:18 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Forth2020_Zoom_Meeting&#32;2022Apr09'>Forth2020_Zoom_Meeting 2022Apr09</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Forth2020_Zoom_Meeting&#32;2022Apr09'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Forth2020_Zoom_Meeting&#32;2022Apr09'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Forth2020_Zoom_Meeting&#32;2022Apr09'>Oct 31 2022 3:18 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Forth2020_Zoom_Meeting_2022May14'>Forth2020_Zoom_Meeting_2022May14</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Forth2020_Zoom_Meeting_2022May14'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Forth2020_Zoom_Meeting_2022May14'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Forth2020_Zoom_Meeting_2022May14'>Oct 31 2022 3:19 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Forth_Tagung_2020Jan18.html'>Forth_Tagung_2020Jan18</a></td>
+                            <td><a href='Forth_Tagung_2020Jan18.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Forth_Tagung_2020Jan18.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Forth_Tagung_2020Jan18.html'>Oct 31 2022 3:18 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='from_steve.html'>from_steve</a></td>
+                            <td><a href='from_steve.html'>&lt;dir&gt;</a></td>
+                            <td><a href='from_steve.html'>&lt;dir&gt;</a></td>
+                            <td><a href='from_steve.html'>Oct 31 2022 3:19 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='ga144_arrayforth-master_Python.html'>ga144_arrayforth-master_Python</a></td>
+                            <td><a href='ga144_arrayforth-master_Python.html'>&lt;dir&gt;</a></td>
+                            <td><a href='ga144_arrayforth-master_Python.html'>&lt;dir&gt;</a></td>
+                            <td><a href='ga144_arrayforth-master_Python.html'>Oct 31 2022 3:19 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='GoAsm.html'>GoAsm</a></td>
+                            <td><a href='GoAsm.html'>&lt;dir&gt;</a></td>
+                            <td><a href='GoAsm.html'>&lt;dir&gt;</a></td>
+                            <td><a href='GoAsm.html'>Oct 31 2022 5:57 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='GreenArrays.html'>GreenArrays</a></td>
+                            <td><a href='GreenArrays.html'>&lt;dir&gt;</a></td>
+                            <td><a href='GreenArrays.html'>&lt;dir&gt;</a></td>
+                            <td><a href='GreenArrays.html'>Oct 31 2022 12:06 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Howard_Fernald.html'>Howard_Fernald</a></td>
+                            <td><a href='Howard_Fernald.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Howard_Fernald.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Howard_Fernald.html'>Oct 31 2022 3:20 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Howerd&#32;Oakford'>Howerd Oakford</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Howerd&#32;Oakford'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Howerd&#32;Oakford'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Howerd&#32;Oakford'>Sep 2 2023 8:00 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='How_to_program_in_colorForth_cf2023.docx'>How_to_program_in_colorForth_cf2023.docx</a></td>
+                            <td><a href='How_to_program_in_colorForth_cf2023.docx'>DOCX File</a></td>
+                            <td><a href='How_to_program_in_colorForth_cf2023.docx'>1,458,607</a></td>
+                            <td><a href='How_to_program_in_colorForth_cf2023.docx'>Apr 4 2023 10:32 AM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='How_to_program_in_colorForth_cf2023.pdf'>How_to_program_in_colorForth_cf2023.pdf</a></td>
+                            <td><a href='How_to_program_in_colorForth_cf2023.pdf'>PDF Document</a></td>
+                            <td><a href='How_to_program_in_colorForth_cf2023.pdf'>1,132,022</a></td>
+                            <td><a href='How_to_program_in_colorForth_cf2023.pdf'>Apr 4 2023 10:32 AM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='html.html'>html</a></td>
+                            <td><a href='html.html'>&lt;dir&gt;</a></td>
+                            <td><a href='html.html'>&lt;dir&gt;</a></td>
+                            <td><a href='html.html'>Oct 31 2022 3:20 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='index&#32;-&#32;Copy&#32;(2).php.html'>index - Copy (2).php</a></td>
+                            <td><a href='index&#32;-&#32;Copy&#32;(2).php.html'>PHP Script</a></td>
+                            <td><a href='index&#32;-&#32;Copy&#32;(2).php.html'>13,877</a></td>
+                            <td><a href='index&#32;-&#32;Copy&#32;(2).php.html'>Nov 3 2022 7:37 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='index&#32;-&#32;Copy.php.html'>index - Copy.php</a></td>
+                            <td><a href='index&#32;-&#32;Copy.php.html'>PHP Script</a></td>
+                            <td><a href='index&#32;-&#32;Copy.php.html'>13,478</a></td>
+                            <td><a href='index&#32;-&#32;Copy.php.html'>Nov 3 2022 7:37 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='iso.html'>iso</a></td>
+                            <td><a href='iso.html'>&lt;dir&gt;</a></td>
+                            <td><a href='iso.html'>&lt;dir&gt;</a></td>
+                            <td><a href='iso.html'>Oct 31 2022 3:20 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Issue2021Aug15.html'>Issue2021Aug15</a></td>
+                            <td><a href='Issue2021Aug15.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Issue2021Aug15.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Issue2021Aug15.html'>Oct 31 2022 3:20 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Jeff_Fox_cf_2005.html'>Jeff_Fox_cf_2005</a></td>
+                            <td><a href='Jeff_Fox_cf_2005.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Jeff_Fox_cf_2005.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Jeff_Fox_cf_2005.html'>Sep 2 2023 8:03 AM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Josh.html'>Josh</a></td>
+                            <td><a href='Josh.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Josh.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Josh.html'>Oct 31 2022 3:22 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Josh_Grams.html'>Josh_Grams</a></td>
+                            <td><a href='Josh_Grams.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Josh_Grams.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Josh_Grams.html'>Oct 31 2022 5:57 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='j_comeau.html'>j_comeau</a></td>
+                            <td><a href='j_comeau.html'>&lt;dir&gt;</a></td>
+                            <td><a href='j_comeau.html'>&lt;dir&gt;</a></td>
+                            <td><a href='j_comeau.html'>Oct 31 2022 5:59 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='karig.html'>karig</a></td>
+                            <td><a href='karig.html'>&lt;dir&gt;</a></td>
+                            <td><a href='karig.html'>&lt;dir&gt;</a></td>
+                            <td><a href='karig.html'>Oct 31 2022 3:22 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='keyboard.jpg'>keyboard.jpg</a></td>
+                            <td><a href='keyboard.jpg'>JPG Image</a></td>
+                            <td><a href='keyboard.jpg'>39,147</a></td>
+                            <td><a href='keyboard.jpg'>Jun 19 2017 2:10 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='keys.html'>keys.html</a></td>
+                            <td><a href='keys.html'>HTML File</a></td>
+                            <td><a href='keys.html'>123</a></td>
+                            <td><a href='keys.html'>Jun 19 2017 2:10 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='keys.png'>keys.png</a></td>
+                            <td><a href='keys.png'>PNG Image</a></td>
+                            <td><a href='keys.png'>12,724</a></td>
+                            <td><a href='keys.png'>Jun 19 2017 2:10 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='KrisJohnson.html'>KrisJohnson</a></td>
+                            <td><a href='KrisJohnson.html'>&lt;dir&gt;</a></td>
+                            <td><a href='KrisJohnson.html'>&lt;dir&gt;</a></td>
+                            <td><a href='KrisJohnson.html'>Oct 31 2022 3:22 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='kruee.html'>kruee</a></td>
+                            <td><a href='kruee.html'>&lt;dir&gt;</a></td>
+                            <td><a href='kruee.html'>&lt;dir&gt;</a></td>
+                            <td><a href='kruee.html'>Nov 3 2022 6:26 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Leo&#32;Brodie'>Leo Brodie</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Leo&#32;Brodie'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Leo&#32;Brodie'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Leo&#32;Brodie'>Sep 2 2023 8:00 AM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Linux_drivers.html'>Linux_drivers</a></td>
+                            <td><a href='Linux_drivers.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Linux_drivers.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Linux_drivers.html'>Oct 31 2022 3:22 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='MarkSlicker.html'>MarkSlicker</a></td>
+                            <td><a href='MarkSlicker.html'>&lt;dir&gt;</a></td>
+                            <td><a href='MarkSlicker.html'>&lt;dir&gt;</a></td>
+                            <td><a href='MarkSlicker.html'>Oct 31 2022 3:23 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Mark_Slicker.html'>Mark_Slicker</a></td>
+                            <td><a href='Mark_Slicker.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Mark_Slicker.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Mark_Slicker.html'>Sep 2 2023 8:00 AM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Mark_Tillotson.html'>Mark_Tillotson</a></td>
+                            <td><a href='Mark_Tillotson.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Mark_Tillotson.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Mark_Tillotson.html'>Oct 31 2022 3:22 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Nick_Maroudas'>Nick_Maroudas</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Nick_Maroudas'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Nick_Maroudas'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Nick_Maroudas'>Oct 31 2022 3:25 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='old_cf2023.html'>old_cf2023</a></td>
+                            <td><a href='old_cf2023.html'>&lt;dir&gt;</a></td>
+                            <td><a href='old_cf2023.html'>&lt;dir&gt;</a></td>
+                            <td><a href='old_cf2023.html'>Aug 17 2023 5:25 AM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Pablo_Hugo_Reda.html'>Pablo_Hugo_Reda</a></td>
+                            <td><a href='Pablo_Hugo_Reda.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Pablo_Hugo_Reda.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Pablo_Hugo_Reda.html'>Oct 31 2022 5:30 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='PeterAppelman.html'>PeterAppelman</a></td>
+                            <td><a href='PeterAppelman.html'>&lt;dir&gt;</a></td>
+                            <td><a href='PeterAppelman.html'>&lt;dir&gt;</a></td>
+                            <td><a href='PeterAppelman.html'>Nov 3 2022 6:09 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='Programming&#32;a&#32;144-computer&#32;chip&#32;to&#32;minimize&#32;power&#32;-&#32;Chuck&#32;Moore&#32;(2013)&#32;(720p).mp4'>Programming a 144-computer chip to minimize power - Chuck Moore (2013) (720p).mp4</a></td>
+                            <td><a href='Programming&#32;a&#32;144-computer&#32;chip&#32;to&#32;minimize&#32;power&#32;-&#32;Chuck&#32;Moore&#32;(2013)&#32;(720p).mp4'>MP4 File</a></td>
+                            <td><a href='Programming&#32;a&#32;144-computer&#32;chip&#32;to&#32;minimize&#32;power&#32;-&#32;Chuck&#32;Moore&#32;(2013)&#32;(720p).mp4'>223,247,984</a></td>
+                            <td><a href='Programming&#32;a&#32;144-computer&#32;chip&#32;to&#32;minimize&#32;power&#32;-&#32;Chuck&#32;Moore&#32;(2013)&#32;(720p).mp4'>Jun 27 2023 8:58 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Python.html'>Python</a></td>
+                            <td><a href='Python.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Python.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Python.html'>Oct 31 2022 5:30 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Qemu.html'>Qemu</a></td>
+                            <td><a href='Qemu.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Qemu.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Qemu.html'>Oct 31 2022 5:30 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Quartus.html'>Quartus</a></td>
+                            <td><a href='Quartus.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Quartus.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Quartus.html'>Oct 31 2022 5:30 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='rainbowforth.html'>rainbowforth</a></td>
+                            <td><a href='rainbowforth.html'>&lt;dir&gt;</a></td>
+                            <td><a href='rainbowforth.html'>&lt;dir&gt;</a></td>
+                            <td><a href='rainbowforth.html'>Oct 31 2022 5:39 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='rawwrite.html'>rawwrite</a></td>
+                            <td><a href='rawwrite.html'>&lt;dir&gt;</a></td>
+                            <td><a href='rawwrite.html'>&lt;dir&gt;</a></td>
+                            <td><a href='rawwrite.html'>Oct 31 2022 5:40 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Ray.html'>Ray</a></td>
+                            <td><a href='Ray.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Ray.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Ray.html'>Oct 31 2022 5:30 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Ray_St_Marie.html'>Ray_St_Marie</a></td>
+                            <td><a href='Ray_St_Marie.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Ray_St_Marie.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Ray_St_Marie.html'>Oct 31 2022 5:30 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Roman_Pavlyuk.html'>Roman_Pavlyuk</a></td>
+                            <td><a href='Roman_Pavlyuk.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Roman_Pavlyuk.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Roman_Pavlyuk.html'>Oct 31 2022 5:38 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Roman_Pavlyuk2.html'>Roman_Pavlyuk2</a></td>
+                            <td><a href='Roman_Pavlyuk2.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Roman_Pavlyuk2.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Roman_Pavlyuk2.html'>Oct 31 2022 5:38 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Sean&#32;Pringle'>Sean Pringle</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Sean&#32;Pringle'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Sean&#32;Pringle'>&lt;dir&gt;</a></td>
+                            <td><a href='https://www.inventio.co.uk/colorForth_archive/Sean&#32;Pringle'>Sep 2 2023 8:01 AM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Terry_Loveall.html'>Terry_Loveall</a></td>
+                            <td><a href='Terry_Loveall.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Terry_Loveall.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Terry_Loveall.html'>Nov 3 2022 6:13 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Tim_Neitz.html'>Tim_Neitz</a></td>
+                            <td><a href='Tim_Neitz.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Tim_Neitz.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Tim_Neitz.html'>Sep 2 2023 8:03 AM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='UEFI.html'>UEFI</a></td>
+                            <td><a href='UEFI.html'>&lt;dir&gt;</a></td>
+                            <td><a href='UEFI.html'>&lt;dir&gt;</a></td>
+                            <td><a href='UEFI.html'>Oct 31 2022 5:38 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='USBbootMakers.html'>USBbootMakers</a></td>
+                            <td><a href='USBbootMakers.html'>&lt;dir&gt;</a></td>
+                            <td><a href='USBbootMakers.html'>&lt;dir&gt;</a></td>
+                            <td><a href='USBbootMakers.html'>Nov 2 2022 6:13 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='VESA.html'>VESA</a></td>
+                            <td><a href='VESA.html'>&lt;dir&gt;</a></td>
+                            <td><a href='VESA.html'>&lt;dir&gt;</a></td>
+                            <td><a href='VESA.html'>Oct 31 2022 6:07 PM</a></td>
+                        </tr>
+                            <tr class='dir'>
+                            <td><a href='Windows.html'>Windows</a></td>
+                            <td><a href='Windows.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Windows.html'>&lt;dir&gt;</a></td>
+                            <td><a href='Windows.html'>Oct 31 2022 12:39 PM</a></td>
+                        </tr>
+                            <tr class='file'>
+                            <td><a href='xxxcf2023&#32;2023Jan31&#32;Issue&#32;words.7z'>xxxcf2023 2023Jan31 Issue words.7z</a></td>
+                            <td><a href='xxxcf2023&#32;2023Jan31&#32;Issue&#32;words.7z'>7Z File</a></td>
+                            <td><a href='xxxcf2023&#32;2023Jan31&#32;Issue&#32;words.7z'>5,607,040</a></td>
+                            <td><a href='xxxcf2023&#32;2023Jan31&#32;Issue&#32;words.7z'>Jan 31 2023 4:08 AM</a></td>
+                        </tr>
+    </table>
+
+    </div>
+</body>
+</html>
