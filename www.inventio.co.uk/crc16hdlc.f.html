@@ -1,0 +1,192 @@
+\ *****************************************************************************
+\ crc16hdlc.f  2012 Apr 11 
+\ CRC-16 for HDLC calculation using a table 
+\ 16 bit FCS lookup table per RFC1331 
+\ Thanks to :
+\ http://www.mavi1.org/web_security/cryptography/hashes/crc/crc-16-hdlc.c
+\ Note that this code defines "#define FCSGOOD 0xF0B8"
+\ whereas I define "$0F47 constant CRC_VALID"  which is bitwise inverted.
+\ This is because CRC16 returns the actual value to be sent in an HDLC packet
+\ Also note that at least one online CRC calculator does not include this CRC.
+\ *****************************************************************************
+
+\ The CCITT standard crc-polynomial for XMODEM : x**16 + x**12 + x**5 + 1 
+\ ( X*16 is implicit )
+\ $1021 CONSTANT CRCpolynomial 
+\ $8005 CONSTANT CRCpolynomial  \ CRC-16-IBM
+
+\ For HDLC ref RFC1331, hex 8408 = bits 16, 12, 5 and 0
+\ ( read bits backwards, bit 16 is implied )
+$8408 CONSTANT CRCpolynomial
+
+: w, ( w -- )   dup c, >< c, ;
+
+create CRC16table    \ created using the code at the end of the file
+ $0000 w, $1189 w, $2312 w, $329B w, $4624 w, $57AD w, $6536 w, $74BF w,
+ $8C48 w, $9DC1 w, $AF5A w, $BED3 w, $CA6C w, $DBE5 w, $E97E w, $F8F7 w,
+ $1081 w, $0108 w, $3393 w, $221A w, $56A5 w, $472C w, $75B7 w, $643E w,
+ $9CC9 w, $8D40 w, $BFDB w, $AE52 w, $DAED w, $CB64 w, $F9FF w, $E876 w,
+ $2102 w, $308B w, $0210 w, $1399 w, $6726 w, $76AF w, $4434 w, $55BD w,
+ $AD4A w, $BCC3 w, $8E58 w, $9FD1 w, $EB6E w, $FAE7 w, $C87C w, $D9F5 w,
+ $3183 w, $200A w, $1291 w, $0318 w, $77A7 w, $662E w, $54B5 w, $453C w,
+ $BDCB w, $AC42 w, $9ED9 w, $8F50 w, $FBEF w, $EA66 w, $D8FD w, $C974 w,
+ $4204 w, $538D w, $6116 w, $709F w, $0420 w, $15A9 w, $2732 w, $36BB w,
+ $CE4C w, $DFC5 w, $ED5E w, $FCD7 w, $8868 w, $99E1 w, $AB7A w, $BAF3 w,
+ $5285 w, $430C w, $7197 w, $601E w, $14A1 w, $0528 w, $37B3 w, $263A w,
+ $DECD w, $CF44 w, $FDDF w, $EC56 w, $98E9 w, $8960 w, $BBFB w, $AA72 w,
+ $6306 w, $728F w, $4014 w, $519D w, $2522 w, $34AB w, $0630 w, $17B9 w,
+ $EF4E w, $FEC7 w, $CC5C w, $DDD5 w, $A96A w, $B8E3 w, $8A78 w, $9BF1 w,
+ $7387 w, $620E w, $5095 w, $411C w, $35A3 w, $242A w, $16B1 w, $0738 w,
+ $FFCF w, $EE46 w, $DCDD w, $CD54 w, $B9EB w, $A862 w, $9AF9 w, $8B70 w,
+ $8408 w, $9581 w, $A71A w, $B693 w, $C22C w, $D3A5 w, $E13E w, $F0B7 w,
+ $0840 w, $19C9 w, $2B52 w, $3ADB w, $4E64 w, $5FED w, $6D76 w, $7CFF w,
+ $9489 w, $8500 w, $B79B w, $A612 w, $D2AD w, $C324 w, $F1BF w, $E036 w,
+ $18C1 w, $0948 w, $3BD3 w, $2A5A w, $5EE5 w, $4F6C w, $7DF7 w, $6C7E w,
+ $A50A w, $B483 w, $8618 w, $9791 w, $E32E w, $F2A7 w, $C03C w, $D1B5 w,
+ $2942 w, $38CB w, $0A50 w, $1BD9 w, $6F66 w, $7EEF w, $4C74 w, $5DFD w,
+ $B58B w, $A402 w, $9699 w, $8710 w, $F3AF w, $E226 w, $D0BD w, $C134 w,
+ $39C3 w, $284A w, $1AD1 w, $0B58 w, $7FE7 w, $6E6E w, $5CF5 w, $4D7C w,
+ $C60C w, $D785 w, $E51E w, $F497 w, $8028 w, $91A1 w, $A33A w, $B2B3 w,
+ $4A44 w, $5BCD w, $6956 w, $78DF w, $0C60 w, $1DE9 w, $2F72 w, $3EFB w,
+ $D68D w, $C704 w, $F59F w, $E416 w, $90A9 w, $8120 w, $B3BB w, $A232 w,
+ $5AC5 w, $4B4C w, $79D7 w, $685E w, $1CE1 w, $0D68 w, $3FF3 w, $2E7A w,
+ $E70E w, $F687 w, $C41C w, $D595 w, $A12A w, $B0A3 w, $8238 w, $93B1 w,
+ $6B46 w, $7ACF w, $4854 w, $59DD w, $2D62 w, $3CEB w, $0E70 w, $1FF9 w,
+ $F78F w, $E606 w, $D49D w, $C514 w, $B1AB w, $A022 w, $92B9 w, $8330 w,
+ $7BC7 w, $6A4E w, $58D5 w, $495C w, $3DE3 w, $2C6A w, $1EF1 w, $0F78 w,
+
+\ accumulates the CRC for character c into address a
+: CRC16accumulate ( c a -- )   
+   >r  
+   r@ w@ xor  $FF and  
+   2* CRC16table + w@
+   r@ w@ 8 rshift $ff and  xor  
+   r> w! 
+;
+
+variable incomingCRC    \ contains the input CRC value
+variable outgoingCRC    \ contains the output CRC value
+
+\ initialises the input CRC value in the required way
+: initIncomingCRC   -1 incomingCRC w! ; 
+                                        
+\ initialises the output CRC value in the required way
+: initOutgoingCRC   -1 outgoingCRC w! ; 
+
+\ calculates the CRC-16 for the given string.
+: CRC16 ( a n -- u )
+   initOutgoingCRC  
+   over + swap ?do
+      i c@ outgoingCRC CRC16accumulate
+   loop
+   outgoingCRC w@  invert $0000FFFF and 
+;
+
+pad 0 CRC16 pad w!  pad 2 CRC16 constant CRC_VALID
+\ $0F47 constant CRC_VALID
+
+\ *****************************************************************************
+\ Tests
+\ *****************************************************************************
+variable #failed 
+
+\ tests the CRC16 of a string given its correct result u
+: CRCtest ( a n u )   base @ >r  hex 
+   >r
+   cr  2 spaces  2dup type  $30 over - 0 max spaces
+   CRC16  dup base @ >r  hex  0 <#  # # # #  #> type  r> base !
+   r>    2dup = if  
+      2drop ."  ok"  
+   else  
+      ."  <-- should be " 4 u.r ."  failed!"  drop  1 #failed +!  
+   then 
+   r> base ! 
+;
+
+\ KAT packets :    
+\             length    payload                                                                 Checksum
+create Test0  $0C c,    $00 c, $00 c, $0A c, $00 c, $00 c, $00 c, $00 c, $01 c, $00 c, $01 c,   $FE c, $0E c, 
+create Test1  $04 c,    $08 c, $91 c,                                                           $87 c, $44 c, 
+create Test2  $04 c,    $08 c, $B1 c,                                                           $85 c, $65 c, 
+create Test3  $06 c,    $00 c, $01 c, $01 c, $3F c,                                             $AE c, $76 c, 
+create Test4  $06 c,    $02 c, $01 c, $01 c, $01 c,                                             $25 c, $97 c, 
+create Test5  $06 c,    $00 c, $01 c, $01 c, $0D c,                                             $3F c, $64 c, 
+create Test6  $12 c,    $ff c, $03 c, $c0 c, $21 c, $01 c, $c9 c, $00 c, $0c c, 
+                        $01 c, $04 c, $05 c, $dc c, $08 c, $02 c, $07 c, $02 c,                 $1E c, $87 c,
+
+\ ttcrc16  tests a selection of strings against known answers.
+: ttCRC16
+   0 #failed !
+
+   cr ." CRC-16 HDLC tests : " 
+
+   s" A" $A3F5 CRCtest
+   s" An Arbitrary String" $DC9B CRCtest
+   s" ZYXWVUTSRQPONMLKJIHGFEDBCA" $EBC9 CRCtest
+   s" Hello, World!" $9BD5 CRCtest
+   s" 123456789" $906E CRCtest 
+   s" abc" $9E25 CRCtest  
+   s" ABC" $9F2F CRCtest 
+   s" This is a string"  $5121 CRCtest
+   s" \uFFFE\u0000\u0001\u0002" $0350 CRCtest 
+   s" 0" $C1FB CRCtest
+   s" 01" $99EF CRCtest
+   s" 012" $FD89 CRCtest
+   s" 0123" $EA54 CRCtest
+   s" 01234" $9394 CRCtest
+   s" www.inventio.co.uk/crc16.f" $BDDC CRCtest
+   s" ABCDEFGHIJKLMNOPQRSTUVWXYZ" $3BAD CRCtest
+   s" ZYXWVUTSRQPONMLKJIHGFEDBCA" $EBC9 CRCtest
+   s" abcdefghijklmnopqrstuvwxyz" $0D43 CRCtest
+   s" zyxwvutsrqponmlkjihgfedbca" $DD27 CRCtest  
+   s" THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG"      $DD4F CRCtest
+   s"  "  drop 0 $0000 CRCtest      ."  ( null string )" 
+   pad #26 $00 fill pad #26 $8DF3 CRCtest  ."  ( 26 bytes of 0 )"
+   pad #26 $11 fill pad #26 $E4B4 CRCtest  ."  ( 26 bytes of hex 11 )"
+ 
+   Test0 count 2- $0EFE CRCtest  ."  Test0 " 
+   Test1 count 2- $4487 CRCtest  ."  Test1 " 
+   Test2 count 2- $6585 CRCtest  ."  Test2 "
+   Test3 count 2- $76AE CRCtest  ."  Test3 "
+   Test4 count 2- $9725 CRCtest  ."  Test4 "
+   Test5 count 2- $643F CRCtest  ."  Test5 "
+   Test6 count 2- $871E CRCtest  ."  Test6 "
+
+   Test0 count    CRC_VALID CRCtest  ."  Test0 +cs " 
+   Test1 count    CRC_VALID CRCtest  ."  Test1 +cs " 
+   Test2 count    CRC_VALID CRCtest  ."  Test2 +cs "
+   Test3 count    CRC_VALID CRCtest  ."  Test3 +cs "
+   Test4 count    CRC_VALID CRCtest  ."  Test4 +cs "
+   Test5 count    CRC_VALID CRCtest  ."  Test5 +cs "
+   Test6 count    CRC_VALID CRCtest  ."  Test6 +cs "
+
+   cr  #failed @ if  
+      ." Failed with "  #failed @ . ." error" #failed @ 1 = not if  ." s"  then ." !"  
+   else  
+      ." All tests passed"  
+   then
+;
+
+\\ 
+
+\ *************************************************************************** 
+\ Create the table used above
+\ *************************************************************************** 
+
+\ getCRC  calculates the CRC value for table element n , slow method
+: (CRC16calc) ( n - n)   8 0 DO  dup 1 AND
+      if  U2/  CRCpolynomial xor  else  U2/  then  LOOP ;
+
+: ShowCRCtable   
+   hex cr  
+   $100 0 do  
+      0 incomingCRC !  i (CRC16calc)    
+
+      \ SwiftForth format
+      0 <# [char] , hold  bl hold  # # # #  [char] $ hold  bl hold #> type
+      \ C format - please remove the final ,
+\      0 <# [char] , hold # # # #  [char] x hold  [char] 0 hold  bl hold #> type
+
+      i 7 and 7 = if  cr  then 
+   loop
+;

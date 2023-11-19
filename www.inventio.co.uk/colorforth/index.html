@@ -1,0 +1,1424 @@
+<html xmlns:v="urn:schemas-microsoft-com:vml"
+xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:w="urn:schemas-microsoft-com:office:word"
+xmlns:m="http://schemas.microsoft.com/office/2004/12/omml"
+xmlns="http://www.w3.org/TR/REC-html40">
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+<meta name=ProgId content=Word.Document>
+<meta name=Generator content="Microsoft Word 15">
+<meta name=Originator content="Microsoft Word 15">
+<link rel=File-List href="../cf2023/index_files/filelist.xml">
+<link rel=Edit-Time-Data href="https://www.inventio.co.uk/cf2023/index_files/editdata.mso">
+<!--[if !mso]>
+<style>
+v\:* {behavior:url(#default#VML);}
+o\:* {behavior:url(#default#VML);}
+w\:* {behavior:url(#default#VML);}
+.shape {behavior:url(#default#VML);}
+</style>
+<![endif]-->
+<title>colorForth</title>
+<!--[if gte mso 9]><xml>
+ <o:DocumentProperties>
+  <o:Author>Howerd Oakford</o:Author>
+  <o:Keywords>colorForth Forth Real Time Operating System</o:Keywords>
+  <o:LastAuthor>Howerd Oakford</o:LastAuthor>
+  <o:Revision>11</o:Revision>
+  <o:TotalTime>0</o:TotalTime>
+  <o:Created>2023-04-04T08:22:00Z</o:Created>
+  <o:LastSaved>2023-09-03T20:07:00Z</o:LastSaved>
+  <o:Pages>3</o:Pages>
+  <o:Words>1032</o:Words>
+  <o:Characters>6503</o:Characters>
+  <o:Lines>54</o:Lines>
+  <o:Paragraphs>15</o:Paragraphs>
+  <o:CharactersWithSpaces>7520</o:CharactersWithSpaces>
+  <o:Version>16.00</o:Version>
+ </o:DocumentProperties>
+ <o:OfficeDocumentSettings>
+  <o:AllowPNG/>
+ </o:OfficeDocumentSettings>
+</xml><![endif]-->
+<link rel=themeData href="../cf2023/index_files/themedata.thmx">
+<link rel=colorSchemeMapping href="../cf2023/index_files/colorschememapping.xml">
+<!--[if gte mso 9]><xml>
+ <w:WordDocument>
+  <w:View>Print</w:View>
+  <w:Zoom>110</w:Zoom>
+  <w:DisplayBackgroundShape/>
+  <w:SpellingState>Clean</w:SpellingState>
+  <w:TrackMoves>false</w:TrackMoves>
+  <w:TrackFormatting/>
+  <w:HyphenationZone>21</w:HyphenationZone>
+  <w:PunctuationKerning/>
+  <w:ValidateAgainstSchemas/>
+  <w:SaveIfXMLInvalid>false</w:SaveIfXMLInvalid>
+  <w:IgnoreMixedContent>false</w:IgnoreMixedContent>
+  <w:AlwaysShowPlaceholderText>false</w:AlwaysShowPlaceholderText>
+  <w:DoNotPromoteQF/>
+  <w:LidThemeOther>DE</w:LidThemeOther>
+  <w:LidThemeAsian>X-NONE</w:LidThemeAsian>
+  <w:LidThemeComplexScript>X-NONE</w:LidThemeComplexScript>
+  <w:Compatibility>
+   <w:BreakWrappedTables/>
+   <w:SnapToGridInCell/>
+   <w:WrapTextWithPunct/>
+   <w:UseAsianBreakRules/>
+   <w:DontGrowAutofit/>
+   <w:SplitPgBreakAndParaMark/>
+   <w:EnableOpenTypeKerning/>
+   <w:DontFlipMirrorIndents/>
+   <w:OverrideTableStyleHps/>
+  </w:Compatibility>
+  <w:BrowserLevel>MicrosoftInternetExplorer4</w:BrowserLevel>
+  <m:mathPr>
+   <m:mathFont m:val="Cambria Math"/>
+   <m:brkBin m:val="before"/>
+   <m:brkBinSub m:val="&#45;-"/>
+   <m:smallFrac m:val="off"/>
+   <m:dispDef/>
+   <m:lMargin m:val="0"/>
+   <m:rMargin m:val="0"/>
+   <m:defJc m:val="centerGroup"/>
+   <m:wrapIndent m:val="1440"/>
+   <m:intLim m:val="subSup"/>
+   <m:naryLim m:val="undOvr"/>
+  </m:mathPr></w:WordDocument>
+</xml><![endif]--><!--[if gte mso 9]><xml>
+ <w:LatentStyles DefLockedState="false" DefUnhideWhenUsed="false"
+  DefSemiHidden="false" DefQFormat="false" DefPriority="99"
+  LatentStyleCount="376">
+  <w:LsdException Locked="false" Priority="0" QFormat="true" Name="Normal"/>
+  <w:LsdException Locked="false" Priority="9" QFormat="true" Name="heading 1"/>
+  <w:LsdException Locked="false" Priority="9" SemiHidden="true"
+   UnhideWhenUsed="true" QFormat="true" Name="heading 2"/>
+  <w:LsdException Locked="false" Priority="9" SemiHidden="true"
+   UnhideWhenUsed="true" QFormat="true" Name="heading 3"/>
+  <w:LsdException Locked="false" Priority="9" SemiHidden="true"
+   UnhideWhenUsed="true" QFormat="true" Name="heading 4"/>
+  <w:LsdException Locked="false" Priority="9" SemiHidden="true"
+   UnhideWhenUsed="true" QFormat="true" Name="heading 5"/>
+  <w:LsdException Locked="false" Priority="9" SemiHidden="true"
+   UnhideWhenUsed="true" QFormat="true" Name="heading 6"/>
+  <w:LsdException Locked="false" Priority="9" SemiHidden="true"
+   UnhideWhenUsed="true" QFormat="true" Name="heading 7"/>
+  <w:LsdException Locked="false" Priority="9" SemiHidden="true"
+   UnhideWhenUsed="true" QFormat="true" Name="heading 8"/>
+  <w:LsdException Locked="false" Priority="9" SemiHidden="true"
+   UnhideWhenUsed="true" QFormat="true" Name="heading 9"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="index 1"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="index 2"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="index 3"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="index 4"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="index 5"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="index 6"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="index 7"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="index 8"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="index 9"/>
+  <w:LsdException Locked="false" Priority="39" SemiHidden="true"
+   UnhideWhenUsed="true" Name="toc 1"/>
+  <w:LsdException Locked="false" Priority="39" SemiHidden="true"
+   UnhideWhenUsed="true" Name="toc 2"/>
+  <w:LsdException Locked="false" Priority="39" SemiHidden="true"
+   UnhideWhenUsed="true" Name="toc 3"/>
+  <w:LsdException Locked="false" Priority="39" SemiHidden="true"
+   UnhideWhenUsed="true" Name="toc 4"/>
+  <w:LsdException Locked="false" Priority="39" SemiHidden="true"
+   UnhideWhenUsed="true" Name="toc 5"/>
+  <w:LsdException Locked="false" Priority="39" SemiHidden="true"
+   UnhideWhenUsed="true" Name="toc 6"/>
+  <w:LsdException Locked="false" Priority="39" SemiHidden="true"
+   UnhideWhenUsed="true" Name="toc 7"/>
+  <w:LsdException Locked="false" Priority="39" SemiHidden="true"
+   UnhideWhenUsed="true" Name="toc 8"/>
+  <w:LsdException Locked="false" Priority="39" SemiHidden="true"
+   UnhideWhenUsed="true" Name="toc 9"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Normal Indent"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="footnote text"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="annotation text"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="header"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="footer"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="index heading"/>
+  <w:LsdException Locked="false" Priority="35" SemiHidden="true"
+   UnhideWhenUsed="true" QFormat="true" Name="caption"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="table of figures"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="envelope address"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="envelope return"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="footnote reference"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="annotation reference"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="line number"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="page number"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="endnote reference"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="endnote text"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="table of authorities"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="macro"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="toa heading"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="List"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="List Bullet"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="List Number"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="List 2"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="List 3"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="List 4"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="List 5"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="List Bullet 2"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="List Bullet 3"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="List Bullet 4"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="List Bullet 5"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="List Number 2"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="List Number 3"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="List Number 4"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="List Number 5"/>
+  <w:LsdException Locked="false" Priority="10" QFormat="true" Name="Title"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Closing"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Signature"/>
+  <w:LsdException Locked="false" Priority="1" SemiHidden="true"
+   UnhideWhenUsed="true" Name="Default Paragraph Font"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Body Text"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Body Text Indent"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="List Continue"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="List Continue 2"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="List Continue 3"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="List Continue 4"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="List Continue 5"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Message Header"/>
+  <w:LsdException Locked="false" Priority="11" QFormat="true" Name="Subtitle"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Salutation"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Date"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Body Text First Indent"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Body Text First Indent 2"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Note Heading"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Body Text 2"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Body Text 3"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Body Text Indent 2"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Body Text Indent 3"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Block Text"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Hyperlink"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="FollowedHyperlink"/>
+  <w:LsdException Locked="false" Priority="22" QFormat="true" Name="Strong"/>
+  <w:LsdException Locked="false" Priority="20" QFormat="true" Name="Emphasis"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Document Map"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Plain Text"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="E-mail Signature"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="HTML Top of Form"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="HTML Bottom of Form"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Normal (Web)"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="HTML Acronym"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="HTML Address"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="HTML Cite"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="HTML Code"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="HTML Definition"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="HTML Keyboard"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="HTML Preformatted"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="HTML Sample"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="HTML Typewriter"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="HTML Variable"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Normal Table"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="annotation subject"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="No List"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Outline List 1"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Outline List 2"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Outline List 3"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Simple 1"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Simple 2"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Simple 3"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Classic 1"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Classic 2"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Classic 3"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Classic 4"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Colorful 1"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Colorful 2"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Colorful 3"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Columns 1"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Columns 2"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Columns 3"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Columns 4"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Columns 5"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Grid 1"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Grid 2"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Grid 3"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Grid 4"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Grid 5"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Grid 6"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Grid 7"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Grid 8"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table List 1"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table List 2"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table List 3"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table List 4"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table List 5"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table List 6"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table List 7"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table List 8"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table 3D effects 1"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table 3D effects 2"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table 3D effects 3"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Contemporary"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Elegant"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Professional"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Subtle 1"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Subtle 2"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Web 1"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Web 2"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Web 3"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Balloon Text"/>
+  <w:LsdException Locked="false" Priority="39" Name="Table Grid"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Table Theme"/>
+  <w:LsdException Locked="false" SemiHidden="true" Name="Placeholder Text"/>
+  <w:LsdException Locked="false" Priority="1" QFormat="true" Name="No Spacing"/>
+  <w:LsdException Locked="false" Priority="60" Name="Light Shading"/>
+  <w:LsdException Locked="false" Priority="61" Name="Light List"/>
+  <w:LsdException Locked="false" Priority="62" Name="Light Grid"/>
+  <w:LsdException Locked="false" Priority="63" Name="Medium Shading 1"/>
+  <w:LsdException Locked="false" Priority="64" Name="Medium Shading 2"/>
+  <w:LsdException Locked="false" Priority="65" Name="Medium List 1"/>
+  <w:LsdException Locked="false" Priority="66" Name="Medium List 2"/>
+  <w:LsdException Locked="false" Priority="67" Name="Medium Grid 1"/>
+  <w:LsdException Locked="false" Priority="68" Name="Medium Grid 2"/>
+  <w:LsdException Locked="false" Priority="69" Name="Medium Grid 3"/>
+  <w:LsdException Locked="false" Priority="70" Name="Dark List"/>
+  <w:LsdException Locked="false" Priority="71" Name="Colorful Shading"/>
+  <w:LsdException Locked="false" Priority="72" Name="Colorful List"/>
+  <w:LsdException Locked="false" Priority="73" Name="Colorful Grid"/>
+  <w:LsdException Locked="false" Priority="60" Name="Light Shading Accent 1"/>
+  <w:LsdException Locked="false" Priority="61" Name="Light List Accent 1"/>
+  <w:LsdException Locked="false" Priority="62" Name="Light Grid Accent 1"/>
+  <w:LsdException Locked="false" Priority="63" Name="Medium Shading 1 Accent 1"/>
+  <w:LsdException Locked="false" Priority="64" Name="Medium Shading 2 Accent 1"/>
+  <w:LsdException Locked="false" Priority="65" Name="Medium List 1 Accent 1"/>
+  <w:LsdException Locked="false" SemiHidden="true" Name="Revision"/>
+  <w:LsdException Locked="false" Priority="34" QFormat="true"
+   Name="List Paragraph"/>
+  <w:LsdException Locked="false" Priority="29" QFormat="true" Name="Quote"/>
+  <w:LsdException Locked="false" Priority="30" QFormat="true"
+   Name="Intense Quote"/>
+  <w:LsdException Locked="false" Priority="66" Name="Medium List 2 Accent 1"/>
+  <w:LsdException Locked="false" Priority="67" Name="Medium Grid 1 Accent 1"/>
+  <w:LsdException Locked="false" Priority="68" Name="Medium Grid 2 Accent 1"/>
+  <w:LsdException Locked="false" Priority="69" Name="Medium Grid 3 Accent 1"/>
+  <w:LsdException Locked="false" Priority="70" Name="Dark List Accent 1"/>
+  <w:LsdException Locked="false" Priority="71" Name="Colorful Shading Accent 1"/>
+  <w:LsdException Locked="false" Priority="72" Name="Colorful List Accent 1"/>
+  <w:LsdException Locked="false" Priority="73" Name="Colorful Grid Accent 1"/>
+  <w:LsdException Locked="false" Priority="60" Name="Light Shading Accent 2"/>
+  <w:LsdException Locked="false" Priority="61" Name="Light List Accent 2"/>
+  <w:LsdException Locked="false" Priority="62" Name="Light Grid Accent 2"/>
+  <w:LsdException Locked="false" Priority="63" Name="Medium Shading 1 Accent 2"/>
+  <w:LsdException Locked="false" Priority="64" Name="Medium Shading 2 Accent 2"/>
+  <w:LsdException Locked="false" Priority="65" Name="Medium List 1 Accent 2"/>
+  <w:LsdException Locked="false" Priority="66" Name="Medium List 2 Accent 2"/>
+  <w:LsdException Locked="false" Priority="67" Name="Medium Grid 1 Accent 2"/>
+  <w:LsdException Locked="false" Priority="68" Name="Medium Grid 2 Accent 2"/>
+  <w:LsdException Locked="false" Priority="69" Name="Medium Grid 3 Accent 2"/>
+  <w:LsdException Locked="false" Priority="70" Name="Dark List Accent 2"/>
+  <w:LsdException Locked="false" Priority="71" Name="Colorful Shading Accent 2"/>
+  <w:LsdException Locked="false" Priority="72" Name="Colorful List Accent 2"/>
+  <w:LsdException Locked="false" Priority="73" Name="Colorful Grid Accent 2"/>
+  <w:LsdException Locked="false" Priority="60" Name="Light Shading Accent 3"/>
+  <w:LsdException Locked="false" Priority="61" Name="Light List Accent 3"/>
+  <w:LsdException Locked="false" Priority="62" Name="Light Grid Accent 3"/>
+  <w:LsdException Locked="false" Priority="63" Name="Medium Shading 1 Accent 3"/>
+  <w:LsdException Locked="false" Priority="64" Name="Medium Shading 2 Accent 3"/>
+  <w:LsdException Locked="false" Priority="65" Name="Medium List 1 Accent 3"/>
+  <w:LsdException Locked="false" Priority="66" Name="Medium List 2 Accent 3"/>
+  <w:LsdException Locked="false" Priority="67" Name="Medium Grid 1 Accent 3"/>
+  <w:LsdException Locked="false" Priority="68" Name="Medium Grid 2 Accent 3"/>
+  <w:LsdException Locked="false" Priority="69" Name="Medium Grid 3 Accent 3"/>
+  <w:LsdException Locked="false" Priority="70" Name="Dark List Accent 3"/>
+  <w:LsdException Locked="false" Priority="71" Name="Colorful Shading Accent 3"/>
+  <w:LsdException Locked="false" Priority="72" Name="Colorful List Accent 3"/>
+  <w:LsdException Locked="false" Priority="73" Name="Colorful Grid Accent 3"/>
+  <w:LsdException Locked="false" Priority="60" Name="Light Shading Accent 4"/>
+  <w:LsdException Locked="false" Priority="61" Name="Light List Accent 4"/>
+  <w:LsdException Locked="false" Priority="62" Name="Light Grid Accent 4"/>
+  <w:LsdException Locked="false" Priority="63" Name="Medium Shading 1 Accent 4"/>
+  <w:LsdException Locked="false" Priority="64" Name="Medium Shading 2 Accent 4"/>
+  <w:LsdException Locked="false" Priority="65" Name="Medium List 1 Accent 4"/>
+  <w:LsdException Locked="false" Priority="66" Name="Medium List 2 Accent 4"/>
+  <w:LsdException Locked="false" Priority="67" Name="Medium Grid 1 Accent 4"/>
+  <w:LsdException Locked="false" Priority="68" Name="Medium Grid 2 Accent 4"/>
+  <w:LsdException Locked="false" Priority="69" Name="Medium Grid 3 Accent 4"/>
+  <w:LsdException Locked="false" Priority="70" Name="Dark List Accent 4"/>
+  <w:LsdException Locked="false" Priority="71" Name="Colorful Shading Accent 4"/>
+  <w:LsdException Locked="false" Priority="72" Name="Colorful List Accent 4"/>
+  <w:LsdException Locked="false" Priority="73" Name="Colorful Grid Accent 4"/>
+  <w:LsdException Locked="false" Priority="60" Name="Light Shading Accent 5"/>
+  <w:LsdException Locked="false" Priority="61" Name="Light List Accent 5"/>
+  <w:LsdException Locked="false" Priority="62" Name="Light Grid Accent 5"/>
+  <w:LsdException Locked="false" Priority="63" Name="Medium Shading 1 Accent 5"/>
+  <w:LsdException Locked="false" Priority="64" Name="Medium Shading 2 Accent 5"/>
+  <w:LsdException Locked="false" Priority="65" Name="Medium List 1 Accent 5"/>
+  <w:LsdException Locked="false" Priority="66" Name="Medium List 2 Accent 5"/>
+  <w:LsdException Locked="false" Priority="67" Name="Medium Grid 1 Accent 5"/>
+  <w:LsdException Locked="false" Priority="68" Name="Medium Grid 2 Accent 5"/>
+  <w:LsdException Locked="false" Priority="69" Name="Medium Grid 3 Accent 5"/>
+  <w:LsdException Locked="false" Priority="70" Name="Dark List Accent 5"/>
+  <w:LsdException Locked="false" Priority="71" Name="Colorful Shading Accent 5"/>
+  <w:LsdException Locked="false" Priority="72" Name="Colorful List Accent 5"/>
+  <w:LsdException Locked="false" Priority="73" Name="Colorful Grid Accent 5"/>
+  <w:LsdException Locked="false" Priority="60" Name="Light Shading Accent 6"/>
+  <w:LsdException Locked="false" Priority="61" Name="Light List Accent 6"/>
+  <w:LsdException Locked="false" Priority="62" Name="Light Grid Accent 6"/>
+  <w:LsdException Locked="false" Priority="63" Name="Medium Shading 1 Accent 6"/>
+  <w:LsdException Locked="false" Priority="64" Name="Medium Shading 2 Accent 6"/>
+  <w:LsdException Locked="false" Priority="65" Name="Medium List 1 Accent 6"/>
+  <w:LsdException Locked="false" Priority="66" Name="Medium List 2 Accent 6"/>
+  <w:LsdException Locked="false" Priority="67" Name="Medium Grid 1 Accent 6"/>
+  <w:LsdException Locked="false" Priority="68" Name="Medium Grid 2 Accent 6"/>
+  <w:LsdException Locked="false" Priority="69" Name="Medium Grid 3 Accent 6"/>
+  <w:LsdException Locked="false" Priority="70" Name="Dark List Accent 6"/>
+  <w:LsdException Locked="false" Priority="71" Name="Colorful Shading Accent 6"/>
+  <w:LsdException Locked="false" Priority="72" Name="Colorful List Accent 6"/>
+  <w:LsdException Locked="false" Priority="73" Name="Colorful Grid Accent 6"/>
+  <w:LsdException Locked="false" Priority="19" QFormat="true"
+   Name="Subtle Emphasis"/>
+  <w:LsdException Locked="false" Priority="21" QFormat="true"
+   Name="Intense Emphasis"/>
+  <w:LsdException Locked="false" Priority="31" QFormat="true"
+   Name="Subtle Reference"/>
+  <w:LsdException Locked="false" Priority="32" QFormat="true"
+   Name="Intense Reference"/>
+  <w:LsdException Locked="false" Priority="33" QFormat="true" Name="Book Title"/>
+  <w:LsdException Locked="false" Priority="37" SemiHidden="true"
+   UnhideWhenUsed="true" Name="Bibliography"/>
+  <w:LsdException Locked="false" Priority="39" SemiHidden="true"
+   UnhideWhenUsed="true" QFormat="true" Name="TOC Heading"/>
+  <w:LsdException Locked="false" Priority="41" Name="Plain Table 1"/>
+  <w:LsdException Locked="false" Priority="42" Name="Plain Table 2"/>
+  <w:LsdException Locked="false" Priority="43" Name="Plain Table 3"/>
+  <w:LsdException Locked="false" Priority="44" Name="Plain Table 4"/>
+  <w:LsdException Locked="false" Priority="45" Name="Plain Table 5"/>
+  <w:LsdException Locked="false" Priority="40" Name="Grid Table Light"/>
+  <w:LsdException Locked="false" Priority="46" Name="Grid Table 1 Light"/>
+  <w:LsdException Locked="false" Priority="47" Name="Grid Table 2"/>
+  <w:LsdException Locked="false" Priority="48" Name="Grid Table 3"/>
+  <w:LsdException Locked="false" Priority="49" Name="Grid Table 4"/>
+  <w:LsdException Locked="false" Priority="50" Name="Grid Table 5 Dark"/>
+  <w:LsdException Locked="false" Priority="51" Name="Grid Table 6 Colorful"/>
+  <w:LsdException Locked="false" Priority="52" Name="Grid Table 7 Colorful"/>
+  <w:LsdException Locked="false" Priority="46"
+   Name="Grid Table 1 Light Accent 1"/>
+  <w:LsdException Locked="false" Priority="47" Name="Grid Table 2 Accent 1"/>
+  <w:LsdException Locked="false" Priority="48" Name="Grid Table 3 Accent 1"/>
+  <w:LsdException Locked="false" Priority="49" Name="Grid Table 4 Accent 1"/>
+  <w:LsdException Locked="false" Priority="50" Name="Grid Table 5 Dark Accent 1"/>
+  <w:LsdException Locked="false" Priority="51"
+   Name="Grid Table 6 Colorful Accent 1"/>
+  <w:LsdException Locked="false" Priority="52"
+   Name="Grid Table 7 Colorful Accent 1"/>
+  <w:LsdException Locked="false" Priority="46"
+   Name="Grid Table 1 Light Accent 2"/>
+  <w:LsdException Locked="false" Priority="47" Name="Grid Table 2 Accent 2"/>
+  <w:LsdException Locked="false" Priority="48" Name="Grid Table 3 Accent 2"/>
+  <w:LsdException Locked="false" Priority="49" Name="Grid Table 4 Accent 2"/>
+  <w:LsdException Locked="false" Priority="50" Name="Grid Table 5 Dark Accent 2"/>
+  <w:LsdException Locked="false" Priority="51"
+   Name="Grid Table 6 Colorful Accent 2"/>
+  <w:LsdException Locked="false" Priority="52"
+   Name="Grid Table 7 Colorful Accent 2"/>
+  <w:LsdException Locked="false" Priority="46"
+   Name="Grid Table 1 Light Accent 3"/>
+  <w:LsdException Locked="false" Priority="47" Name="Grid Table 2 Accent 3"/>
+  <w:LsdException Locked="false" Priority="48" Name="Grid Table 3 Accent 3"/>
+  <w:LsdException Locked="false" Priority="49" Name="Grid Table 4 Accent 3"/>
+  <w:LsdException Locked="false" Priority="50" Name="Grid Table 5 Dark Accent 3"/>
+  <w:LsdException Locked="false" Priority="51"
+   Name="Grid Table 6 Colorful Accent 3"/>
+  <w:LsdException Locked="false" Priority="52"
+   Name="Grid Table 7 Colorful Accent 3"/>
+  <w:LsdException Locked="false" Priority="46"
+   Name="Grid Table 1 Light Accent 4"/>
+  <w:LsdException Locked="false" Priority="47" Name="Grid Table 2 Accent 4"/>
+  <w:LsdException Locked="false" Priority="48" Name="Grid Table 3 Accent 4"/>
+  <w:LsdException Locked="false" Priority="49" Name="Grid Table 4 Accent 4"/>
+  <w:LsdException Locked="false" Priority="50" Name="Grid Table 5 Dark Accent 4"/>
+  <w:LsdException Locked="false" Priority="51"
+   Name="Grid Table 6 Colorful Accent 4"/>
+  <w:LsdException Locked="false" Priority="52"
+   Name="Grid Table 7 Colorful Accent 4"/>
+  <w:LsdException Locked="false" Priority="46"
+   Name="Grid Table 1 Light Accent 5"/>
+  <w:LsdException Locked="false" Priority="47" Name="Grid Table 2 Accent 5"/>
+  <w:LsdException Locked="false" Priority="48" Name="Grid Table 3 Accent 5"/>
+  <w:LsdException Locked="false" Priority="49" Name="Grid Table 4 Accent 5"/>
+  <w:LsdException Locked="false" Priority="50" Name="Grid Table 5 Dark Accent 5"/>
+  <w:LsdException Locked="false" Priority="51"
+   Name="Grid Table 6 Colorful Accent 5"/>
+  <w:LsdException Locked="false" Priority="52"
+   Name="Grid Table 7 Colorful Accent 5"/>
+  <w:LsdException Locked="false" Priority="46"
+   Name="Grid Table 1 Light Accent 6"/>
+  <w:LsdException Locked="false" Priority="47" Name="Grid Table 2 Accent 6"/>
+  <w:LsdException Locked="false" Priority="48" Name="Grid Table 3 Accent 6"/>
+  <w:LsdException Locked="false" Priority="49" Name="Grid Table 4 Accent 6"/>
+  <w:LsdException Locked="false" Priority="50" Name="Grid Table 5 Dark Accent 6"/>
+  <w:LsdException Locked="false" Priority="51"
+   Name="Grid Table 6 Colorful Accent 6"/>
+  <w:LsdException Locked="false" Priority="52"
+   Name="Grid Table 7 Colorful Accent 6"/>
+  <w:LsdException Locked="false" Priority="46" Name="List Table 1 Light"/>
+  <w:LsdException Locked="false" Priority="47" Name="List Table 2"/>
+  <w:LsdException Locked="false" Priority="48" Name="List Table 3"/>
+  <w:LsdException Locked="false" Priority="49" Name="List Table 4"/>
+  <w:LsdException Locked="false" Priority="50" Name="List Table 5 Dark"/>
+  <w:LsdException Locked="false" Priority="51" Name="List Table 6 Colorful"/>
+  <w:LsdException Locked="false" Priority="52" Name="List Table 7 Colorful"/>
+  <w:LsdException Locked="false" Priority="46"
+   Name="List Table 1 Light Accent 1"/>
+  <w:LsdException Locked="false" Priority="47" Name="List Table 2 Accent 1"/>
+  <w:LsdException Locked="false" Priority="48" Name="List Table 3 Accent 1"/>
+  <w:LsdException Locked="false" Priority="49" Name="List Table 4 Accent 1"/>
+  <w:LsdException Locked="false" Priority="50" Name="List Table 5 Dark Accent 1"/>
+  <w:LsdException Locked="false" Priority="51"
+   Name="List Table 6 Colorful Accent 1"/>
+  <w:LsdException Locked="false" Priority="52"
+   Name="List Table 7 Colorful Accent 1"/>
+  <w:LsdException Locked="false" Priority="46"
+   Name="List Table 1 Light Accent 2"/>
+  <w:LsdException Locked="false" Priority="47" Name="List Table 2 Accent 2"/>
+  <w:LsdException Locked="false" Priority="48" Name="List Table 3 Accent 2"/>
+  <w:LsdException Locked="false" Priority="49" Name="List Table 4 Accent 2"/>
+  <w:LsdException Locked="false" Priority="50" Name="List Table 5 Dark Accent 2"/>
+  <w:LsdException Locked="false" Priority="51"
+   Name="List Table 6 Colorful Accent 2"/>
+  <w:LsdException Locked="false" Priority="52"
+   Name="List Table 7 Colorful Accent 2"/>
+  <w:LsdException Locked="false" Priority="46"
+   Name="List Table 1 Light Accent 3"/>
+  <w:LsdException Locked="false" Priority="47" Name="List Table 2 Accent 3"/>
+  <w:LsdException Locked="false" Priority="48" Name="List Table 3 Accent 3"/>
+  <w:LsdException Locked="false" Priority="49" Name="List Table 4 Accent 3"/>
+  <w:LsdException Locked="false" Priority="50" Name="List Table 5 Dark Accent 3"/>
+  <w:LsdException Locked="false" Priority="51"
+   Name="List Table 6 Colorful Accent 3"/>
+  <w:LsdException Locked="false" Priority="52"
+   Name="List Table 7 Colorful Accent 3"/>
+  <w:LsdException Locked="false" Priority="46"
+   Name="List Table 1 Light Accent 4"/>
+  <w:LsdException Locked="false" Priority="47" Name="List Table 2 Accent 4"/>
+  <w:LsdException Locked="false" Priority="48" Name="List Table 3 Accent 4"/>
+  <w:LsdException Locked="false" Priority="49" Name="List Table 4 Accent 4"/>
+  <w:LsdException Locked="false" Priority="50" Name="List Table 5 Dark Accent 4"/>
+  <w:LsdException Locked="false" Priority="51"
+   Name="List Table 6 Colorful Accent 4"/>
+  <w:LsdException Locked="false" Priority="52"
+   Name="List Table 7 Colorful Accent 4"/>
+  <w:LsdException Locked="false" Priority="46"
+   Name="List Table 1 Light Accent 5"/>
+  <w:LsdException Locked="false" Priority="47" Name="List Table 2 Accent 5"/>
+  <w:LsdException Locked="false" Priority="48" Name="List Table 3 Accent 5"/>
+  <w:LsdException Locked="false" Priority="49" Name="List Table 4 Accent 5"/>
+  <w:LsdException Locked="false" Priority="50" Name="List Table 5 Dark Accent 5"/>
+  <w:LsdException Locked="false" Priority="51"
+   Name="List Table 6 Colorful Accent 5"/>
+  <w:LsdException Locked="false" Priority="52"
+   Name="List Table 7 Colorful Accent 5"/>
+  <w:LsdException Locked="false" Priority="46"
+   Name="List Table 1 Light Accent 6"/>
+  <w:LsdException Locked="false" Priority="47" Name="List Table 2 Accent 6"/>
+  <w:LsdException Locked="false" Priority="48" Name="List Table 3 Accent 6"/>
+  <w:LsdException Locked="false" Priority="49" Name="List Table 4 Accent 6"/>
+  <w:LsdException Locked="false" Priority="50" Name="List Table 5 Dark Accent 6"/>
+  <w:LsdException Locked="false" Priority="51"
+   Name="List Table 6 Colorful Accent 6"/>
+  <w:LsdException Locked="false" Priority="52"
+   Name="List Table 7 Colorful Accent 6"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Mention"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Smart Hyperlink"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Hashtag"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Unresolved Mention"/>
+  <w:LsdException Locked="false" SemiHidden="true" UnhideWhenUsed="true"
+   Name="Smart Link"/>
+ </w:LatentStyles>
+</xml><![endif]-->
+<style>
+<!--
+ /* Font Definitions */
+ @font-face
+	{font-family:"Cambria Math";
+	panose-1:2 4 5 3 5 4 6 3 2 4;
+	mso-font-charset:0;
+	mso-generic-font-family:roman;
+	mso-font-pitch:variable;
+	mso-font-signature:-536869121 1107305727 33554432 0 415 0;}
+ /* Style Definitions */
+ p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{mso-style-unhide:no;
+	mso-style-qformat:yes;
+	mso-style-parent:"";
+	margin:0cm;
+	mso-pagination:widow-orphan;
+	font-size:12.0pt;
+	font-family:"Times New Roman",serif;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	color:black;}
+h2
+	{mso-style-noshow:yes;
+	mso-style-priority:9;
+	mso-style-qformat:yes;
+	mso-style-link:"Heading 2 Char";
+	mso-margin-top-alt:auto;
+	margin-right:0cm;
+	mso-margin-bottom-alt:auto;
+	margin-left:0cm;
+	mso-pagination:widow-orphan;
+	mso-outline-level:2;
+	font-size:18.0pt;
+	font-family:"Times New Roman",serif;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	color:black;
+	font-weight:bold;}
+a:link, span.MsoHyperlink
+	{mso-style-priority:99;
+	color:blue;
+	text-decoration:underline;
+	text-underline:single;}
+a:visited, span.MsoHyperlinkFollowed
+	{mso-style-noshow:yes;
+	mso-style-priority:99;
+	color:#954F72;
+	mso-themecolor:followedhyperlink;
+	text-decoration:underline;
+	text-underline:single;}
+p
+	{mso-style-noshow:yes;
+	mso-style-priority:99;
+	mso-margin-top-alt:auto;
+	margin-right:0cm;
+	mso-margin-bottom-alt:auto;
+	margin-left:0cm;
+	mso-pagination:widow-orphan;
+	font-size:12.0pt;
+	font-family:"Times New Roman",serif;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	color:black;}
+p.MsoNoSpacing, li.MsoNoSpacing, div.MsoNoSpacing
+	{mso-style-noshow:yes;
+	mso-style-priority:1;
+	mso-style-unhide:no;
+	mso-style-qformat:yes;
+	mso-style-parent:"";
+	margin:0cm;
+	mso-pagination:widow-orphan;
+	font-size:12.0pt;
+	font-family:"Times New Roman",serif;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	color:black;}
+span.Heading2Char
+	{mso-style-name:"Heading 2 Char";
+	mso-style-noshow:yes;
+	mso-style-priority:9;
+	mso-style-unhide:no;
+	mso-style-locked:yes;
+	mso-style-link:"Heading 2";
+	mso-ansi-font-size:18.0pt;
+	mso-bidi-font-size:18.0pt;
+	font-family:"Times New Roman",serif;
+	mso-ascii-font-family:"Times New Roman";
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-hansi-font-family:"Times New Roman";
+	mso-bidi-font-family:"Times New Roman";
+	color:black;
+	mso-fareast-language:DE;
+	font-weight:bold;}
+p.msonormal0, li.msonormal0, div.msonormal0
+	{mso-style-name:msonormal;
+	mso-style-noshow:yes;
+	mso-style-priority:99;
+	mso-style-unhide:no;
+	mso-margin-top-alt:auto;
+	margin-right:0cm;
+	mso-margin-bottom-alt:auto;
+	margin-left:0cm;
+	mso-pagination:widow-orphan;
+	font-size:12.0pt;
+	font-family:"Times New Roman",serif;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	color:black;}
+span.SpellE
+	{mso-style-name:"";
+	mso-spl-e:yes;}
+.MsoChpDefault
+	{mso-style-type:export-only;
+	mso-default-props:yes;
+	font-size:10.0pt;
+	mso-ansi-font-size:10.0pt;
+	mso-bidi-font-size:10.0pt;
+	font-family:"Calibri",sans-serif;
+	mso-ascii-font-family:Calibri;
+	mso-ascii-theme-font:minor-latin;
+	mso-fareast-font-family:Calibri;
+	mso-fareast-theme-font:minor-latin;
+	mso-hansi-font-family:Calibri;
+	mso-hansi-theme-font:minor-latin;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;
+	mso-font-kerning:0pt;
+	mso-ligatures:none;
+	mso-fareast-language:EN-US;}
+@page WordSection1
+	{size:595.3pt 841.9pt;
+	margin:36.0pt 36.0pt 36.0pt 36.0pt;
+	mso-header-margin:35.4pt;
+	mso-footer-margin:35.4pt;
+	mso-paper-source:0;}
+div.WordSection1
+	{page:WordSection1;}
+-->
+</style>
+<!--[if gte mso 10]>
+<style>
+ /* Style Definitions */
+ table.MsoNormalTable
+	{mso-style-name:"Table Normal";
+	mso-tstyle-rowband-size:0;
+	mso-tstyle-colband-size:0;
+	mso-style-noshow:yes;
+	mso-style-priority:99;
+	mso-style-parent:"";
+	mso-padding-alt:0cm 5.4pt 0cm 5.4pt;
+	mso-para-margin:0cm;
+	mso-pagination:widow-orphan;
+	font-size:10.0pt;
+	font-family:"Calibri",sans-serif;
+	mso-ascii-font-family:Calibri;
+	mso-ascii-theme-font:minor-latin;
+	mso-hansi-font-family:Calibri;
+	mso-hansi-theme-font:minor-latin;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;
+	mso-fareast-language:EN-US;}
+</style>
+<![endif]--><!--[if gte mso 9]><xml>
+ <o:shapedefaults v:ext="edit" spidmax="1026">
+  <o:colormru v:ext="edit" colors="#d9ffda,#d1ffc5,#faffdc,#e8ffce,#f0fff0,#f0fffa,#faffff,#f7ffff"/>
+ </o:shapedefaults></xml><![endif]--><!--[if gte mso 9]><xml>
+ <o:shapelayout v:ext="edit">
+  <o:idmap v:ext="edit" data="1"/>
+ </o:shapelayout></xml><![endif]-->
+</head>
+
+<body bgcolor="#FAFFFF" lang=DE link=blue vlink="#954F72" style='tab-interval:
+35.4pt;word-wrap:break-word'>
+
+<div class=WordSection1>
+
+<h2 align=center style='text-align:center'><i><span lang=EN-GB
+style='font-size:22.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";color:red;mso-ansi-language:EN-GB'>color</span></i><i><span
+lang=EN-GB style='font-size:22.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";color:lime;mso-ansi-language:EN-GB'>Forth</span></i><span
+lang=EN-GB style='font-size:22.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";color:windowtext;mso-ansi-language:EN-GB;font-weight:normal;
+mso-bidi-font-weight:bold;mso-bidi-font-style:italic'> is a minimalistic
+operating system for an x86 PC<o:p></o:p></span></h2>
+
+<h2 align=center style='text-align:center'><span lang=EN-GB style='font-family:
+"Arial",sans-serif;mso-fareast-font-family:"Times New Roman";color:windowtext;
+mso-ansi-language:EN-GB;font-weight:normal;mso-bidi-font-weight:bold;
+mso-bidi-font-style:italic'>2023 Sep 03<o:p></o:p></span></h2>
+
+<p class=MsoNormal align=center style='text-align:center'><span lang=EN-GB
+style='font-size:16.0pt;font-family:"Arial",sans-serif;color:red;mso-ansi-language:
+EN-GB'>color</span><span lang=EN-GB style='font-size:16.0pt;font-family:"Arial",sans-serif;
+color:lime;mso-ansi-language:EN-GB'>Forth </span><span lang=EN-GB
+style='font-size:16.0pt;font-family:"Arial",sans-serif;color:windowtext;
+mso-ansi-language:EN-GB'>cf2023 edition has arrived!</span><span lang=EN-GB
+style='font-family:"Arial",sans-serif;color:windowtext;mso-ansi-language:EN-GB'><o:p></o:p></span></p>
+
+<p class=MsoNormal><span lang=EN-GB style='font-family:"Arial",sans-serif;
+color:windowtext;mso-ansi-language:EN-GB'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNormal><span lang=EN-GB style='mso-ansi-language:EN-GB'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNormal><span lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;
+color:red;mso-ansi-language:EN-GB'>color</span><span lang=EN-GB
+style='font-size:14.0pt;font-family:"Arial",sans-serif;color:lime;mso-ansi-language:
+EN-GB'>Forth</span><span lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;
+mso-fareast-font-family:"Times New Roman";mso-ansi-language:EN-GB'> is a simple
+dialect of Forth created by the inventor of Forth, Chuck Moore.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;
+mso-fareast-font-family:"Times New Roman";mso-ansi-language:EN-GB'>cf2023 is a
+distribution that runs on a Windows PC in bochs, or natively from a USB drive.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;
+mso-fareast-font-family:"Times New Roman";mso-ansi-language:EN-GB'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNoSpacing><span lang=EN-GB style='font-size:14.0pt;font-family:
+"Arial",sans-serif;mso-fareast-font-family:"Times New Roman";background:yellow;
+mso-highlight:yellow;mso-ansi-language:EN-GB'>New :</span><span lang=EN-GB
+style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";mso-ansi-language:EN-GB'> </span><span lang=EN-GB
+style='font-size:14.0pt;font-family:"Arial",sans-serif;color:red;mso-ansi-language:
+EN-GB'><a
+href="colorForth_and_Object_Oriented_Programming.pdf">colorForth<span
+style='mso-fareast-font-family:"Times New Roman"'> and Object Oriented
+Programming</span></a> </span><span lang=EN-GB style='font-size:14.0pt;
+font-family:"Arial",sans-serif;mso-fareast-font-family:"Times New Roman";
+mso-ansi-language:EN-GB'>(<a
+href="colorForth_and_Object_Oriented_Programming.pdf">pdf
+file</a>).<o:p></o:p></span></p>
+
+<p class=MsoNoSpacing><span lang=EN-GB style='font-size:14.0pt;font-family:
+"Arial",sans-serif;color:red;mso-ansi-language:EN-GB'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNoSpacing><span class=SpellE><span lang=EN-GB style='font-size:
+14.0pt;font-family:"Arial",sans-serif;color:red;mso-ansi-language:EN-GB'>color</span><span
+lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;color:lime;
+mso-ansi-language:EN-GB'>Forth</span><span lang=EN-GB style='font-size:14.0pt;
+font-family:"Arial",sans-serif;mso-fareast-font-family:"Times New Roman";
+mso-ansi-language:EN-GB'>:<a href="../cf2023/colorForth_Next_Generation.pdf">The Next
+Generation</a></span></span><span lang=EN-GB style='font-size:14.0pt;
+font-family:"Arial",sans-serif;mso-fareast-font-family:"Times New Roman";
+mso-ansi-language:EN-GB'> – some ideas for the future (<a
+href="../cf2023/colorForth_Next_Generation.pdf">pdf file</a>).<o:p></o:p></span></p>
+
+<p class=MsoNoSpacing><span lang=EN-GB style='font-size:14.0pt;font-family:
+"Arial",sans-serif;mso-fareast-font-family:"Times New Roman";mso-ansi-language:
+EN-GB'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNoSpacing><span lang=EN-GB style='font-size:14.0pt;font-family:
+"Arial",sans-serif;mso-fareast-font-family:"Times New Roman";mso-ansi-language:
+EN-GB'>Download the latest </span><span style='font-size:14.0pt;font-family:
+"Arial",sans-serif'><a
+href="../cf2023/cf2023_2023Apr04_roomed-zebra.7z"><span
+lang=EN-GB style='mso-fareast-font-family:"Times New Roman";mso-ansi-language:
+EN-GB'>cf2023_2023Apr04_roomed-zebra.7z</span></a></span><span
+class=MsoHyperlink><b><span style='font-size:14.0pt;font-family:"Arial",sans-serif;
+mso-ansi-language:EN-GB'> </span></b></span><i><span lang=EN-GB
+style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";color:red;mso-ansi-language:EN-GB'>color</span></i><i><span
+lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";color:lime;mso-ansi-language:EN-GB'>Forth</span></i><span
+lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";color:lime;mso-ansi-language:EN-GB'> </span><span lang=EN-GB
+style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";mso-ansi-language:EN-GB'>system packaged with</span><i><span
+lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";color:aqua;mso-ansi-language:EN-GB'> </span></i><span
+style='font-size:14.0pt;font-family:"Arial",sans-serif'><a
+href="http://bochs.sourceforge.net/"><span lang=EN-GB style='mso-fareast-font-family:
+"Times New Roman";mso-ansi-language:EN-GB'>Bochs</span></a></span><span
+lang=EN-US style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-ansi-language:
+EN-US'> for Windows</span><span lang=EN-GB style='font-size:14.0pt;font-family:
+"Arial",sans-serif;mso-fareast-font-family:"Times New Roman";mso-ansi-language:
+EN-GB'>. <o:p></o:p></span></p>
+
+<p class=MsoNoSpacing><span lang=EN-GB style='font-size:14.0pt;font-family:
+"Arial",sans-serif;mso-fareast-font-family:"Times New Roman";mso-ansi-language:
+EN-GB'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNoSpacing><span lang=EN-GB style='font-size:14.0pt;font-family:
+"Arial",sans-serif;mso-fareast-font-family:"Times New Roman";mso-ansi-language:
+EN-GB'>The cf2023.img file can also be copied to a USB drive ( e.g. using <a
+href="https://rufus.ie/downloads/">rufus-3.xx.exe</a> ) or emulated in Linux (
+e.g. using <a href="https://www.qemu.org/download/#linux">QEMU</a> - the file <a
+href="../cf2023/go_qemu.bat">go_qemu.bat</a> is included
+in the 7z file, in case it helps).<o:p></o:p></span></p>
+
+<p class=MsoNoSpacing><span lang=EN-GB style='font-size:14.0pt;font-family:
+"Arial",sans-serif;mso-fareast-font-family:"Times New Roman";mso-ansi-language:
+EN-GB'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNoSpacing><span lang=EN-GB style='font-size:14.0pt;font-family:
+"Arial",sans-serif;mso-fareast-font-family:"Times New Roman";mso-ansi-language:
+EN-GB'>Latest cf2023 distribution documentation : </span><span
+style='font-size:14.0pt;font-family:"Arial",sans-serif'><a
+href="../cf2023/cf2023_colorForth.pdf"><span lang=EN-GB
+style='mso-fareast-font-family:"Times New Roman";mso-ansi-language:EN-GB'>cf2023_</span><span
+lang=EN-GB style='mso-fareast-font-family:"Times New Roman";color:red;
+mso-ansi-language:EN-GB'>color</span><span lang=EN-GB style='mso-fareast-font-family:
+"Times New Roman";color:#00B050;mso-ansi-language:EN-GB'>Forth</span><span
+lang=EN-GB style='mso-fareast-font-family:"Times New Roman";mso-ansi-language:
+EN-GB'>.pdf</span></a></span><span lang=EN-US style='font-size:14.0pt;
+font-family:"Arial",sans-serif;mso-ansi-language:EN-US'><o:p></o:p></span></p>
+
+<p class=MsoNoSpacing><span lang=EN-US style='font-size:14.0pt;font-family:
+"Arial",sans-serif;mso-ansi-language:EN-US'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNoSpacing><span lang=EN-GB style='font-size:14.0pt;font-family:
+"Arial",sans-serif;mso-fareast-font-family:"Times New Roman";mso-ansi-language:
+EN-GB'>What is new to see in ’23 : <a
+href="../cf2023/cf2023_what_is_new_to_see_in_23.pdf">cf2023_what_is_new_to_see_in_23.pdf</a><o:p></o:p></span></p>
+
+<p class=MsoNoSpacing><span lang=EN-GB style='font-size:14.0pt;font-family:
+"Arial",sans-serif;mso-ansi-language:EN-GB'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNoSpacing><span lang=EN-GB style='font-size:14.0pt;font-family:
+"Arial",sans-serif;mso-ansi-language:EN-GB'>How to program in colorForth cf2023
+: <a
+href="../cf2023/How_to_program_in_colorForth_cf2023.pdf">How_to_program_in_colorForth_cf2023.pdf</a><o:p></o:p></span></p>
+
+<p class=MsoNoSpacing><span lang=EN-GB style='mso-ansi-language:EN-GB'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNoSpacing><span lang=EN-GB style='font-size:14.0pt;font-family:
+"Arial",sans-serif;mso-ansi-language:EN-GB'>Chuck Moore’s original <a
+href="../colorForth_archive/Chuck_Moore_Website/index.html">www.colorforth.com</a>
+website.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;
+mso-fareast-font-family:"Times New Roman";mso-ansi-language:EN-GB'><a
+href="../colorForth_archive.html"><span class=SpellE>colorForth_archive</span></a>
+from Chuck Moore’s original 2001 code onwards…</span><span lang=EN-GB
+style='mso-ansi-language:EN-GB'><o:p></o:p></span></p>
+
+<p class=MsoNoSpacing><span lang=EN-GB style='font-size:14.0pt;font-family:
+"Arial",sans-serif;mso-ansi-language:EN-GB'><o:p>&nbsp;</o:p></span></p>
+
+<div class=MsoNormal align=center style='text-align:center'><span lang=EN-GB
+style='font-family:"Arial",sans-serif;mso-fareast-font-family:"Times New Roman";
+mso-ansi-language:EN-GB'>
+
+<hr size=2 width="100%" align=center>
+
+</span></div>
+
+<p class=MsoNoSpacing><span lang=EN-GB style='font-family:"Arial",sans-serif;
+mso-fareast-font-family:"Times New Roman";mso-ansi-language:EN-GB'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNoSpacing><span lang=EN-GB style='font-family:"Arial",sans-serif;
+mso-fareast-font-family:"Times New Roman";mso-ansi-language:EN-GB'>New : The
+2022 Nov 03 edition updates Bochs so that it works under Windows 11<o:p></o:p></span></p>
+
+<p class=MsoNoSpacing><span lang=EN-GB style='font-size:14.0pt;font-family:
+"Arial",sans-serif;mso-fareast-font-family:"Times New Roman";mso-ansi-language:
+EN-GB'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNoSpacing><span lang=EN-GB style='font-family:"Arial",sans-serif;
+mso-fareast-font-family:"Times New Roman";mso-ansi-language:EN-GB'>Forth2020
+Group : my <b>“colorForth_cf2022_Under_the_Hood.pptx</b>”</span><b><span
+lang=EN-GB style='font-size:14.0pt;mso-bidi-font-size:12.0pt;font-family:"Arial",sans-serif;
+mso-ansi-language:EN-GB'> </span></b><span lang=EN-GB style='font-family:"Arial",sans-serif;
+mso-fareast-font-family:"Times New Roman";mso-ansi-language:EN-GB'>PowerPoint
+file : </span><span lang=EN-GB style='font-size:14.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'><a
+href="../cf2022/colorForth_cf2022_Under_the_Hood.pptx">https://www.inventio.co.uk/cf2022/colorForth_cf2022_Under_the_Hood.pptx</a><o:p></o:p></span></p>
+
+<p class=MsoNoSpacing><span lang=EN-GB style='mso-ansi-language:EN-GB'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNoSpacing><span style='font-size:14.0pt'><a
+href="../cf2022/cf2022_what_is_new_in_2022.pdf"><span
+lang=EN-GB style='font-size:16.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";mso-ansi-language:EN-GB'>cf2022_what_is_new_in_2022.pdf</span></a></span><span
+lang=EN-GB style='font-size:14.0pt;mso-ansi-language:EN-GB'><o:p></o:p></span></p>
+
+<p class=MsoNoSpacing><span style='font-size:14.0pt'><a
+href="../cf2022/How_to_program_in_colorForth_cf2022.pdf"><span
+lang=EN-GB style='font-size:16.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";mso-ansi-language:EN-GB'>How_to_program_in_colorForth_cf2022.pdf</span></a></span><span
+lang=EN-GB style='font-size:14.0pt;mso-ansi-language:EN-GB'><o:p></o:p></span></p>
+
+<p class=MsoNoSpacing><span lang=EN-GB style='font-size:14.0pt;mso-ansi-language:
+EN-GB'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNoSpacing><span lang=EN-GB style='font-family:"Arial",sans-serif;
+mso-fareast-font-family:"Times New Roman";mso-ansi-language:EN-GB'>Forth2020
+Facebook Group : my</span><b><span lang=EN-GB style='font-size:14.0pt;
+mso-bidi-font-size:12.0pt;font-family:"Arial",sans-serif;mso-ansi-language:
+EN-GB'> “<a href="https://www.youtube.com/watch?v=krRV3ZVQ8Qs&amp;t=7759s"><span
+style='font-weight:normal'>cf2022 what’s new in 2022</span></a></span></b><span
+lang=EN-GB style='font-family:"Arial",sans-serif;mso-fareast-font-family:"Times New Roman";
+mso-ansi-language:EN-GB'>” video <o:p></o:p></span></p>
+
+<p class=MsoNoSpacing><span lang=EN-GB style='font-family:"Arial",sans-serif;
+mso-fareast-font-family:"Times New Roman";mso-ansi-language:EN-GB'>and the
+PowerPoint file : </span><span lang=EN-GB style='font-size:14.0pt;mso-bidi-font-size:
+12.0pt;font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'><a
+href="../cf2022/colorForth_Forth2020_cf2022_Presentation.pptx">https://www.inventio.co.uk/cf2022/colorForth_Forth2020_cf2022_Presentation.pptx</a><o:p></o:p></span></p>
+
+<p class=MsoNormal><span lang=EN-GB style='font-family:"Arial",sans-serif;
+mso-fareast-font-family:"Times New Roman";mso-ansi-language:EN-GB'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNormal><span lang=EN-GB style='font-family:"Arial",sans-serif;
+mso-fareast-font-family:"Times New Roman";mso-ansi-language:EN-GB'>Unzip the 7z
+or zip file and run <b>go.bat</b> to run the cf2022.img image in the bochs PC
+emulator.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span lang=EN-GB style='font-family:"Arial",sans-serif;
+mso-fareast-font-family:"Times New Roman";mso-ansi-language:EN-GB'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNormal><span lang=EN-GB style='font-family:"Arial",sans-serif;
+color:windowtext;mso-ansi-language:EN-GB'>Now available on GitHub <a
+href="https://github.com/Howerd/colorForth.git">https://github.com/Howerd/colorForth.git</a><o:p></o:p></span></p>
+
+<p class=MsoNormal><span lang=EN-GB style='font-family:"Arial",sans-serif;
+mso-fareast-font-family:"Times New Roman";color:windowtext;mso-ansi-language:
+EN-GB'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNormal><span lang=EN-GB style='font-family:"Arial",sans-serif;
+mso-fareast-font-family:"Times New Roman";mso-ansi-language:EN-GB'>And <span
+class=SpellE>SourceForge</span> : </span><a
+href="https://sourceforge.net/projects/colorforth/" target="_blank"><span
+lang=EN-US style='font-family:"Arial",sans-serif;color:#002060;background:white;
+mso-ansi-language:EN-US'>https://sourceforge.net/projects/colorforth/</span></a><span
+lang=EN-US style='font-family:"Arial",sans-serif;color:#002060;background:white;
+mso-ansi-language:EN-US'>&nbsp;</span><span lang=EN-US style='font-family:"Arial",sans-serif;
+color:#002060;mso-ansi-language:EN-US'><br>
+</span><span lang=EN-US style='font-family:"Arial",sans-serif;background:white;
+mso-ansi-language:EN-US'><a
+href="https://sourceforge.net/projects/colorforth/files/cf2022_2022Sep24.7z/download">https://sourceforge.net/projects/colorforth/files/<span
+style='mso-bookmark:_Hlk114980492'>cf2022_2022Sep24.7z</span>/download</a><![if !supportNestedAnchors]><a
+name="_Hlk114980492"></a><![endif]></span><span lang=EN-US style='font-family:
+"Arial",sans-serif;color:#002060;background:white;mso-ansi-language:EN-US'>&nbsp;<o:p></o:p></span></p>
+
+<p><span lang=EN-GB style='font-size:14.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>Bug reports, feedback
+and comments to</span><span lang=EN-GB style='font-family:"Arial",sans-serif;
+color:#002060;background:white;mso-ansi-language:EN-GB'> </span><span
+lang=EN-GB style='font-size:16.0pt;font-family:"Arial",sans-serif;color:aqua;
+mso-ansi-language:EN-GB'><span style='mso-spacerun:yes'> </span></span><a
+href="mailto:howerd@inventio.co.uk"><span lang=EN-GB style='font-size:16.0pt;
+font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>Howerd Oakford</span></a><span
+lang=EN-GB style='mso-ansi-language:EN-GB'><o:p></o:p></span></p>
+
+<p><span lang=EN-GB style='font-size:14.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>Enjoy!<o:p></o:p></span></p>
+
+<p><span lang=EN-GB style='font-size:14.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial",sans-serif;background:yellow;mso-highlight:yellow;
+mso-ansi-language:EN-GB'>For reference : Chuck Moore’s <a
+href="Chuck_Moore's_original_colorForth.7z">original
+colorForth files</a></span><span lang=EN-GB style='font-size:14.0pt;mso-bidi-font-size:
+12.0pt;font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'> : <span
+style='background:yellow;mso-highlight:yellow'>Chuck_Moore's_original_colorForth.7z</span><o:p></o:p></span></p>
+
+<p><span lang=EN-GB style='font-size:14.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial",sans-serif;background:yellow;mso-highlight:yellow;
+mso-ansi-language:EN-GB'>Plus, a version by Josh Grams that fixes some bugs :</span><span
+lang=EN-GB style='font-size:14.0pt;mso-bidi-font-size:12.0pt;font-family:"Arial",sans-serif;
+mso-ansi-language:EN-GB'> <span style='background:yellow;mso-highlight:yellow'><a
+href="chuck05-jg5.7z">https://www.inventio.co.uk/colorforth/chuck05-jg5.7z</a></span><o:p></o:p></span></p>
+
+<p><b style='mso-bidi-font-weight:normal'><i style='mso-bidi-font-style:normal'><span
+lang=EN-GB style='font-size:14.0pt;mso-bidi-font-size:12.0pt;font-family:"Arial",sans-serif;
+mso-ansi-language:EN-GB'>cf2022 uses BIOS calls to access a USB drive, so it is
+not necessary to have a floppy disk drive to run natively!<o:p></o:p></span></i></b></p>
+
+<p><span lang=EN-GB style='font-family:"Arial",sans-serif;mso-ansi-language:
+EN-GB'>Full assembler source file, </span><a href="http://www.nasm.us/"><b><span
+lang=EN-GB style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>NASM</span></b></a><span
+style='mso-ansi-language:EN-GB'> </span><span lang=EN-GB style='font-family:
+"Arial",sans-serif;mso-ansi-language:EN-GB'>assembler, </span><span lang=EN-GB
+style='font-family:"Arial",sans-serif;color:red;mso-ansi-language:EN-GB'>color</span><span
+lang=EN-GB style='font-family:"Arial",sans-serif;color:lime;mso-ansi-language:
+EN-GB'>Forth</span><span lang=EN-GB style='mso-ansi-language:EN-GB'> </span><span
+lang=EN-GB style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>source
+and batch files to create the </span><span lang=EN-GB style='font-family:"Arial",sans-serif;
+color:red;mso-ansi-language:EN-GB'>color</span><span lang=EN-GB
+style='font-family:"Arial",sans-serif;color:lime;mso-ansi-language:EN-GB'>Forth</span><span
+lang=EN-GB style='mso-ansi-language:EN-GB'> </span><span lang=EN-GB
+style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>image, and run
+it in the bochs emulator.</span><span lang=EN-GB style='mso-ansi-language:EN-GB'><o:p></o:p></span></p>
+
+<p align=center style='text-align:center'><span lang=EN-GB style='font-size:
+16.0pt;font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>Real </span><span
+lang=EN-GB style='font-size:16.0pt;font-family:"Arial",sans-serif;color:red;
+mso-ansi-language:EN-GB'>color</span><span lang=EN-GB style='font-size:16.0pt;
+font-family:"Arial",sans-serif;color:lime;mso-ansi-language:EN-GB'>Forth</span><span
+lang=EN-GB style='font-size:16.0pt;font-family:"Arial",sans-serif;mso-ansi-language:
+EN-GB'> running on (just about) any Windows PC.</span><span lang=EN-GB
+style='font-size:16.0pt;mso-ansi-language:EN-GB'><o:p></o:p></span></p>
+
+<p><span lang=EN-GB style='font-family:"Arial",sans-serif;mso-ansi-language:
+EN-GB'>bochs is available from </span><a href="http://bochs.sourceforge.net/"><span
+lang=EN-GB style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>http://bochs.sourceforge.net/</span></a><span
+lang=EN-GB style='mso-ansi-language:EN-GB'><span style='mso-spacerun:yes'>   
+</span></span><span lang=EN-GB style='font-family:"Arial",sans-serif;
+mso-ansi-language:EN-GB'>Thank you to all the bochs developers...</span><span
+lang=EN-GB style='mso-ansi-language:EN-GB'><o:p></o:p></span></p>
+
+<p><span lang=EN-GB style='font-size:14.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>Download the previous
+zip file here&nbsp; </span><a href="https://www.inventio.co.uk/cf2023/cf2022_Issue_2022Apr04.zip"><span
+lang=EN-GB style='font-size:16.0pt;mso-bidi-font-size:13.5pt;font-family:"Arial",sans-serif;
+mso-fareast-font-family:"Times New Roman";mso-ansi-language:EN-GB'>cf2022_Issue_2022Apr04.zip</span></a><span
+lang=EN-GB style='font-size:14.0pt;mso-bidi-font-size:12.0pt;font-family:"Arial",sans-serif;
+mso-ansi-language:EN-GB'>&nbsp; <o:p></o:p></span></p>
+
+<h2><span lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;
+color:#0070C0;mso-ansi-language:EN-GB;font-weight:normal'>Presentation by
+Howerd Oakford at <a
+href="http://www.inventio.co.uk/cf2020/colorForth_KüstenForth-Treffen.pptx">colorForth_KüstenForth-Treffen.pptx</a><o:p></o:p></span></h2>
+
+<p class=MsoNormal><a
+href="../cf2020/colorForth_in_Black_and_White.pdf"><span
+lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";color:red;mso-ansi-language:EN-GB'>color</span><span
+lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";color:#00B050;mso-ansi-language:EN-GB'>Forth</span><span
+lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";mso-ansi-language:EN-GB'>_in_</span><span lang=EN-GB
+style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";color:windowtext;mso-ansi-language:EN-GB'>Black</span><span
+lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";mso-ansi-language:EN-GB'>_and_</span><span lang=EN-GB
+style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";color:white;mso-themecolor:background1;background:black;
+mso-highlight:black;mso-ansi-language:EN-GB'>White</span><span lang=EN-GB
+style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";mso-ansi-language:EN-GB'>.pdf</span></a><span lang=EN-GB
+style='font-family:"Arial",sans-serif;mso-fareast-font-family:"Times New Roman";
+mso-ansi-language:EN-GB'><span style='mso-spacerun:yes'>   </span>PDF file</span><span
+lang=EN-GB style='font-family:"Arial",sans-serif;color:#0070C0;mso-ansi-language:
+EN-GB'><o:p></o:p></span></p>
+
+<p class=MsoNormal><a
+href="../cf2020/colorForth_in_Black_and_White.pptx"><span
+lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";color:red;mso-ansi-language:EN-GB'>color</span><span
+lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";color:#00B050;mso-ansi-language:EN-GB'>Forth</span><span
+lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";mso-ansi-language:EN-GB'>_in_</span><span lang=EN-GB
+style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";color:windowtext;mso-ansi-language:EN-GB'>Black</span><span
+lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";mso-ansi-language:EN-GB'>_and_</span><span lang=EN-GB
+style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";color:white;mso-themecolor:background1;background:black;
+mso-highlight:black;mso-ansi-language:EN-GB'>White</span><span lang=EN-GB
+style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";mso-ansi-language:EN-GB'>.pptx</span></a><span
+class=MsoHyperlink><span style='font-size:14.0pt;font-family:"Arial",sans-serif;
+mso-ansi-language:EN-GB'> </span></span><span lang=EN-GB style='font-family:
+"Arial",sans-serif;mso-fareast-font-family:"Times New Roman";mso-ansi-language:
+EN-GB'>PowerPoint<o:p></o:p></span></p>
+
+<p class=MsoNormal><span lang=EN-GB style='font-family:"Arial",sans-serif;
+mso-fareast-font-family:"Times New Roman";mso-ansi-language:EN-GB'><o:p>&nbsp;</o:p></span></p>
+
+<h2><span lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;
+color:#0070C0;mso-ansi-language:EN-GB;font-weight:normal'>Presentations by
+Howerd Oakford at </span><a href="http://euro.theforth.net/"><span lang=EN-GB
+style='font-size:14.0pt;font-family:"Arial",sans-serif;color:windowtext;
+mso-ansi-language:EN-GB;font-weight:normal'>EuroForth 2019</span></a><span
+lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;color:#0070C0;
+mso-ansi-language:EN-GB;font-weight:normal'> :<o:p></o:p></span></h2>
+
+<h2><span lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;
+color:#0070C0;mso-ansi-language:EN-GB;font-weight:normal'>And from </span><a
+href="http://euro.theforth.net/"><span lang=EN-GB style='font-size:14.0pt;
+font-family:"Arial",sans-serif;color:windowtext;mso-ansi-language:EN-GB;
+font-weight:normal'>EuroForth 2017</span></a><span lang=EN-GB style='font-size:
+14.0pt;font-family:"Arial",sans-serif;color:#0070C0;mso-ansi-language:EN-GB;
+font-weight:normal'> :<span style='mso-spacerun:yes'>  </span></span><a
+href="../cf2020/cryptoColorForth.pdf"><span lang=EN-GB
+style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";mso-ansi-language:EN-GB;font-weight:normal'>crypto</span><span
+lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";color:red;mso-ansi-language:EN-GB;font-weight:normal'>Color</span><span
+lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";color:#00B050;mso-ansi-language:EN-GB;font-weight:normal'>Forth</span><span
+lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";mso-ansi-language:EN-GB;font-weight:normal'>.pdf</span></a><span
+lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";mso-ansi-language:EN-GB;font-weight:normal'><span
+style='mso-spacerun:yes'>  </span>PDF file<o:p></o:p></span></h2>
+
+<h2><span lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;
+mso-fareast-font-family:"Times New Roman";mso-ansi-language:EN-GB;font-weight:
+normal'>Video : </span><span style='font-size:14.0pt;font-family:"Arial",sans-serif;
+mso-fareast-font-family:"Times New Roman";font-weight:normal'><a
+href="https://wiki.forth-ev.de/lib/exe/fetch.php/events:ef2017:cryptocolorforth.mp4"><span
+lang=EN-GB style='mso-ansi-language:EN-GB'>cryptocolorforth.mp4</span></a></span><span
+lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";mso-ansi-language:EN-GB;font-weight:normal'><o:p></o:p></span></h2>
+
+<h2><span lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;
+mso-fareast-font-family:"Times New Roman";mso-ansi-language:EN-GB;font-weight:
+normal'>How to load a Forth App: </span><span lang=EN-GB style='font-size:14.0pt;
+font-family:"Arial",sans-serif;color:#0070C0;mso-ansi-language:EN-GB;
+font-weight:normal'>https://wiki.forth-ev.de/lib/exe/fetch.php/events:ef2017:colorforth2.mp4</span><span
+lang=EN-GB style='font-size:14.0pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";mso-ansi-language:EN-GB;font-weight:normal'><o:p></o:p></span></h2>
+
+<p style='tab-stops:45.8pt 91.6pt 137.4pt 183.2pt 229.0pt 274.8pt 320.6pt 366.4pt 412.2pt 458.0pt 503.8pt 549.6pt 595.4pt 641.2pt 687.0pt 732.8pt'><span
+lang=EN-GB style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>See
+also </span><a href="http://www.inventio.co.uk/EuroForth03.htm"><span
+lang=EN-GB style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>The</span></a><a
+href="http://www.inventio.co.uk/EuroForth03.htm"><span style='font-family:"Arial",sans-serif;
+mso-ansi-language:EN-GB'> </span></a><a
+href="http://www.inventio.co.uk/EuroForth03.htm"><span lang=EN-GB
+style='font-family:"Arial",sans-serif;color:red;mso-ansi-language:EN-GB'>color</span><span
+lang=EN-GB style='font-family:"Arial",sans-serif;color:lime;mso-ansi-language:
+EN-GB'>Forth</span><span lang=EN-GB style='mso-ansi-language:EN-GB'> </span><span
+lang=EN-GB style='font-family:"Arial",sans-serif;color:fuchsia;mso-ansi-language:
+EN-GB'>Magenta</span><span lang=EN-GB style='mso-ansi-language:EN-GB'> </span><span
+lang=EN-GB style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>Variable</span></a><span
+style='mso-ansi-language:EN-GB'> </span><span lang=EN-GB style='font-family:
+"Arial",sans-serif;mso-ansi-language:EN-GB'>and </span><a
+href="http://www.inventio.co.uk/colorForth%20and%20the%20Art%20of%20the%20Impossible.htm"><span
+lang=EN-GB style='font-family:"Arial",sans-serif;color:red;mso-ansi-language:
+EN-GB'>color</span><span lang=EN-GB style='font-family:"Arial",sans-serif;
+color:lime;mso-ansi-language:EN-GB'>Forth</span><span lang=EN-GB
+style='color:red;mso-ansi-language:EN-GB'> </span><span lang=EN-GB
+style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>and the Art of
+the Impossible</span></a><span lang=EN-GB style='mso-ansi-language:EN-GB'>&nbsp;,
+</span><span lang=EN-GB style='font-family:"Arial",sans-serif;mso-ansi-language:
+EN-GB'>my first impressions of </span><span lang=EN-GB style='font-family:"Arial",sans-serif;
+color:red;mso-ansi-language:EN-GB'>color</span><span lang=EN-GB
+style='font-family:"Arial",sans-serif;color:lime;mso-ansi-language:EN-GB'>Forth</span><span
+lang=EN-GB style='font-family:"Arial",sans-serif;mso-fareast-font-family:"Times New Roman";
+mso-ansi-language:EN-GB'>.</span><span lang=EN-GB style='mso-ansi-language:
+EN-GB'><o:p></o:p></span></p>
+
+<p class=MsoNormal><span lang=EN-GB style='font-family:"Arial",sans-serif;
+mso-fareast-font-family:"Times New Roman";mso-ansi-language:EN-GB'><o:p>&nbsp;</o:p></span></p>
+
+<p><span lang=EN-GB style='font-size:14.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'><o:p>&nbsp;</o:p></span></p>
+
+<h2><span lang=EN-GB style='font-size:12.0pt;font-family:"Arial",sans-serif;
+mso-ansi-language:EN-GB;font-weight:normal'>Legacy – requires a floppy disc
+drive to run natively :<o:p></o:p></span></h2>
+
+<h2><a href="../cf2012bochs2012Oct21release.exe"><span
+lang=EN-GB style='font-size:13.5pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";mso-ansi-language:EN-GB'>cf2012bochs</span></a><span
+style='mso-fareast-font-family:"Times New Roman";color:lime;mso-ansi-language:
+EN-GB'> </span><i><span lang=EN-GB style='font-size:13.5pt;font-family:"Arial",sans-serif;
+mso-fareast-font-family:"Times New Roman";color:red;mso-ansi-language:EN-GB'>color</span></i><i><span
+lang=EN-GB style='font-size:13.5pt;font-family:"Arial",sans-serif;mso-fareast-font-family:
+"Times New Roman";color:lime;mso-ansi-language:EN-GB'>Forth</span></i><span
+lang=EN-GB style='mso-fareast-font-family:"Times New Roman";color:lime;
+mso-ansi-language:EN-GB'> </span><i><span lang=EN-GB style='font-size:13.5pt;
+font-family:"Arial",sans-serif;mso-fareast-font-family:"Times New Roman";
+color:aqua;mso-ansi-language:EN-GB'>system packaged with </span></i><a
+href="http://bochs.sourceforge.net/"><span lang=EN-GB style='font-size:13.5pt;
+font-family:"Arial",sans-serif;mso-fareast-font-family:"Times New Roman";
+mso-ansi-language:EN-GB'>Bochs</span></a><span lang=EN-GB style='mso-fareast-font-family:
+"Times New Roman";mso-ansi-language:EN-GB'><o:p></o:p></span></h2>
+
+<p><span lang=EN-GB style='font-family:"Arial",sans-serif;mso-ansi-language:
+EN-GB'>Download the zip file here&nbsp; </span><a
+href="../cf2012bochs2012Oct21release.zip"><span
+lang=EN-GB style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>cf2012bochs2012Oct21release.zip</span></a><span
+lang=EN-GB style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>&nbsp;
+and self-extracting zip file here </span><a
+href="../cf2012bochs2012Oct21release.exe"><span
+lang=EN-GB style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>cf2012bochs2012Oct21release.exe</span></a><span
+lang=EN-GB style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'><o:p></o:p></span></p>
+
+<p style='tab-stops:45.8pt 91.6pt 137.4pt 183.2pt 229.0pt 274.8pt 320.6pt 366.4pt 412.2pt 458.0pt 503.8pt 549.6pt 595.4pt 641.2pt 687.0pt 732.8pt'><a
+href="http://www.inventio.co.uk/cfdos.htm"><span lang=EN-GB style='font-family:
+"Arial",sans-serif;mso-ansi-language:EN-GB'>cfdos</span></a><span
+style='color:blue;mso-ansi-language:EN-GB'> </span><span lang=EN-GB
+style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>is a DOS program
+to display </span><span lang=EN-GB style='font-family:"Arial",sans-serif;
+color:red;mso-ansi-language:EN-GB'>color</span><span lang=EN-GB
+style='font-family:"Arial",sans-serif;color:lime;mso-ansi-language:EN-GB'>Forth</span><span
+lang=EN-GB style='mso-ansi-language:EN-GB'> </span><span lang=EN-GB
+style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>pre-parsed
+source blocks. This program will work on any computer that runs or emulates
+DOS, and allows you to view </span><span lang=EN-GB style='font-family:"Arial",sans-serif;
+color:red;mso-ansi-language:EN-GB'>color</span><span lang=EN-GB
+style='font-family:"Arial",sans-serif;color:lime;mso-ansi-language:EN-GB'>Forth</span><span
+lang=EN-GB style='mso-ansi-language:EN-GB'> </span><span lang=EN-GB
+style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>source, in both
+normal and &quot;colour blind&quot; mode. It features a file listing utility
+(F6) which displays all files of type *.BLK in the same directory, and can copy
+them to a formatted floppy disk. </span><a
+href="http://www.inventio.co.uk/cfdos.htm"><span lang=EN-GB style='font-family:
+"Arial",sans-serif;color:red;mso-ansi-language:EN-GB'>color</span><span
+lang=EN-GB style='font-family:"Arial",sans-serif;color:lime;mso-ansi-language:
+EN-GB'>Forth</span><span lang=EN-GB style='mso-ansi-language:EN-GB'> </span></a><span
+lang=EN-GB style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>Explorer
+Edition is the latest </span><a href="http://www.colorforth.com/cf.html"><span
+lang=EN-GB style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>colorForth</span></a><span
+style='color:lime;mso-ansi-language:EN-GB'> </span><span lang=EN-GB
+style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>stand-alone
+operating system, packaged together with a Windows/DOS program to display </span><span
+lang=EN-GB style='font-family:"Arial",sans-serif;color:red;mso-ansi-language:
+EN-GB'>color</span><span lang=EN-GB style='font-family:"Arial",sans-serif;
+color:lime;mso-ansi-language:EN-GB'>Forth </span><span lang=EN-GB
+style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>source and
+create bootable floppy disks. </span><span lang=EN-GB style='mso-ansi-language:
+EN-GB'><o:p></o:p></span></p>
+
+<p style='tab-stops:45.8pt 91.6pt 137.4pt 183.2pt 229.0pt 274.8pt 320.6pt 366.4pt 412.2pt 458.0pt 503.8pt 549.6pt 595.4pt 641.2pt 687.0pt 732.8pt'><span
+lang=EN-GB style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>Don't
+be deceived by the fact that </span><span lang=EN-GB style='font-family:"Arial",sans-serif;
+color:red;mso-ansi-language:EN-GB'>color</span><span lang=EN-GB
+style='font-family:"Arial",sans-serif;color:lime;mso-ansi-language:EN-GB'>Forth</span><span
+lang=EN-GB style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>
+boots from a floppy - this is an experimental state-of-the-art operating system
+for a PC. </span><span lang=EN-GB style='mso-ansi-language:EN-GB'><o:p></o:p></span></p>
+
+<p style='tab-stops:45.8pt 91.6pt 137.4pt 183.2pt 229.0pt 274.8pt 320.6pt 366.4pt 412.2pt 458.0pt 503.8pt 549.6pt 595.4pt 641.2pt 687.0pt 732.8pt'><span
+lang=EN-GB style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>See </span><a
+href="http://www.inventio.co.uk/EuroForth03.htm"><span lang=EN-GB
+style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>The</span></a><a
+href="http://www.inventio.co.uk/EuroForth03.htm"><span style='font-family:"Arial",sans-serif;
+mso-ansi-language:EN-GB'> </span></a><a
+href="http://www.inventio.co.uk/EuroForth03.htm"><span lang=EN-GB
+style='font-family:"Arial",sans-serif;color:red;mso-ansi-language:EN-GB'>color</span><span
+lang=EN-GB style='font-family:"Arial",sans-serif;color:lime;mso-ansi-language:
+EN-GB'>Forth</span><span lang=EN-GB style='mso-ansi-language:EN-GB'> </span><span
+lang=EN-GB style='font-family:"Arial",sans-serif;color:fuchsia;mso-ansi-language:
+EN-GB'>Magenta</span><span lang=EN-GB style='mso-ansi-language:EN-GB'> </span><span
+lang=EN-GB style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>Variable</span></a><span
+style='mso-ansi-language:EN-GB'> </span><span lang=EN-GB style='font-family:
+"Arial",sans-serif;mso-ansi-language:EN-GB'>and </span><a
+href="http://www.inventio.co.uk/colorForth%20and%20the%20Art%20of%20the%20Impossible.htm"><span
+lang=EN-GB style='font-family:"Arial",sans-serif;color:red;mso-ansi-language:
+EN-GB'>color</span><span lang=EN-GB style='font-family:"Arial",sans-serif;
+color:lime;mso-ansi-language:EN-GB'>Forth</span><span lang=EN-GB
+style='color:red;mso-ansi-language:EN-GB'> </span><span lang=EN-GB
+style='font-family:"Arial",sans-serif;mso-ansi-language:EN-GB'>and the Art of
+the Impossible</span></a><span lang=EN-GB style='mso-ansi-language:EN-GB'>&nbsp;
+</span><span lang=EN-GB style='font-family:"Arial",sans-serif;mso-ansi-language:
+EN-GB'>my first impressions of </span><span lang=EN-GB style='font-family:"Arial",sans-serif;
+color:red;mso-ansi-language:EN-GB'>color</span><span lang=EN-GB
+style='font-family:"Arial",sans-serif;color:lime;mso-ansi-language:EN-GB'>Forth
+</span><span lang=EN-GB style='font-family:"Arial",sans-serif;mso-ansi-language:
+EN-GB'>.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span lang=EN-GB style='mso-ansi-language:EN-GB'><o:p>&nbsp;</o:p></span></p>
+
+</div>
+
+</body>
+
+</html>

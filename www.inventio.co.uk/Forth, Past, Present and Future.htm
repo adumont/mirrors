@@ -1,0 +1,331 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:w="urn:schemas-microsoft-com:office:word"
+xmlns="http://www.w3.org/TR/REC-html40">
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+<meta name=ProgId content=Word.Document>
+<meta name=Generator content="Microsoft Word 9">
+<meta name=Originator content="Microsoft Word 9">
+<link rel=File-List
+href="http://www.inventio.co.uk/Forth,%20Past,%20Present%20and%20Future_files/filelist.xml">
+<title>Forth : Past, Present and Future</title>
+<style>
+<!--
+ /* Font Definitions */
+@font-face
+	{font-family:Eurostile;
+	panose-1:0 0 0 0 0 0 0 0 0 0;
+	mso-font-alt:"Times New Roman";
+	mso-font-charset:0;
+	mso-generic-font-family:roman;
+	mso-font-format:other;
+	mso-font-pitch:auto;
+	mso-font-signature:0 0 0 0 0 0;}
+ /* Style Definitions */
+p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{mso-style-parent:"";
+	margin:0cm;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:12.0pt;
+	font-family:"Times New Roman";
+	mso-fareast-font-family:"Times New Roman";}
+p
+	{font-size:12.0pt;
+	font-family:"Times New Roman";
+	mso-fareast-font-family:"Times New Roman";}
+@page Section1
+	{size:595.3pt 841.9pt;
+	margin:72.0pt 90.0pt 72.0pt 90.0pt;
+	mso-header-margin:35.4pt;
+	mso-footer-margin:35.4pt;
+	mso-paper-source:0;}
+div.Section1
+	{page:Section1;}
+ /* List Definitions */
+@list l0
+	{mso-list-id:1541017923;
+	mso-list-type:hybrid;
+	mso-list-template-ids:-107948902 -1369519032 1955754584 -199312316 168842066 -864894734 -1401896112 -2124372174 -1676005628 741227812;}
+@list l1
+	{mso-list-id:2109495072;
+	mso-list-type:hybrid;
+	mso-list-template-ids:1985906166 -747481884 43187774 1189348150 2128668352 -570027000 -555076582 1418074158 285250078 45278140;}
+ol
+	{margin-bottom:0cm;}
+ul
+	{margin-bottom:0cm;}
+-->
+</style>
+</head>
+
+<body lang=EN-GB style='tab-interval:36.0pt'>
+
+<div class=Section1>
+
+<p align=center style='text-align:center'><b><span style='font-size:24.0pt;
+font-family:Eurostile;color:blue'>Forth : Past, Present and Future<o:p></o:p></span></b></p>
+
+<p><b><span style='font-size:18.0pt;font-family:Eurostile'>Abstract<o:p></o:p></span></b></p>
+
+<p><span style='font-family:Eurostile'>A look at one possible future direction
+for Forth, by analysing present and past systems.<o:p></o:p></span></p>
+
+<p><b><span style='font-size:18.0pt;font-family:Eurostile'>Forth : Past<o:p></o:p></span></b></p>
+
+<p><span style='font-family:Eurostile'>In 1386 Bishop Ralph Erghum installed a
+clock in the tower of Salisbury Cathedral. It is a classic example of what
+could be called &quot;Forth design philosophy&quot;. Obviously, as it predates
+the computer age by nearly six centuries it is not a computer program, but it
+does have several properties which it shares with <i>good</i> Forth programs :<o:p></o:p></span></p>
+
+<p style='margin-left:36.0pt;text-indent:-18.0pt;mso-list:l0 level1 lfo1;
+tab-stops:list 36.0pt'><![if !supportLists]><span style='font-family:Eurostile'>1.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span><![endif]><span
+style='font-family:Eurostile'>Elegance. The indefinable &quot;wow&quot; factor.<o:p></o:p></span></p>
+
+<p style='margin-left:36.0pt;text-indent:-18.0pt;mso-list:l0 level1 lfo2;
+tab-stops:list 36.0pt'><![if !supportLists]><span style='font-family:Eurostile'>1.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span><![endif]><span
+style='font-family:Eurostile'>Simplicity. There is no unnecessary complexity.<o:p></o:p></span></p>
+
+<p style='margin-left:36.0pt;text-indent:-18.0pt;mso-list:l0 level1 lfo3;
+tab-stops:list 36.0pt'><![if !supportLists]><span style='font-family:Eurostile'>1.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span><![endif]><span
+style='font-family:Eurostile'>Modularity. Each part has a specific function,
+well separated from the other &quot;modules&quot;.<o:p></o:p></span></p>
+
+<p style='margin-left:36.0pt;text-indent:-18.0pt;mso-list:l0 level1 lfo4;
+tab-stops:list 36.0pt'><![if !supportLists]><span style='font-family:Eurostile'>1.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span><![endif]><span
+style='font-family:Eurostile'>Robustness. It has been running for over five
+hundred years ( with a 72 year break ).<o:p></o:p></span></p>
+
+<p style='margin-left:36.0pt;text-indent:-18.0pt;mso-list:l0 level1 lfo5;
+tab-stops:list 36.0pt'><![if !supportLists]><span style='font-family:Eurostile'>1.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span><![endif]><span
+style='font-family:Eurostile'>Modifiability. Changes can be made easily.<o:p></o:p></span></p>
+
+<p style='margin-left:36.0pt;text-indent:-18.0pt;mso-list:l0 level1 lfo6;
+tab-stops:list 36.0pt'><![if !supportLists]><span style='font-family:Eurostile'>1.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span><![endif]><span
+style='font-family:Eurostile'>Appropriateness. It solves a specific problem,
+for a given environment.<o:p></o:p></span></p>
+
+<p><b><span style='font-size:13.5pt;font-family:Eurostile'>Description<o:p></o:p></span></b></p>
+
+<p><span style='font-family:Eurostile'>The clock is made from wrought iron,
+wood, stone and rope. Minimalist programmers will be pleased to learn that it
+has no clock face, no hands and no pendulum. Its function is to chime the hours
+on the Cathedral bell. In the 14th century a clock face would have been
+superfluous, as no one could &quot;tell the time&quot;.<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>In the 18th century, when accurate
+timekeeping became necessary to determine longitude at sea, the original
+&quot;foliot and verge&quot; escapement was considered too crude, and the
+mechanism was changed to include a pendulum. This gives an order of magnitude
+improvement in timekeeping stability. Only in the early 20th century was the
+clock restored to its original form with an appreciation of its <i>historic</i>
+value.<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>The design uses two stone weights to
+provide motive power. One drives a constant velocity<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>&quot;foliot and verge&quot; escapement,
+the other provides power to chime the bell. There is an on/off switch which
+disconnects the gear trains so that the weights can be wound up again.<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>The clock is a state machine, and moves
+through 12 distinct states, S, numbered 1 to 12. The state, S, is stored by the
+angle of a 78 tooth gear wheel. This angle is 360n/78 degrees, where n is the
+sum of the integers from 1 to S, the current state number. The number 78 is the
+sum of integers from 1 to 12. The transition from one state to the next is
+triggered at hourly intervals by the &quot;foliot and verge&quot; escapement (
+&quot;ticking&quot; every 8 seconds ) geared down to give one rotation per
+hour. Bishop Erghum obviously liked the latest in Hi-Tech gadgetry, as he
+installed version 2.0 in Bath when he moved there...<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>&nbsp;<o:p></o:p></span></p>
+
+<p><span style='font-size:18.0pt;font-family:Eurostile'>&nbsp;<o:p></o:p></span></p>
+
+<p><b><span style='font-size:18.0pt;font-family:Eurostile'>Forth : Present<o:p></o:p></span></b></p>
+
+<p><span style='font-family:Eurostile'>In the early 1970’s Chuck Moore
+developed the first Forth computer systems. In 1978 I started using the
+microForth system for the 1802 processor. Apart from the detail that microForth
+was retired from service after about 10 years, not 500, the design qualities
+are the same as the Salisbury clock. The elegance became apparent almost
+immediately when I typed <b>1 1 + .</b> &lt;cr&gt; and saw a <b>2</b> appear.
+The simplicity, modularity, robustness and modifiability took longer to
+appreciate, as I understood how it all worked, but the <b>appropriateness</b> I
+am only beginning to appreciate now.<o:p></o:p></span></p>
+
+<p><b><span style='font-size:13.5pt;font-family:Eurostile'>Description<o:p></o:p></span></b></p>
+
+<p><span style='font-family:Eurostile'>Forth is a computer programming language
+which respects human understanding. That is, the programmer is the key element
+in the Forth system. The language is an expression of his/her understanding. As
+the understanding changes so does Forth, hence the ability to define new words,
+structures and compiler functions is a key feature of all Forth systems.<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>To avoid getting bogged down in details,
+such as direct/indirect/token threading, assemblers, etc, I will describe a
+much simplified Forth computer. (Any real computer can provide a Forth computer
+by means of a software virtual processor.)<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>A Forth computer is a general purpose
+processing machine which contains memory, a (virtual) processor which follows a
+Forth instruction set, and some input/output devices. <o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>The memory may be thought of as a series
+of bytes, each one having an <b>address</b>, starting at 0 and continuing up to
+the maximum size of memory in the computer,<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>A program is put into memory ( by
+another program ) and the processor steps through the instructions which
+constitute the program.<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>Some of the instructions send or receive
+data ( numbers or characters ) to or from the input /output devices. For
+example, a key may be pressed and that character will appear on a display.<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>Other instructions allow the processor
+to jump to a different part of the program. This allows the same sequence of
+instructions to be used many times.<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>The processor’s instruction set of <b>words</b>
+are grouped into more useful <b>words,</b> each of which is then given its own <b>name
+</b>by which the programmer can refer to it, and a <b>token</b> by which the
+processor can refer to it. The name is a sequence of printable ASCII characters
+with one or more spaces at each end. The list of names of Forth words is linked
+together in the <b>dictionary</b>, which may be split into different <b>vocabularies</b>
+so that the same name may be used for different words, each one being selected
+according to which vocabulary is currently active. The token is often the
+address of the word’s list of instructions, each of which is another Forth
+token.<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>One particular Forth word is called <b>QUIT
+</b>, the Forth text interpreter. QUIT receives characters and processes them :
+if the characters are the name of a Forth word in the dictionary, the processor
+jumps to that word and performs the associated sequence of instructions. If it
+is not it tries to convert the characters to a number, and if that fails it
+jumps to the start of QUIT, This allows words to be tried out by typing their
+names.<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>Two other important Forth words are <b>:</b>
+which creates a new Forth word in the dictionary by compiling the tokens that
+it requires ( starting with <b>nest</b> ) , and <b>;</b> which compiles <b>unnest
+</b>. The <b>return stack</b> stores the return addresses of nested words.<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>The <b>parameter stack</b> stores data
+which one word may pass to another, so that each word may be considered
+separately from all the others.<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>Programming is the creation of the
+program whose instructions perform a desired function. With the above features
+Chuck Moore created an elegant, simple, modular, robust and easily modified
+programming language which he called Forth. <o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>&nbsp;<o:p></o:p></span></p>
+
+<p><b><span style='font-size:18.0pt;font-family:Eurostile'>Forth : Future<o:p></o:p></span></b></p>
+
+<p><span style='font-family:Eurostile'>Every feature of the present day Forth
+system is highly refined, and uses the simplest, most elegant structures
+possible. The use of the parameter stack to isolate words from each other, the
+return stack to allow nesting of words calling other words, and the linked list
+dictionary are all examples of this approach. The text interpreter, QUIT , is
+also the simplest possible way of allow interpreted testing of words. So what
+can be added?<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>Today’s Forth provides the solution to a
+specific problem - how does a programmer control the operation of a computer.
+Tomorrow’s Forth must provide a solution to a new problem - how do <b>two </b>programmers
+control the operation of a computer.<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>The change from a single programmer to
+two ( or more ) programmers working on the same problem sounds deceptively
+simple, but several of the simple structures used in conventional Forth are now
+no longer applicable.<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>Firstly, the name of a Forth word is no
+longer a static entity. Instead of a simple string of ASCII characters we need
+a point in a four dimensional &quot;space&quot;. The four dimensions are :<o:p></o:p></span></p>
+
+<p style='margin-left:36.0pt;text-indent:-18.0pt;mso-list:l1 level1 lfo7;
+tab-stops:list 36.0pt'><![if !supportLists]><span style='font-family:Eurostile'>1.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span><![endif]><span
+style='font-family:Eurostile'>Name ( same as before )<o:p></o:p></span></p>
+
+<p style='margin-left:36.0pt;text-indent:-18.0pt;mso-list:l1 level1 lfo8;
+tab-stops:list 36.0pt'><![if !supportLists]><span style='font-family:Eurostile'>1.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span><![endif]><span
+style='font-family:Eurostile'>Version number ( bug fix /programmer ID )<o:p></o:p></span></p>
+
+<p style='margin-left:36.0pt;text-indent:-18.0pt;mso-list:l1 level1 lfo9;
+tab-stops:list 36.0pt'><![if !supportLists]><span style='font-family:Eurostile'>1.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span><![endif]><span
+style='font-family:Eurostile'>Application ( any variations dependent on what
+the program is doing )<o:p></o:p></span></p>
+
+<p style='margin-left:36.0pt;text-indent:-18.0pt;mso-list:l1 level1 lfo10;
+tab-stops:list 36.0pt'><![if !supportLists]><span style='font-family:Eurostile'>1.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span><![endif]><span
+style='font-family:Eurostile'>Platform ( what hardware / software environment
+the word runs in )<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>The reason for the extra three
+parameters to describe a name are that whereas in the case of the single
+programmer, when a bug fix or other modification is made the old version is
+usually overwritten ( or possibly archived ), but with multiple programmers it
+is possible to have two different versions in existence simultaneously, in
+different physical locations.<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>Take as an example the Forth word <b>SQRT</b>
+, which finds the square root of a number. <o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>Let Alice and Bob be two programmers,
+each with their own version of SQRT . Alice’s version of SQRT takes a positive
+30 bit number and returns a 15 bit number, and is coded in 8051 assembler. Bob’s
+version of SQRT takes a positive 32 bit number and returns a positive 16 bit
+number, and is written in high level Forth. The two versions differ in both
+Application (30 or 32 bit input ) and Platform ( 8051 or high level ).<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>With just one programmer SQRT will only
+be used for the current application, running on the current platform. With two
+programmers life becomes much more complicated.<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>If Alice wants to use Bob’s version
+because her application suddenly uses 32 bit values as input to SQRT, she will
+have two versions of SQRT on her computer. Then Bob ‘phones Alice to say that
+he found a bug in the version of SQRT which he just sent her. Alice then has
+three versions of SQRT, each differing in detail, but each performing the same
+conceptual function.<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>What has happened in the transition from
+one- to multiple- programmers is that the simplifying assumption that the
+connection between the programmer’s understanding and the program is
+&quot;tightly bound&quot; no longer applies. We are now in the world of version
+control and relational databases.<o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>So what implications are there in this
+new 4D name? The dictionary ( and hence QUIT ) must be moved from the compiler
+to the editor. The compiler is much reduced, to the point where it may not be
+necessary any more. Goodbye <b>: </b>! The editor becomes a version control
+tool, with built in archiving, Internet access and text comparison features.
+Source text validation will be required to sift through the dross. <o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>The return stack may also have to go.
+This is a by-product of word-based version control - words need to be
+categorised by level, so unlimited nesting is out. <o:p></o:p></span></p>
+
+<p><span style='font-family:Eurostile'>Its Forth, but not as we know it! Or is
+it? 8^) Howerd Oakford , 1 Sep 97<o:p></o:p></span></p>
+
+</div>
+
+</body>
+
+</html>

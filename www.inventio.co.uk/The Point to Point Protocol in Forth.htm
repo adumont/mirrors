@@ -1,0 +1,1026 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:w="urn:schemas-microsoft-com:office:word"
+xmlns="http://www.w3.org/TR/REC-html40">
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+<meta name=ProgId content=Word.Document>
+<meta name=Generator content="Microsoft Word 9">
+<meta name=Originator content="Microsoft Word 9">
+<link rel=File-List href="http://www.inventio.co.uk/EuroForth2000PPP_files/filelist.xml">
+<title> </title>
+<style>
+<!--
+ /* Style Definitions */
+p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{mso-style-parent:"";
+	margin:0cm;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:12.0pt;
+	font-family:"Times New Roman";
+	mso-fareast-font-family:"Times New Roman";}
+a:link, span.MsoHyperlink
+	{color:blue;
+	text-decoration:underline;
+	text-underline:single;}
+a:visited, span.MsoHyperlinkFollowed
+	{color:purple;
+	text-decoration:underline;
+	text-underline:single;}
+p
+	{font-size:12.0pt;
+	font-family:"Times New Roman";
+	mso-fareast-font-family:"Times New Roman";}
+@page Section1
+	{size:595.3pt 841.9pt;
+	margin:72.0pt 90.0pt 72.0pt 90.0pt;
+	mso-header-margin:35.4pt;
+	mso-footer-margin:35.4pt;
+	mso-paper-source:0;}
+div.Section1
+	{page:Section1;}
+ /* List Definitions */
+@list l0
+	{mso-list-id:670986378;
+	mso-list-type:hybrid;
+	mso-list-template-ids:1213775838 924086856 -1901422580 1947125580 1547729710 767445888 79352348 671002030 1764501430 -972813940;}
+@list l1
+	{mso-list-id:913514500;
+	mso-list-type:hybrid;
+	mso-list-template-ids:-530408194 67698703 67698713 67698715 67698703 67698713 67698715 67698703 67698713 67698715;}
+@list l1:level1
+	{mso-level-tab-stop:54.0pt;
+	mso-level-number-position:left;
+	margin-left:54.0pt;
+	text-indent:-18.0pt;}
+@list l2
+	{mso-list-id:1330446581;
+	mso-list-type:hybrid;
+	mso-list-template-ids:-1035179932 501248218 -996625786 1351228804 -749571410 -493080384 -962569480 1794175650 -615198266 824483354;}
+@list l2:level1
+	{mso-level-start-at:2;
+	mso-level-tab-stop:36.0pt;
+	mso-level-number-position:left;
+	text-indent:-18.0pt;}
+@list l3
+	{mso-list-id:1794979745;
+	mso-list-type:hybrid;
+	mso-list-template-ids:-1059832858 67698703 67698713 67698715 67698703 67698713 67698715 67698703 67698713 67698715;}
+@list l3:level1
+	{mso-level-tab-stop:54.0pt;
+	mso-level-number-position:left;
+	margin-left:54.0pt;
+	text-indent:-18.0pt;}
+ol
+	{margin-bottom:0cm;}
+ul
+	{margin-bottom:0cm;}
+-->
+</style>
+</head>
+
+<body lang=EN-GB link=blue vlink=purple style='tab-interval:36.0pt'>
+
+<div class=Section1>
+
+<p align=center style='text-align:center'><span style='font-size:18.0pt;
+font-family:Arial;color:blue'>The Point to Point Protocol in Forth<o:p></o:p></span></p>
+
+<p align=center style='text-align:center'><span style='font-family:Arial'>2 Nov
+2000<o:p></o:p></span></p>
+
+<p align=center style='text-align:center'><span style='font-family:Arial'>Howerd
+Oakford<o:p></o:p></span></p>
+
+<p align=center style='text-align:center'><span style='font-family:Arial'>Inventio
+Software Ltd<o:p></o:p></span></p>
+
+<p align=center style='text-align:center'><span style='font-family:Arial'>www.inventio.co.uk<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>The Point to Point Protocol is used by PC
+programs to connect to an Internet Service Provider ( ISP ) so that
+applications can surf the web, or get email.<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>In this paper I describe an implementation
+of a PPP Peer in Forth.<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>English is not a good language to describe
+complex computer programs, so I have given some examples of Forth source.<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>Paper is not a good medium to present Forth
+source - it is better to try out the program interactively.<o:p></o:p></span></p>
+
+<p><span style='font-size:13.5pt;font-family:Arial'>PPP is complicated. I have
+done everything I can to simplify it : <o:p></o:p></span></p>
+
+<p style='margin-left:18.0pt'><span style='font-family:Arial'>1. I captured the
+actual packets transferred between my PC and ISP when checking my email using a
+well known email program. This converted the enormous range of possible formats
+and options to the ones that are actually used.<o:p></o:p></span></p>
+
+<p style='margin-left:18.0pt'><span style='font-family:Arial'>2. I use a
+&quot;flat architecture&quot; and avoid the concept of an &quot;IP-stack&quot;
+or hierarchical layer of protocols. This follows the Forth-like &quot;direct
+action&quot; approach, where Forth words actually do something, rather than the
+C-like or operating system approach where functions process and pass data structures
+to other functions.<o:p></o:p></span></p>
+
+<p style='margin-left:18.0pt'><span style='font-family:Arial'>3. The current
+implementation has four tasks ( apart from the Operator task ). Again the tasks
+are used in a Forth-like way - each one defines an activity which is inherently
+asynchronous to the other tasks. The C-like approach to tasks is to use them to
+isolate functions written by different teams of people, so that each part of
+the software can operate asynchronously to each other part without interfering
+with each other.<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>The Point to Point Protocol Peer has the
+properties of both a Client ( issuing requests ) and Server ( responding to
+requests ). Each end of a PPP connection is identical to the other. <o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>However, the Client and Server parts of PPP
+are not independent, as the PPP Peer must step through three levels to achieve
+an open PPP connection :<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>LCP Link Control Protocol level sets up the
+Maximum Transmission Unit ( MTU ) and other parameters required to pass PPP
+packets between the two PPP Peers.<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>The PAP/CHAP level authenticates the other
+PPP Peer. <o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>The IPCP sets up the Internet Protocol
+parameters such as IP addresses and compression algorithms.<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>When all three levels have been achieved by
+both the Client and Server side, the PPP link is open, and IP packets may be
+sent in either direction.<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>IP packets carry a payload of data in one of
+the higher level formats such as UDP and TCP. A simple example of a UDP packet
+is given. TCP is more difficult and is my next project!<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>This is &quot;work in progress&quot;, and
+the source listed below is a only a small part of the current system. I intend
+to publish a working system as soon as it can get my email… [ See <a
+href="PPPcom.htm">PPP.com</a> 18 Sep 2002 ]<o:p></o:p></span></p>
+
+<p><span style='font-size:13.5pt;font-family:Arial'>First the easy bit, PPP
+Packet Output :<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>The basic unit of currency on a PPP
+connection is the packet - a string of characters separated by a PPP Flag
+character : hex 7E.<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>The format of a PPP packet is well defined,
+and includes a PPP protocol field and CRC .<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>When sending a packet nothing except the
+payload is stored in an array, just as data on the stack or as literals in the
+program. For example, executing <b>IP</b> actually sends the payload as an IP
+packet, complete with PPP Flag, PPP header, IP header and checksum and PPP CRC.
+PPP &quot;escape&quot; characters ( hex 7D ) are sent before certain
+characters, these characters are XORd with hex 20 . See the code below for
+details.<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>In a conventional IP stack, the payload
+would be sent to each layer in turn to have another header added to it, before
+being passed to an output function. Here we calculate the byte stream as we
+need it and send it immediately. This is what is meant by a &quot;flat
+architecture&quot;.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 720 )<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 0 ) ( Output ) HEX \ PPP_ESC is the PPP
+&quot;escape&quot; character<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 1 ) 7D CONSTANT PPP_ESC 7E CONSTANT PPP_FLAG \
+PPP_FLAG is the PPP flag character<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 2 ) \ ACCM = ASCII Control Character Map<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 3 ) 2VARIABLE ACCM : \ACCM 00000000. ACCM 2! ;
+\ACCM \ ACCM has one bit set for each character from 0 to hex 1F if<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 4 ) CREATE [2**] 1 C, 2 C, 4 C, 8 C, 10 C, 20 C,
+40 C, 80 C, 100 C, \ that character must be escaped.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 5 ) : ?ACCM ( c - f) DUP 07 AND [2**] + C@ \ ?ACCM
+looks up the bit for character c in the ACCM and<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 6 ) SWAP 8 / ACCM + C@ AND ; \ returns true if it
+is set ( meaning it must be escaped )<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 7 ) \ ESC? returns true if c must be escaped.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 8 ) : ESC? ( c - f) &gt;R I PPP_FLAG = I PPP_ESC =
+OR \ The PPP escape character and the PPP flag character must<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 9 ) I 0 20 WITHIN IF I ?ACCM OR THEN R&gt; DROP ;
+\ also be escaped.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 10 ) \ HEMIT sends c as one or two characters.
+Certain characters<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 11 ) : HEMIT ( c) DUP [CRC-OUT] +CRC \ must not be
+sent in a PPP packet - they are XOR'd with 20<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 12 ) DUP ESC? IF PPP_ESC REMIT 20 XOR THEN REMIT ;
+\ and preceded by a PPP escape character = 7D.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 13 ) \ HEMIT also accumulates the CRC of the
+un-escaped character<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 14 ) : HTYPE ( a n) ?DUP IF \ HTYPE sends an
+&quot;escaped&quot; string<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 15 ) OVER + SWAP DO I C@ HEMIT LOOP ELSE DROP THEN
+; \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 721 )<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 0 ) ( Output ) HEX \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 1 ) : W&gt; ( n) DUP DUP &gt;&lt; 0FF AND HEMIT
+0FF AND HEMIT &gt;&lt; +1CS ; \ W&gt; sends a 16 bit Word in Big Endian format<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 2 ) \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 3 ) : 2C&gt; ( c1 c2) SWAP &gt;&lt; OR W&gt; ; \
+2C&gt; sends two 8 bit Characters, c1 first then c2.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 4 ) \ D&gt;&gt; sends a 32 bit Word in Big Endian
+format<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 5 ) : D&gt;&gt; ( d) W&gt; W&gt; ; \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 6 ) \ @&gt; sends the 16 bit Word at a in Big
+Endian format<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 7 ) : @&gt; ( a) @ W&gt; ; \ 2@&gt; sends the 32
+bit Word at a in Big Endian format<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 8 ) \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 9 ) : 2@&gt; ( a) 2@ D&gt;&gt; ; \ PPP&lt; ....
+&gt;PPP send a formatted PPP packet<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 10 ) \ PPP&lt; sends the initial Flag, address and
+control bytes<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 11 ) : PPP&lt; SERIAL_OUT GET PPP_FLAG REMIT
+\CRC-OUT \ &gt;PPP sends the accumulated CRC and terminating Flag<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 12 ) FF HEMIT 03 HEMIT ; \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 13 ) \ Note that since the checksum is 16 bits it
+is more efficient<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 14 ) : &gt;PPP [CRC-OUT] @ -1 XOR &gt;&lt; W&gt;
+PPP_FLAG REMIT \ to send bytes two at at time, hence 2C&gt; and no C&gt;.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 15 ) SERIAL_OUT RELEASE ; \ The 1CS word does take
+care of odd length strings though.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 722 )<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 0 ) ( LCP Output ) HEX \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 1 ) 70 USER SO.UR.CE.IP 74 USER SOURCEPRT \
+SO.UR.CE.IP the source IP address<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 2 ) 76 USER DE.ST.IN.IP 7A USER DESTINPRT \
+SOURCEPRT the source port number<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 3 ) \ The IP address and port define a unique 48
+bit socket<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 4 ) : LCP ( a n code seq) PPP&lt; C021 W&gt; (
+code seq) 2C&gt; \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 5 ) ( length) DUP ( n) 4 + W&gt; ( a n) HTYPE
+&gt;PPP ; \ DE.ST.IN.IP the destination IP address<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 6 ) \ DESTINPRT the destination port number<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 7 ) : LCP_MTU ( MTU) PPP&lt; C021 W&gt; ( REQ
+code) 1 ( seq) 1 2C&gt; \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 8 ) ( length) 0A W&gt; ( MTU) W&gt; &gt;PPP ; \
+LCP sends an LCP packet of code and sequence number seq<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 9 ) \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 10 ) \ LCP_MTU sends an LCP request with MTU setup
+option.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 723 )<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 0 ) ( IPCP Output ) HEX \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 1 ) : IPCPOPT&gt; ( d opt) &gt;&lt; 06 OR W&gt;
+D&gt;&gt; ; \ IPCPopt send a six byte IPCP option. Most options consist<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 2 ) \ of an option type, length and 4 data bytes.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 3 ) : IPCP ( IPaddr code seq) PPP&lt; \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 4 ) 8021 W&gt; ( code seq) 2C&gt; \ Only one
+option is sent here : the IP addresses, code 3.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 5 ) ( options length + 2 ) 0A W&gt; \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 6 ) ( IPaddr) 3 IPCPOPT&gt; \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 7 ) \ ( DNS ) 0. 81 IPCPOPT&gt; 0. 82 IPCPOPT&gt;
+\ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 8 ) \ ( NBNS ) 0. 83 IPCPOPT&gt; 0. 84 IPCPOPT&gt;
+\ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 9 ) &gt;PPP ; \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 10 ) \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 724 )<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 0 ) ( IP Output ) HEX \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 1 ) : PPP&lt;:IP ( prot frag id# ) PPP&lt; (
+PPPprot=IP) 0021 W&gt; \ PPP&lt;:IP sends an Internet Protocol packet, an IP
+header plus a payload.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 2 ) \1CS 4500 W&gt; 2&gt;R OVER ( n) 14 + W&gt;
+2R&gt; <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 3 ) ( id#) W&gt; ( frag) W&gt; ( prot) ( TTL) 40
+&gt;&lt; OR W&gt; \ a n define the payload string<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 4 ) ( add in the IP addresses' checksums in
+advance : ) \ prot is the payload protocol :<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 5 ) SO.UR.CE.IP 2@ +1CS +1CS DE.ST.IN.IP 2@ +1CS
++1CS \ 1 is ICMP Internet Control Message Protocol<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 6 ) 1CS@ -1 XOR W&gt; \ 2 is IGMP Internet Control
+Message Protocol<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 7 ) SO.UR.CE.IP 2@ D&gt;&gt; DE.ST.IN.IP 2@
+D&gt;&gt; ; \ 6 is TCP Transmission Control Protocol<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 8 ) \ hex 11 is UDP User Datagra Protocol<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 9 ) : IP ( a n prot frag id# ) PPP&lt;:IP ( a n)
+HTYPE &gt;PPP ; \ frag is the payload's offset in 8 byte units, with<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 10 ) \ bit 13 zero, bit 14 as &quot;do not
+fragment&quot; and bit 15 as<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 11 ) : TEST_IP PAD 0 11 0 1 IP ; \ &quot;more
+fragments&quot;.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 12 ) \ id# is this IP packet's number.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 13 ) \ ( calculate the IP header checksum<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 14 ) \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 15 ) \ IP sends n bytes at a as the payload of an
+IP packet<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 725 )<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 0 ) ( UDP Output ) HEX \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 1 ) : UDP ( a n) ( UDP prot) 11 ( frag) 0 ( id#) 1
+PPP&lt;:IP \ A large payload can be delivered by using many IP packets by<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 2 ) SOURCEPRT @ W&gt; DESTINPRT @ W&gt; \ breaking
+it up into fragments, the frag value being set so<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 3 ) ( n) 28 + W&gt; 2DUP 1CS 1CS@ -1 XOR W&gt; \
+that the receiving computer can reassemble it.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 4 ) &gt;PPP ; \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 5 ) \ UDP sends the simplest UDP packet, one IP
+fragment only.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 6 ) \ n must be less than the Maximum Transmission
+Unit ( MTU ).<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 7 ) \ The MTU defaults to 1500 bytes, but may be
+setup by the LCP.</span></p>
+
+<p><span style='font-size:13.5pt;font-family:Arial'>A bit more difficult is PPP
+input :<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>Again &quot;direct action&quot; is taken,
+rather than buffering and passing of pointers.<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>First the start of a PPP packet is detected,
+then the protocol type is used to calculate the header size, and the header is
+directed to the Header array and the payload ( the rest of the packet ) is
+directed to the Buffer array.<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>The Header array is a small 64 byte array
+used to save the current header and any other non-payload data. It is destroyed
+when the next PPP packet arrives.<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>The Buffer is a large ( 16K byte ) circular
+linked list which retains the most recent payloads. Only the oldest payloads
+are destroyed, and only when the Buffer is full.<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>The CRC is accumulated during this process,
+and is checked when the end of the packet is detected.<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>Detection of the start of packet of a PPP
+packet is tricky, because there may be one or more PPP Flag characters between
+any two packets.<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>The first character of a packet is the first
+non-Flag character after one or more Flag characters have been received.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 733 )<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 0 ) ( PPP input) HEX \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 1 ) VARIABLE FLAG-RECVD \ FLAG_RECVD is set true
+when a PPP Flag character is received<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 2 ) VARIABLE LAST[CRC-IN] \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 3 ) \ LAST[CRC-IN] saves the accumulated incoming
+data CRC _before_<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 4 ) : HKEY ( - c) RKEY \ the Flag character resets
+it.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 5 ) DUP PPP_FLAG = IF ( the flag character ) \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 6 ) [CRC-IN] @ LAST[CRC-IN] ! \CRC-IN -1
+FLAG-RECVD ! \ HKEY waits for one &quot;un-escaped&quot; char from the serial
+Port<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 7 ) ELSE ( any other character, maybe
+&quot;escaped&quot; ) \ It waits for a second character if an escape character
+( 7D )<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 8 ) DUP PPP_ESC = IF DROP RKEY 20 XOR THEN \ is
+received.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 9 ) DUP [CRC-IN] +CRC \ HKEY also accumulates the
+PPP layer CRC and clears the<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 10 ) THEN \ CRC if a Flag character is received.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 11 ) ; \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 12 ) \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 13 ) \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 14 ) \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 15 ) \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 735 )<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 0 ) ( PPP input) HEX \ PPPstart waits for a PPP
+header and returns the Protocol type<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 1 ) : PPPstart ( - n) 0 \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 2 ) BEGIN DROP \ If FLAG-RECVD is true the end of
+the last frame's PPP Flag<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 3 ) HKEY DUP PPP_FLAG = 0= ( this one is not a
+Flag ) \ character was the last one received, and this counts as the<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 4 ) FLAG-RECVD @ AND ( but we have had a Flag ) \
+first PPP Flag character of the next frame.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 5 ) UNTIL 0 FLAG-RECVD ! \ The start of the PPP
+packet is when the first non-Flag<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 6 ) DUP FF = IF ( an address byte, so remove the
+control byte ) \ character received after one or more Flag characters.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 7 ) DROP HKEY DROP ( and get the first protocol
+byte ) HKEY \ ( i.e empty frames are discarded )<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 8 ) THEN ( otherwise it was the first protocol
+byte ) \ If first char. is not hex FF it is assumed that Address<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 9 ) DUP 1 AND 0= IF &gt;&lt; HKEY OR THEN \ and Code
+Field Compression is enabled, so it will be<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 10 ) SAVE-BUF ; \ the first of the Protocol ( one
+or two ) bytes, the last<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 11 ) \ byte being marked by bit 0 being true. This
+always decodes<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 12 ) \ Protocol Field Compression ( pfc ), even if
+it has not been<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 13 ) \ selected.<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>Having directed the incoming data stream to
+its rightful places, the data can now be processed. Four tasks are currently
+used to handle the Point to Point Protocol.<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>The tasks allow the functionality of the
+protocol to be expressed clearly, without getting bogged down in the details of
+packet parsing and creation. <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 773 )<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 0 ) ( Peer state) \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 1 ) : CALC_PPP_PEER_STATE \ CALC_PPP_PEER_STATE
+changes our PPP peer state only when both<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 2 ) PPP_CLIENT_STATE @ 1 = PPP_SERVER_STATE @ 1 =
+AND \ the client and server tasks have completed the current level.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 3 ) IF ( LCP ) 1 PPP_PEER_STATE ! .PPP_STATE THEN
+\ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 4 ) PPP_CLIENT_STATE @ 2 = PPP_SERVER_STATE @ 2 =
+AND \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 5 ) IF ( PAP/CHAP ) 2 PPP_PEER_STATE ! .PPP_STATE
+THEN \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 6 ) PPP_CLIENT_STATE @ 3 = PPP_SERVER_STATE @ 3 =
+AND \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 7 ) IF ( IPCP ) 3 PPP_PEER_STATE ! .PPP_STATE THEN
+\ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 8 ) PPP_CLIENT_STATE @ 4 = PPP_SERVER_STATE @ 4 =
+AND \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 9 ) IF ( Open ) 4 PPP_PEER_STATE ! .PPP_STATE THEN
+\ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 10 ) ; \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 774 )<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 0 ) ( Protocols ) HEX \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 1 ) : PPPpacket PPPstart DUP PPP_PROT ! \
+PPPpacket receives PPP packets and parses them<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 2 ) CASE \ The header ( of size determined by the
+protocol type ) is<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 3 ) 0021 OF PPP_IP ENDOF \ put into the Header,
+then the payload into the Buffer.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 4 ) 8021 OF PPP_IPCP ENDOF \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 5 ) C021 OF PPP_LCP ENDOF \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 6 ) C023 OF PPP_PAP ENDOF \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 7 ) C223 OF PPP_CHAP ENDOF \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 8 ) PPP_UNKNOWN \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 9 ) ENDCASE ; \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 10 ) \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 11 ) \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 775 )<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 0 ) ( PPP main task) \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 1 ) : PPP_MAIN PPP_MAINING ACTIVATE 15 ATT! &gt;H
+20 24 WIN \ PPP_MAIN repeatedly receives PPP packets and parses them<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 2 ) BEGIN \ for the other tasks to pick up from
+the Header and Buffer<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 3 ) .PPP_STATE PPPpacket \ It also updates the
+display of our PPP state<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 4 ) AGAIN ; \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 5 ) \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 776 )<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 0 ) ( PPP client task) HEX \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 1 ) : PPP_CLIENT PPP_CLIENTING ACTIVATE 1F ATT!
+&gt;H 1 9 WIN \ PPP_CLIENT initiates requests to the remote PPP peer.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 2 ) BEGIN PAUSE \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 3 ) NEW_PPP_PROT @ CASE \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 4 ) 8021 OF IPCPclient PAUSE ENDOF \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 5 ) C021 OF LCPclient PAUSE ENDOF \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 6 ) C023 OF ENDOF \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 7 ) C223 OF ENDOF \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 8 ) DROP ENDCASE \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 9 ) AGAIN ; \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 10 ) \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 777 )<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 0 ) ( PPP server task) HEX \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 1 ) : PPP_SERVER PPP_SERVERING ACTIVATE 5F ATT!
+&gt;H 0C 13 WIN \ PPPpacket receives PPP packets and parses them<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 2 ) BEGIN PAUSE \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 3 ) NEW_PPP_PROT @ CASE \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 4 ) 8021 OF IPCPserver PAUSE ENDOF \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 5 ) C021 OF LCPserver PAUSE ENDOF \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 6 ) C023 OF ENDOF \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 7 ) C223 OF ENDOF \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 8 ) DROP ENDCASE \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 9 ) AGAIN ; \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 10 ) \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 778 )<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 0 ) ( PPP kicking task) HEX \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 1 ) : LCP_BACKOFF 400 ?MS ; : PAP_BACKOFF 400 ?MS
+; \ LCP_BACKOFF waits for a timeout period<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 2 ) : IPCP_BACKOFF 400 ?MS ; \ PAP_BACKOFF waits
+for a timeout period<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 3 ) \ IPCP_BACKOFF waits for a timeout period<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 4 ) : PPP_KICK PPP_KICKING ACTIVATE 70 ATT! &gt;H
+0C 13 WIN \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 5 ) BEGIN PAUSE \ PPP_KICK performs timeout
+retries<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 6 ) CALC_PPP_PEER_STATE \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 7 ) PPP_PEER_STATE @ CASE \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 8 ) -1 OF ( term) LCP_TERM LCP_BACKOFF ENDOF \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 9 ) 00 OF ( idle) ENDOF \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 10 ) 01 OF ( LCP) LCP_KICK LCP_BACKOFF ENDOF \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 11 ) 02 OF ( PAP/CHAP) PAP_KICK PAP_BACKOFF ENDOF
+\ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 12 ) 03 OF ( LCP and AUTH ok) IPCP_KICK
+IPCP_BACKOFF ENDOF \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 13 ) 04 OF ( PPP open) ENDOF \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 14 ) DROP ENDCASE \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 15 ) AGAIN ; ' PPP_KICK 'PPP_KICK ! \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>&nbsp;<o:p></o:p></span></p>
+
+<p><span style='font-size:7.5pt;font-family:"Courier New"'>&nbsp;<o:p></o:p></span></p>
+
+<p><span style='font-size:13.5pt;font-family:Arial'>And finally the top level
+user interface :<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 779 )<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 0 ) ( Protocols ) \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 1 ) : RUN COM1 9600 BAUD ( 115200. JBAUD ) HEX
+PAGE \ RUN starts the PPP peer<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 2 ) 0. MyIPaddr 2! HisIPaddr 2TALLY \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 3 ) 23 0 TAB 20 24 WIN \PPP_STATE .PPP_STATE \
+VIEW starts the PPP peer in display only mode ( no Client<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 4 ) \BUF PPP_MAIN PPP_CLIENT PPP_SERVER PPP_KICK \
+actions )<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 5 ) 24 0 TAB DECIMAL ; \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 6 ) \ GO opens a PPP link<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 7 ) : VIEW RUN \PPP_KICK ; \ Note that only one
+PPP peer needs to issue a GO command, as<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 8 ) \ the other PPP peer will be started by the
+receipt of an LCP<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 9 ) : GO 1 PPP_CLIENT_STATE ! 1 PPP_SERVER_STATE !
+; \ configure request.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 10 ) \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 11 ) : \GO -1 PPP_CLIENT_STATE ! ; \ \GO closes
+the PPP link<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 12 ) \ <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 13 ) : run RUN ; : go GO ; : view VIEW ; : \tasks
+\TASKS ; \ run is a lower case alias for RUN etc...<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 14 ) : K1 CR .&quot; F1 = Help, F2 = Go, F3 =
+Reset, F4 = Stop tasks &quot; ; \ K1 , K2 , K3 and K4 are the actions of
+function keys F1 to F4<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Courier New"'>( 15 ) : K2 GO ; : K3 RUN ; : K4 \TASKS ; \ Press F1
+for Help<o:p></o:p></span></p>
+
+<p style='margin:0cm;margin-bottom:.0001pt'>&nbsp;</p>
+
+<p><span style='font-family:Arial'>The Forth program is written in 8086
+polyForth. This is a 16 bit LittleEndian Forth with built in multitasking and
+uses blocks for the Forth source.<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>The current state of the program is that two
+PCs connected together with a null modem cable, and both running the program
+will open a PPP connection.<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>PAP and CHAP are not supported yet, although
+they are there in outline form and the MD5 algorithm ( for CHAP ) is complete
+and tested.<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>The LCP and IPCP options are defined at
+compile time, except for the IPCP IP address option which handles an IPCP
+configure request with a zero IP address option field by returning a NAK and
+new IP address.<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>The Buffer array circular queue does not
+support linked lists yet. This is only relevant to IP and higher protocols.<o:p></o:p></span></p>
+
+<p><span style='font-family:Arial'>The PPP packet parsing and display functions
+correctly show the packets captured from the PC during fetching of email, and
+correctly calculate the PPP packet CRC and IP and UDP header checksums.<o:p></o:p></span></p>
+
+<p><span style='font-size:13.5pt;font-family:Arial'>Howerd Oakford 2 Nov 2000<o:p></o:p></span></p>
+
+<p><span style='font-size:13.5pt;font-family:Arial'>Note : </span><span
+style='font-family:Arial'>See <a href="PPPcom.htm">PPP.com</a>
+18 Sep 2002 for the latest downloadable version.<o:p></o:p></span></p>
+
+<p><span style='font-size:13.5pt;font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p><span style='font-size:10.0pt;font-family:"Courier New"'>&nbsp;<o:p></o:p></span></p>
+
+</div>
+
+</body>
+
+</html>

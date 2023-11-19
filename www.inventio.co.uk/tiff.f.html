@@ -1,0 +1,1311 @@
+\ tiff.f 2008 May 06 TIFF and BigTIFF/TIFFX file reader
+\ New : 64 bit file access using blocks
+\ Howerd Oakford www.inventio.co.uk
+\ Tag Image File Format (TIFF) Rev 6.0
+\ TIFF is an extensible image file format
+\ BigTIFF/TIFX is TIFF expanded to 64 bits ( with two names...)
+\ See : http://www.awaresystems.be/imaging/tiff/tifftags.html
+\     : http://www.awaresystems.be/imaging/tiff/bigtiff.html
+\     : http://www.digitalpreservation.gov/formats/fdd/fdd000022.shtml
+
+decimal
+
+0 value BigEndian \ true if the TIFF file is Big Endian
+variable CurrentFilename  258 allot  0 CurrentFilename c!
+s" test.tif"  CurrentFilename place
+
+\ ---------------------------------------------------------------------
+\ Forth "blocks" using Least Recently Used ( LRU ) buffer allocation.
+\ Originally from BLOCK.F by Tom Zimmer
+\ --------------------------------------------------------------------- 
+
+1024 constant BLOCK_SIZE        \ length of each block
+  64 constant c/l               \ character per line
+   4 constant NUMBER_OF_BUFFERS          \ number of virtual buffers
+  -1    value FileHandle        \ current block file handle
+
+variable cur_buffer#                    \ current buffer # of current block
+0 cur_buffer# !
+
+NUMBER_OF_BUFFERS cells constant ARRAY_SIZE
+
+variable Buffers NUMBER_OF_BUFFERS BLOCK_SIZE * allot \ the array of buffers
+
+variable BlockNumbers   ARRAY_SIZE allot      \ block # array
+variable BufferNumbers  ARRAY_SIZE allot      \ buffer # array
+variable BufferUpdated  ARRAY_SIZE allot      \ Update flags
+
+CODE LSCAN ( c-addr1 u u' -- c-addr2 u2 )
+   EDI PUSH                         \ save locals pointer
+   EBX EAX MOV                      \ u' value to scan for in ax
+   0 [EBP] ECX MOV                  \ count in ecx
+   ECX ECX OR  0<> IF
+      4 [EBP] EDI MOV               \ get address to edi
+      REPNE SCASD                   \ and scan the string
+      0= IF                         \ if a match was found
+         ECX INC                    \ advance the string
+         EDI DEC                    \ 
+      THEN                          \ 
+      EDI 4 [EBP] MOV               \ and write the new address
+   THEN                             \ 
+   ECX EBX MOV                      \ tos is ecx
+   4 # EBP ADD                      \ clean up stack
+   EDI POP                          \ and restore pointer
+   RET END-CODE
+
+: bubbleup      ( n1 -- )              \ move buffer # n1 to end of list
+   >r BufferNumbers NUMBER_OF_BUFFERS r@ lscan 
+   dup 0= abort" Buffer# number not in buffer list"
+   1- cells >r dup cell+ swap r> move  \ move list down except first
+   r> BufferNumbers ARRAY_SIZE + cell - ! ;      \ stuff first at end of list.
+
+: BlockInMemory? ( n -- n' f )   \ true if block n is already in buffer n'
+   BlockNumbers NUMBER_OF_BUFFERS rot lscan nip
+   dup 0= if  \ block number not found in BlockNumber array
+      false 
+   else
+      NUMBER_OF_BUFFERS swap - \ tos is buffer # with matching block #
+      true
+   then
+;
+
+: ReadBlock    ( a n)   \ read block n to address a
+   ( n) BLOCK_SIZE * 0 FileHandle REPOSITION-FILE drop
+   ( a) BLOCK_SIZE  FileHandle  READ-FILE abort" Error reading block" 
+   drop        \ discard the number of bytes read              
+;
+
+: WriteBlock  ( n1 n2)  \ write block n1 to disk from buffer n2
+   BLOCK_SIZE * 0 FileHandle REPOSITION-FILE drop 
+   BLOCK_SIZE * Buffers +  BLOCK_SIZE  FileHandle  WRITE-FILE
+   abort" Error writing block" 
+;
+: save-buffers  ( -- )          \ save all updated buffers to disk
+   NUMBER_OF_BUFFERS 0                              \ through all the buffers
+   do      
+      BufferNumbers @ >r         \ find a buffer
+      r@ bubbleup                \ bump to highest priority
+      r@ cur_buffer# !           \ set current buffer var
+      BufferUpdated cur_buffer# @ cells + @             \ check update flag
+      if      
+         BufferUpdated swap cells + off           \ clear update flag
+         r@ 
+         BlockNumbers r@ cells + @  \ get block #
+         WriteBlock             \ write it
+      then    
+      r>drop
+   loop    ;
+
+: buffer ( n1 -- a1 )            \ Assign least used buffer to rec n1
+   dup BlockInMemory?            \ check if already present
+   if      
+      >r drop                    \ buffer already assigned, save it
+   else
+      drop
+      BufferNumbers @ >r               \ assign LRU buffer
+      BufferUpdated r@ cells + @             \ check update flag
+      if      
+         BufferUpdated swap cells + off           \ clear update flag
+         r@                      \ buffer #
+         BlockNumbers r@ cells + @      \ get block # for that buffer
+         WriteBlock             \ write it
+      then
+      BlockNumbers r@ cells + !                \ set block #
+   then
+   r@ bubbleup                   \ bump to most recently used
+   r@ cur_buffer# !              \ set current buffer var
+   r> BLOCK_SIZE * Buffers + ;             \ calc buffer addr
+
+: empty-buffers ( -- )           \ clean out the virtual buffers
+   Buffers BLOCK_SIZE NUMBER_OF_BUFFERS * erase
+   BlockNumbers ARRAY_SIZE $FF fill
+   BufferUpdated ARRAY_SIZE erase
+   BufferNumbers  
+   NUMBER_OF_BUFFERS 0 do      
+      i over ! cell+     \ initialize the bubbleup stack
+   loop
+   drop 
+;
+
+: flush         ( -- )                 \ Write any updated buffers to disk
+   save-buffers
+   empty-buffers 
+;
+
+: update        ( -- )                 \ mark the current block as updated
+   cur_buffer# @ BufferUpdated swap cells + on 
+;
+
+: block ( n -- a)    \ return the address of a buffer containing block n
+   dup BlockInMemory?
+   if  
+      nip >r 
+      r@ BLOCK_SIZE * Buffers +
+      r@ cur_buffer# ! 
+      r> bubbleup
+   else    
+      drop
+      FileHandle -1 = abort" No file open"
+      dup buffer dup rot ReadBlock
+   then 
+;
+
+: CloseBlockFile ( -- )
+   FileHandle -1 <>
+   if      
+      flush
+      FileHandle close-file drop
+   then    
+   -1 to FileHandle 
+;
+
+: OpenBlockFile ( a n)
+   CloseBlockFile
+   r/w open-file abort" Failed to open File"
+   to FileHandle
+   empty-buffers 
+;
+
+: CreateBlockfile ( u1 -<filename>- )  \ create a blank file of u1 block long
+   CloseBlockFile
+   BL word count r/w create-file abort" Failed to create Block File"
+   to FileHandle
+   dup BLOCK_SIZE m* FileHandle resize-file abort" Unable to create a file of that size"
+   empty-buffers
+   0
+   do      
+      i buffer BLOCK_SIZE blank update
+   loop
+   flush 
+;
+
+: #blocks ( -- n1 )       \ return the number of block in the current file
+        FileHandle file-size drop BLOCK_SIZE um/mod nip ;
+
+\ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+\ initialization of the block system
+\ +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+: InitBlocks  ( -- ) 
+   -1 to FileHandle
+   empty-buffers 
+;
+
+InitBlocks
+
+\ ****************************************************************************   
+
+2variable MyFilePos  \ Our local pointer into the file
+
+: InitFkey
+   0. MyFilePos 2! 
+;
+
+: Fkey8 ( - c)  \ get the next byte from the file
+   MyFilePos 2@ 1024 um/mod block + c@  
+   MyFilePos 2@ 1 M+ MyFilePos 2! 
+;
+
+: Fkey16 ( - w)   \ get the next 16 bit word from the file
+   Fkey8 Fkey8  
+   BigEndian if  swap  then
+   8 lshift or 
+;
+
+: Fkey32 ( - u)   \ get the next 32 bit word from the file
+   Fkey16 Fkey16
+   BigEndian if  swap then
+   16 lshift or
+;
+
+: Fkey64 ( - ud)  \ get the next 64 bit word from the file
+   Fkey32 Fkey32
+   BigEndian if  swap then
+;
+
+
+\ number display words
+: 8u.l ( u)   (.)  dup >r  type  8 r> - 0 max  spaces ;
+: 5u.l ( u)   (.)  dup >r  type  5 r> - 0 max  spaces ;
+: .hex ( u c)   base @ >r  hex  u.r  r> base ! ;
+: .dec ( u c)   base @ >r  decimal  u.r  r> base ! ;
+: .oct ( u c)   base @ >r  8 base !  u.r  r> base ! ;
+: .bin ( u c)   base @ >r  2 base !  u.r  r> base ! ;
+
+\ : GET-XY  getxy ;
+
+: >tab ( n)   \ insert spaces until the nth character position
+   GET-XY drop  - 0 max  200 min  spaces
+;
+
+\ TIFF Image File Directories are comprised of a table of field
+\ descriptors of the form shown below.  The table is sorted in
+\ ascending order by tag.  The values associated with each entry are
+\ disjoint and may appear anywhere in the file (so long as they are
+\ placed on a word boundary).
+
+\ Tag value types
+ 0 constant TIFF_NOTYPE    \ placeholder
+ 1 constant TIFF_BYTE      \ 8-bit unsigned integer
+ 2 constant TIFF_ASCII     \ 8-bit bytes w/ last byte null
+ 3 constant TIFF_SHORT     \ 16-bit unsigned integer
+ 4 constant TIFF_LONG      \ 32-bit unsigned integer
+ 5 constant TIFF_RATIONAL  \ 64-bit unsigned fraction. RATIONALs are the ratio of two 32-bit integer values.
+ 6 constant TIFF_SBYTE     \ 8-bit signed integer
+ 7 constant TIFF_UNDEFINED \ 8-bit untyped data
+ 8 constant TIFF_SSHORT    \ 16-bit signed integer
+ 9 constant TIFF_SLONG     \ 32-bit signed integer
+10 constant TIFF_SRATIONAL \ 64-bit signed fraction. RATIONALs are the ratio of two 32-bit integer values.
+11 constant TIFF_FLOAT     \ 32-bit IEEE floating point
+12 constant TIFF_DOUBLE    \ 64-bit IEEE floating point
+13 constant TIFF_IFD       \ 32-bit unsigned integer (offset)
+16 constant TIFF_LONG8     \ BigTiff unsigned 8byte integer
+17 constant TIFF_SLONG8    \ BigTiff signed 8byte integer
+18 constant TIFF_IFD8      \ BigTiff unsigned 8byte IFD offset.
+19 constant TIFF_UTF-8     \ 8-bit UNICODE character encoding
+
+: .ValueType ( n - n)   \ displays the name returns the # bytes for type n
+   case
+      TIFF_NOTYPE    of  0  s" NoType     "  key 27 = if  quit  then  endof
+      TIFF_BYTE      of  1  s" Byte       "  endof
+      TIFF_ASCII     of  1  s" ASCII      "  endof
+      TIFF_SHORT     of  2  s" Short      "  endof
+      TIFF_LONG      of  4  s" Long       "  endof
+      TIFF_RATIONAL  of  8  s" Rational   "  endof
+      TIFF_SBYTE     of  1  s" Sbyte      "  endof
+      TIFF_UNDEFINED of  1  s" Undefined  "  endof
+      TIFF_SSHORT    of  2  s" Sshort     "  endof
+      TIFF_SLONG     of  4  s" Slong      "  endof
+      TIFF_SRATIONAL of  8  s" Srational  "  endof
+      TIFF_FLOAT     of  4  s" Float      "  endof
+      TIFF_DOUBLE    of  8  s" Double     "  endof
+      TIFF_IFD       of  4  s" IFD        "  endof
+      TIFF_LONG8     of  8  s" TIFF_LONG8 "  endof
+      TIFF_SLONG8    of  8  s" TIFF_SLONG8"  endof
+      TIFF_IFD8      of  8  s" TIFF_IFD8  "  endof
+      TIFF_UTF-8     of  1  s" TIFF_UTF-8 "  endof
+      0 swap  ." Unknown value type = "  9 .dec  0 0  0   key 27 = if  quit  then
+   endcase
+   type
+;
+
+\ The words below save on some typing in the source code :
+\ TIFFconst  creates a "TIFF constant" that when executed copies a pointer 
+\ to its own name into the global variable  LastTIFFconst .
+\ TIFF-OF:  is used in place of  OF .... ENDOF 
+\ It compiles code to return the name of the last constant executed
+\ 'TIFF-OF: MyTiffConstant'   is equivalent to
+\ 'MyTiffConstant OF  s" MyTiffConstant"  ENDOF' 
+\ This whole procedure makes .Tag look better, but I'm not sure if its worth it...
+
+variable LastTIFFconst
+
+: string,            ( a n)
+                HERE >R DUP C,
+                DUP ALLOT
+                R@ 1+ SWAP MOVE
+                0 C,
+                ALIGN
+                R> COUNT 2drop ;
+
+: TIFFconst ( n - )  \ create a TIFF constant
+   create  ,   \ the usual "constant" value
+   HERE ,      \ where we will put its name string
+   LAST @ count STRING,  \ compile in the name of this constant
+   does> \ get the constant value, and set up the name pointer
+   2@ swap 4 + LastTIFFconst !
+;
+
+\ TIFFconst under a different name, for clarity in the source
+: CompConst   TIFFconst ; 
+
+: TIFF-OF: ( casesys -- casesys )
+   BL WORD COUNT EVALUATE  \ execute the following TIFFconst 
+   \ compile some code for OF ... ENDOF
+   POSTPONE (OF) (BEGIN) POSTPONE 2DROP
+   POSTPONE LastTIFFconst POSTPONE @  POSTPONE count
+   POSTPONE (ELSE)  >RESOLVE  HERE 4 - !  (BEGIN)
+; IMMEDIATE
+
+\ Tag Definitions
+254   TIFFconst TiffTag_SUBFILETYPE        \  subfile data descriptor
+1     constant  FILETYPE_REDUCEDIMAGE      \  reduced resolution version
+2     constant  FILETYPE_PAGE              \  one page of many
+4     constant  FILETYPE_MASK              \  transparency mask
+
+255   TIFFconst TiffTag_OSUBFILETYPE       \  +kind of data in subfile
+1     constant  OFILETYPE_IMAGE            \  full resolution image data
+2     constant  OFILETYPE_REDUCEDIMAGE     \  reduced size image data
+3     constant  OFILETYPE_PAGE             \  one page of many
+
+256   TIFFconst TiffTag_IMAGEWIDTH         \  image width in pixels
+257   TIFFconst TiffTag_IMAGELENGTH        \  image height in pixels
+258   TIFFconst TiffTag_BITSPERSAMPLE      \  bits per channel (sample)
+
+259   TIFFconst TiffTag_COMPRESSION        \  data compression technique
+1     CompConst COMPRESSION_NONE           \  dump mode
+2     CompConst COMPRESSION_CCITTRLE       \  CCITT modified Huffman RLE
+3     CompConst COMPRESSION_CCITTFAX3      \  CCITT Group 3 fax encoding
+3     CompConst COMPRESSION_CCITT_T4       \  CCITT T.4 (TIFF 6 name)
+4     CompConst COMPRESSION_CCITTFAX4      \  CCITT Group 4 fax encoding
+4     CompConst COMPRESSION_CCITT_T6       \  CCITT T.6 (TIFF 6 name)
+5     CompConst COMPRESSION_LZW            \  Lempel-Ziv  & Welch
+6     CompConst COMPRESSION_OJPEG          \  !6.0 JPEG
+7     CompConst COMPRESSION_JPEG           \  JPEG DCT compression
+32766 CompConst COMPRESSION_NEXT           \  NeXT 2-bit RLE
+32771 CompConst COMPRESSION_CCITTRLEW      \  #1 w/ word alignment
+32773 CompConst COMPRESSION_PACKBITS       \  Macintosh RLE
+32809 CompConst COMPRESSION_THUNDERSCAN    \  ThunderScan RLE
+\ codes 32895-32898 are reserved for ANSI IT8 TIFF/IT <dkelly@apago.com)
+32895 CompConst COMPRESSION_IT8CTPAD       \  IT8 CT w/padding
+32896 CompConst COMPRESSION_IT8LW          \  IT8 Linework RLE
+32897 CompConst COMPRESSION_IT8MP          \  IT8 Monochrome picture
+32898 CompConst COMPRESSION_IT8BL          \  IT8 Binary line art
+\ compression codes 32908-32911 are reserved for Pixar
+32908 CompConst COMPRESSION_PIXARFILM      \  Pixar companded 10bit LZW
+32909 CompConst COMPRESSION_PIXARLOG       \  Pixar companded 11bit ZIP
+32946 CompConst COMPRESSION_DEFLATE        \  Deflate compression
+8     CompConst COMPRESSION_ADOBE_DEFLATE  \  Deflate compression, as recognized by Adobe
+\ compression code 32947 is reserved for Oceana Matrix <dev@oceana.com>
+32947 CompConst COMPRESSION_DCS            \  Kodak DCS encoding
+34661 CompConst COMPRESSION_JBIG           \  ISO JBIG
+34676 CompConst COMPRESSION_SGILOG         \  SGI Log Luminance RLE
+34677 CompConst COMPRESSION_SGILOG24       \  SGI Log 24-bit packed
+34712 CompConst COMPRESSION_JP2000         \  Leadtools JPEG2000
+
+: .Compression ( w)
+   case
+      TIFF-OF: COMPRESSION_NONE           \  dump mode                             
+      TIFF-OF: COMPRESSION_CCITTRLE       \  CCITT modified Huffman RLE            
+      TIFF-OF: COMPRESSION_CCITTFAX3      \  CCITT Group 3 fax encoding            
+      TIFF-OF: COMPRESSION_CCITT_T4       \  CCITT T.4 (TIFF 6 name)               
+      TIFF-OF: COMPRESSION_CCITTFAX4      \  CCITT Group 4 fax encoding            
+      TIFF-OF: COMPRESSION_CCITT_T6       \  CCITT T.6 (TIFF 6 name)               
+      TIFF-OF: COMPRESSION_LZW            \  Lempel-Ziv  & Welch                   
+      TIFF-OF: COMPRESSION_OJPEG          \  !6.0 JPEG                             
+      TIFF-OF: COMPRESSION_JPEG           \  JPEG DCT compression                 
+      TIFF-OF: COMPRESSION_NEXT           \  NeXT 2-bit RLE                        
+      TIFF-OF: COMPRESSION_CCITTRLEW      \  #1 w/ word alignment                  
+      TIFF-OF: COMPRESSION_PACKBITS       \  Macintosh RLE                         
+      TIFF-OF: COMPRESSION_THUNDERSCAN    \  ThunderScan RLE                       
+      TIFF-OF: COMPRESSION_IT8CTPAD       \  IT8 CT w/padding                      
+      TIFF-OF: COMPRESSION_IT8LW          \  IT8 Linework RLE                      
+      TIFF-OF: COMPRESSION_IT8MP          \  IT8 Monochrome picture                
+      TIFF-OF: COMPRESSION_IT8BL          \  IT8 Binary line art                   
+      TIFF-OF: COMPRESSION_PIXARFILM      \  Pixar companded 10bit LZW             
+      TIFF-OF: COMPRESSION_PIXARLOG       \  Pixar companded 11bit ZIP             
+      TIFF-OF: COMPRESSION_DEFLATE        \  Deflate compression                   
+      TIFF-OF: COMPRESSION_ADOBE_DEFLATE  \  Deflate compression, as recognized by Adobe
+      TIFF-OF: COMPRESSION_DCS            \  Kodak DCS encoding                    
+      TIFF-OF: COMPRESSION_JBIG           \  ISO JBIG                              
+      TIFF-OF: COMPRESSION_SGILOG         \  SGI Log Luminance RLE                 
+      TIFF-OF: COMPRESSION_SGILOG24       \  SGI Log 24-bit packed                 
+      TIFF-OF: COMPRESSION_JP2000         \  Leadtools JPEG2000  
+      drop  s" Compression type not found!"  0
+   endcase
+   2dup drop 12 s" COMPRESSION_" compare 0=
+   if
+      12 - 0 max  swap 12 + swap
+   then
+   type
+;
+
+262   TIFFconst TiffTag_PHOTOMETRIC        \  photometric interpretation
+0     constant  PHOTOMETRIC_MINISWHITE     \  min value is white
+1     constant  PHOTOMETRIC_MINISBLACK     \  min value is black
+2     constant  PHOTOMETRIC_RGB            \  RGB color model
+3     constant  PHOTOMETRIC_PALETTE        \  color map indexed
+4     constant  PHOTOMETRIC_MASK           \  holdout mask
+5     constant  PHOTOMETRIC_SEPARATED      \  color separations
+6     constant  PHOTOMETRIC_YCBCR          \  CCIR 601
+8     constant  PHOTOMETRIC_CIELAB         \  1976 CIE L*a*b*
+9     constant  PHOTOMETRIC_ICCLAB         \  ICC L*a*b* [Adobe TIFF Technote 4]
+10    constant  PHOTOMETRIC_ITULAB         \  ITU L*a*b*
+32844 constant  PHOTOMETRIC_LOGL           \  CIE Log2(L)
+32845 constant  PHOTOMETRIC_LOGLUV         \  CIE Log2(L) (u',v')
+
+263   TIFFconst TiffTag_THRESHHOLDING      \  +thresholding used on data
+1     constant  THRESHHOLD_BILEVEL         \  b&w art scan
+2     constant  THRESHHOLD_HALFTONE        \  or dithered scan
+3     constant  THRESHHOLD_ERRORDIFFUSE    \  usually floyd-steinberg
+264   TIFFconst TiffTag_CELLWIDTH          \  +dithering matrix width
+265   TIFFconst TiffTag_CELLLENGTH         \  +dithering matrix height
+266   TIFFconst TiffTag_FILLORDER          \  data order within a byte
+1     constant  FILLORDER_MSB2LSB          \  most significant -> least
+2     constant  FILLORDER_LSB2MSB          \  least significant -> most
+269   TIFFconst TiffTag_DOCUMENTNAME       \  name of doc. image is from
+270   TIFFconst TiffTag_IMAGEDESCRIPTION   \  info about image
+271   TIFFconst TiffTag_MAKE               \  scanner manufacturer name
+272   TIFFconst TiffTag_MODEL              \  scanner model name/number
+273   TIFFconst TiffTag_STRIPOFFSETS       \  offsets to data strips
+274   TIFFconst TiffTag_ORIENTATION        \  +image orientation
+1     constant  ORIENTATION_TOPLEFT        \  row 0 top, col 0 lhs
+2     constant  ORIENTATION_TOPRIGHT       \  row 0 top, col 0 rhs
+3     constant  ORIENTATION_BOTRIGHT       \  row 0 bottom, col 0 rhs
+4     constant  ORIENTATION_BOTLEFT        \  row 0 bottom, col 0 lhs
+5     constant  ORIENTATION_LEFTTOP        \  row 0 lhs, col 0 top
+6     constant  ORIENTATION_RIGHTTOP       \  row 0 rhs, col 0 top
+7     constant  ORIENTATION_RIGHTBOT       \  row 0 rhs, col 0 bottom
+8     constant  ORIENTATION_LEFTBOT        \  row 0 lhs, col 0 bottom
+277   TIFFconst TiffTag_SAMPLESPERPIXEL    \  samples per pixel
+278   TIFFconst TiffTag_ROWSPERSTRIP       \  rows per strip of data
+279   TIFFconst TiffTag_STRIPBYTECOUNTS    \  bytes counts for strips
+280   TIFFconst TiffTag_MINSAMPLEVALUE     \  +minimum sample value
+281   TIFFconst TiffTag_MAXSAMPLEVALUE     \  +maximum sample value
+282   TIFFconst TiffTag_XRESOLUTION        \  pixels/resolution in x
+283   TIFFconst TiffTag_YRESOLUTION        \  pixels/resolution in y
+284   TIFFconst TiffTag_PLANARCONFIG       \  storage organization
+1     constant  PLANARCONFIG_CONTIG        \  single image plane
+2     constant  PLANARCONFIG_SEPARATE      \  separate planes of data
+285   TIFFconst TiffTag_PAGENAME           \  page name image is from
+286   TIFFconst TiffTag_XPOSITION          \  x page offset of image lhs
+287   TIFFconst TiffTag_YPOSITION          \  y page offset of image lhs
+288   TIFFconst TiffTag_FREEOFFSETS        \  +byte offset to free block
+289   TIFFconst TiffTag_FREEBYTECOUNTS     \  +sizes of free blocks
+290   TIFFconst TiffTag_GRAYRESPONSEUNIT   \  gray scale curve accuracy
+1     constant  GRAYRESPONSEUNIT_10S       \  tenths of a unit
+2     constant  GRAYRESPONSEUNIT_100S      \  hundredths of a unit
+3     constant  GRAYRESPONSEUNIT_1000S     \  thousandths of a unit
+4     constant  GRAYRESPONSEUNIT_10000S    \  ten-thousandths of a unit
+5     constant  GRAYRESPONSEUNIT_100000S   \  hundred-thousandths
+291   TIFFconst TiffTag_GRAYRESPONSECURVE  \  gray scale response curve
+292   TIFFconst TiffTag_GROUP3OPTIONS      \  32 flag bits
+292   TIFFconst TiffTag_T4OPTIONS          \  TIFF 6.0 proper name alias
+1     constant  GROUP3OPT_2DENCODING       \  2-dimensional coding
+2     constant  GROUP3OPT_UNCOMPRESSED     \  data not compressed
+4     constant  GROUP3OPT_FILLBITS         \  fill to byte boundary
+293   TIFFconst TiffTag_GROUP4OPTIONS      \  32 flag bits
+293   TIFFconst TiffTag_T6OPTIONS          \  TIFF 6.0 proper name
+2     constant  GROUP4OPT_UNCOMPRESSED     \  data not compressed
+296   TIFFconst TiffTag_RESOLUTIONUNIT     \  units of resolutions
+1     constant  RESUNIT_NONE               \  no meaningful units
+2     constant  RESUNIT_INCH               \  english
+3     constant  RESUNIT_CENTIMETER         \  metric
+297   TIFFconst TiffTag_PAGENUMBER         \  page numbers of multi-page
+300   TIFFconst TiffTag_COLORRESPONSEUNIT  \  color curve accuracy
+1     constant  COLORRESPONSEUNIT_10S      \  tenths of a unit
+2     constant  COLORRESPONSEUNIT_100S     \  hundredths of a unit
+3     constant  COLORRESPONSEUNIT_1000S    \  thousandths of a unit
+4     constant  COLORRESPONSEUNIT_10000S   \  ten-thousandths of a unit
+5     constant  COLORRESPONSEUNIT_100000S  \  hundred-thousandths
+301   TIFFconst TiffTag_TRANSFERFUNCTION   \  !colorimetry info
+305   TIFFconst TiffTag_SOFTWARE           \  name & release
+306   TIFFconst TiffTag_DATETIME           \  creation date and time
+315   TIFFconst TiffTag_ARTIST             \  creator of image
+316   TIFFconst TiffTag_HOSTCOMPUTER       \  machine where created
+317   TIFFconst TiffTag_PREDICTOR          \  prediction scheme w/ LZW
+1     constant  PREDICTOR_NONE             \  no prediction scheme used
+2     constant  PREDICTOR_HORIZONTAL       \  horizontal differencing
+3     constant  PREDICTOR_FLOATINGPOINT    \  floating point predictor
+318   TIFFconst TiffTag_WHITEPOINT         \  image white point
+319   TIFFconst TiffTag_PRIMARYCHROMATICITIES \  !primary chromaticities
+320   TIFFconst TiffTag_COLORMAP           \  RGB map for pallette image
+321   TIFFconst TiffTag_HALFTONEHINTS      \  !highlight+shadow info
+322   TIFFconst TiffTag_TILEWIDTH          \  !tile width in pixels
+323   TIFFconst TiffTag_TILELENGTH         \  !tile height in pixels
+324   TIFFconst TiffTag_TILEOFFSETS        \  !offsets to data tiles
+325   TIFFconst TiffTag_TILEBYTECOUNTS     \  !byte counts for tiles
+326   TIFFconst TiffTag_BADFAXLINES        \  lines w/ wrong pixel count
+327   TIFFconst TiffTag_CLEANFAXDATA       \  regenerated line info
+0     constant  CLEANFAXDATA_CLEAN         \  no errors detected
+1     constant  CLEANFAXDATA_REGENERATED   \  receiver regenerated lines
+2     constant  CLEANFAXDATA_UNCLEAN       \  uncorrected errors exist
+328   TIFFconst TiffTag_CONSECUTIVEBADFAXLINES \  max consecutive bad lines
+330   TIFFconst TiffTag_SUBIFD             \  subimage descriptors
+332   TIFFconst TiffTag_INKSET             \  inks in separated image
+1     constant  INKSET_CMYK                \  cyan-magenta-yellow-black color
+2     constant  INKSET_MULTIINK            \  multi-ink or hi-fi color
+333   TIFFconst TiffTag_INKNAMES           \  ascii names of inks
+334   TIFFconst TiffTag_NUMBEROFINKS       \  number of inks
+336   TIFFconst TiffTag_DOTRANGE           \  0% and 100% dot codes
+337   TIFFconst TiffTag_TARGETPRINTER      \  separation target
+338   TIFFconst TiffTag_EXTRASAMPLES       \  info about extra samples
+0     constant  EXTRASAMPLE_UNSPECIFIED    \  unspecified data
+1     constant  EXTRASAMPLE_ASSOCALPHA     \  associated alpha data
+2     constant  EXTRASAMPLE_UNASSALPHA     \  unassociated alpha data
+339   TIFFconst TiffTag_SAMPLEFORMAT       \  data sample format
+1     constant  SAMPLEFORMAT_UINT          \  unsigned integer data
+2     constant  SAMPLEFORMAT_INT           \  signed integer data
+3     constant  SAMPLEFORMAT_IEEEFP        \  IEEE floating point data
+4     constant  SAMPLEFORMAT_VOID          \  untyped data
+5     constant  SAMPLEFORMAT_COMPLEXINT    \  complex signed int
+6     constant  SAMPLEFORMAT_COMPLEXIEEEFP \  complex ieee floating
+340   TIFFconst TiffTag_SMINSAMPLEVALUE    \  variable MinSampleValue
+341   TIFFconst TiffTag_SMAXSAMPLEVALUE    \  variable MaxSampleValue
+343   TIFFconst TiffTag_CLIPPATH           \  ClipPath [Adobe TIFF technote 2]
+344   TIFFconst TiffTag_XCLIPPATHUNITS     \  XClipPathUnits [Adobe TIFF technote 2]
+345   TIFFconst TiffTag_YCLIPPATHUNITS     \  YClipPathUnits [Adobe TIFF technote 2]
+346   TIFFconst TiffTag_INDEXED            \  Indexed [Adobe TIFF Technote 3]
+347   TIFFconst TiffTag_JPEGTABLES         \  JPEG table stream
+351   TIFFconst TiffTag_OPIPROXY           \  OPI Proxy [Adobe TIFF technote]
+\ tags 512-521 are obsoleted by Technical Note #2 which specifies a
+\ revised JPEG-in-TIFF scheme.
+512   TIFFconst TiffTag_JPEGPROC           \  JPEG processing algorithm
+1     constant  JPEGPROC_BASELINE          \  baseline sequential
+14    constant  JPEGPROC_LOSSLESS          \  Huffman coded lossless
+513   TIFFconst TiffTag_JPEGIFOFFSET       \  pointer to SOI marker
+514   TIFFconst TiffTag_JPEGIFBYTECOUNT    \  JFIF stream length
+515   TIFFconst TiffTag_JPEGRESTARTINTERVAL \ restart interval length
+517   TIFFconst TiffTag_JPEGLOSSLESSPREDICTORS \ lossless proc predictor
+518   TIFFconst TiffTag_JPEGPOINTTRANSFORM \ lossless point transform
+519   TIFFconst TiffTag_JPEGQTABLES        \ Q matrice offsets
+520   TIFFconst TiffTag_JPEGDCTABLES       \ DCT table offsets
+521   TIFFconst TiffTag_JPEGACTABLES       \ AC coefficient offsets
+529   TIFFconst TiffTag_YCBCRCOEFFICIENTS  \ RGB -> YCbCr transform
+530   TIFFconst TiffTag_YCBCRSUBSAMPLING   \ YCbCr subsampling factors
+531   TIFFconst TiffTag_YCBCRPOSITIONING   \ subsample positioning
+1     constant  YCBCRPOSITION_CENTERED     \ as in PostScript Level 2
+2     constant  YCBCRPOSITION_COSITED      \ as in CCIR 601-1
+532   TIFFconst TiffTag_REFERENCEBLACKWHITE \ colorimetry info
+700   TIFFconst TiffTag_XMLPACKET          \ XML packet [Adobe XMP Specification, January 2004
+32781 TIFFconst TiffTag_OPIIMAGEID         \ OPI ImageID [Adobe TIFF technote]
+\ tags 32952-32956 are private tags registered to Island Graphics
+32953 TIFFconst TiffTag_REFPTS             \ image reference points
+32954 TIFFconst TiffTag_REGIONTACKPOINT    \ region-xform tack point
+32955 TIFFconst TiffTag_REGIONWARPCORNERS  \ warp quadrilateral
+32956 TIFFconst TiffTag_REGIONAFFINE       \ affine transformation mat
+\ tags 32995-32999 are private tags registered to SGI
+32995 TIFFconst TiffTag_MATTEING           \ use ExtraSamples
+32996 TIFFconst TiffTag_DATATYPE           \ use SampleFormat
+32997 TIFFconst TiffTag_IMAGEDEPTH         \ z depth of image
+32998 TIFFconst TiffTag_TILEDEPTH          \ z depth/data tile
+
+\ tags 33300-33309 are private tags registered to Pixar )
+\ TiffTag_PIXAR_IMAGEFULLWIDTH and TiffTag_PIXAR_IMAGEFULLLENGTH
+\ are set when an image has been cropped out of a larger image.
+\ They reflect the size of the original uncropped image.
+\ The TiffTag_XPOSITION and TiffTag_YPOSITION can be used
+\ to determine the position of the smaller image in the larger one.
+33300 TIFFconst TiffTag_PIXAR_IMAGEFULLWIDTH   \ full image size in x
+33301 TIFFconst TiffTag_PIXAR_IMAGEFULLLENGTH  \ full image size in y
+\  Tags 33302-33306 are used to identify special image modes and data used by Pixar's texture formats.
+33302 TIFFconst TiffTag_PIXAR_TEXTUREFORMAT  \ texture map format
+33303 TIFFconst TiffTag_PIXAR_WRAPMODES      \ s & t wrap modes
+33304 TIFFconst TiffTag_PIXAR_FOVCOT         \ cotan(fov) for env. maps
+33305 TIFFconst TiffTag_PIXAR_MATRIX_WORLDTOSCREEN
+33306 TIFFconst TiffTag_PIXAR_MATRIX_WORLDTOCAMERA
+\  tag 33405 is a private tag registered to Eastman Kodak
+33405 TIFFconst TiffTag_WRITERSERIALNUMBER   \ device serial number
+\  tag 33432 is listed in the 6.0 spec w/ unknown ownership
+33432 TIFFconst TiffTag_COPYRIGHT            \ copyright string
+\  IPTC TAG from RichTIFF specifications
+33723 TIFFconst TiffTag_RICHTIFFIPTC
+\  34016-34029 are reserved for ANSI IT8 TIFF/IT <dkelly@apago.com
+34016 TIFFconst TiffTag_IT8SITE            \ site name
+34017 TIFFconst TiffTag_IT8COLORSEQUENCE   \ color seq. [RGB,CMYK,etc]
+34018 TIFFconst TiffTag_IT8HEADER          \ DDES Header
+34019 TIFFconst TiffTag_IT8RASTERPADDING   \ raster scanline padding
+34020 TIFFconst TiffTag_IT8BITSPERRUNLENGTH \ # of bits in short run
+34021 TIFFconst TiffTag_IT8BITSPEREXTENDEDRUNLENGTH \ # of bits in long run
+34022 TIFFconst TiffTag_IT8COLORTABLE      \ LW colortable
+34023 TIFFconst TiffTag_IT8IMAGECOLORINDICATOR \ BP/BL image color switch
+34024 TIFFconst TiffTag_IT8BKGCOLORINDICATOR \ BP/BL bg color switch
+34025 TIFFconst TiffTag_IT8IMAGECOLORVALUE \ BP/BL image color value
+34026 TIFFconst TiffTag_IT8BKGCOLORVALUE   \ BP/BL bg color value
+34027 TIFFconst TiffTag_IT8PIXELINTENSITYRANGE \ MP pixel intensity value
+34028 TIFFconst TiffTag_IT8TRANSPARENCYINDICATOR \ HC transparency switch
+34029 TIFFconst TiffTag_IT8COLORCHARACTERIZATION \ color character. table
+34030 TIFFconst TiffTag_IT8HCUSAGE         \ HC usage indicator
+34031 TIFFconst TiffTag_IT8TRAPINDICATOR   \ Trapping indicator (untrapped=0, trapped=1)
+34032 TIFFconst TiffTag_IT8CMYKEQUIVALENT  \ CMYK color equivalents
+\  tags 34232-34236 are private tags registered to Texas Instruments
+34232 TIFFconst TiffTag_FRAMECOUNT         \ Sequence Frame Count
+\  tag 34377 is private tag registered to Adobe for PhotoShop
+34377 TIFFconst TiffTag_PHOTOSHOP
+\  tags 34665, 34853 and 40965 are documented in EXIF specification
+34665 TIFFconst TiffTag_EXIFIFD            \ Pointer to EXIF private directory
+\  tag 34750 is a private tag registered to Adobe?
+34675 TIFFconst TiffTag_ICCPROFILE         \ ICC profile data
+\  tag 34750 is a private tag registered to Pixel Magic
+34750 TIFFconst TiffTag_JBIGOPTIONS        \ JBIG options
+34853 TIFFconst TiffTag_GPSIFD             \ Pointer to GPS private directory
+\  tags 34908-34914 are private tags registered to SGI
+34908 TIFFconst TiffTag_FAXRECVPARAMS      \ encoded Class 2 ses. parms
+34909 TIFFconst TiffTag_FAXSUBADDRESS      \ received SubAddr string
+34910 TIFFconst TiffTag_FAXRECVTIME        \ receive time (secs)
+34911 TIFFconst TiffTag_FAXDCS             \ encoded fax ses. params, Table 2/T.30
+\  tags 37439-37443 are registered to SGI <gregl@sgi.com>
+37439 TIFFconst TiffTag_STONITS            \ Sample value to Nits
+\  tag 34929 is a private tag registered to FedEx
+34929 TIFFconst TiffTag_FEDEX_EDR          \ unknown use
+40965 TIFFconst TiffTag_INTEROPERABILITYIFD \ Pointer to Interoperability private directory
+\  Adobe Digital Negative [DNG] format tags
+50706 TIFFconst TiffTag_DNGVERSION         \ DNG version number
+50707 TIFFconst TiffTag_DNGBACKWARDVERSION \ DNG compatibility version
+50708 TIFFconst TiffTag_UNIQUECAMERAMODEL  \ name for the camera model
+50709 TIFFconst TiffTag_LOCALIZEDCAMERAMODEL \ localized camera model name
+50710 TIFFconst TiffTag_CFAPLANECOLOR      \ CFAPattern->LinearRaw space mapping
+50711 TIFFconst TiffTag_CFALAYOUT          \ spatial layout of the CFA
+50712 TIFFconst TiffTag_LINEARIZATIONTABLE \ lookup table description
+50713 TIFFconst TiffTag_BLACKLEVELREPEATDIM \ repeat pattern size for the BlackLevel tag
+50714 TIFFconst TiffTag_BLACKLEVEL         \ zero light encoding level
+50715 TIFFconst TiffTag_BLACKLEVELDELTAH   \ zero light encoding level differences (columns)
+50716 TIFFconst TiffTag_BLACKLEVELDELTAV   \ zero light encoding level differences (rows)
+50717 TIFFconst TiffTag_WHITELEVEL         \ fully saturated encoding level
+50718 TIFFconst TiffTag_DEFAULTSCALE       \ default scale factors
+50719 TIFFconst TiffTag_DEFAULTCROPORIGIN  \ origin of the final image area
+50720 TIFFconst TiffTag_DEFAULTCROPSIZE    \ size of the final image area
+50721 TIFFconst TiffTag_COLORMATRIX1       \ XYZ->reference color space transformation matrix 1
+50722 TIFFconst TiffTag_COLORMATRIX2       \ XYZ->reference color space transformation matrix 2
+50723 TIFFconst TiffTag_CAMERACALIBRATION1 \ calibration matrix 1
+50724 TIFFconst TiffTag_CAMERACALIBRATION2 \ calibration matrix 2
+50725 TIFFconst TiffTag_REDUCTIONMATRIX1   \ dimensionality reduction matrix 1
+50726 TIFFconst TiffTag_REDUCTIONMATRIX2   \ dimensionality reduction matrix 2
+50727 TIFFconst TiffTag_ANALOGBALANCE      \ gain applied the stored raw values
+50728 TIFFconst TiffTag_ASSHOTNEUTRAL      \ selected white balance in linear reference space
+50729 TIFFconst TiffTag_ASSHOTWHITEXY      \ selected white balance in x-y chromaticity coordinates
+50730 TIFFconst TiffTag_BASELINEEXPOSURE   \ how much to move the zero point
+50731 TIFFconst TiffTag_BASELINENOISE      \ relative noise level
+50732 TIFFconst TiffTag_BASELINESHARPNESS  \ relative amount of sharpening
+50733 TIFFconst TiffTag_BAYERGREENSPLIT    \ how closely the values of the green pixels in the blue/green rows track the values of the green pixels in the red/green rows
+50734 TIFFconst TiffTag_LINEARRESPONSELIMIT \ non-linear encoding range
+50735 TIFFconst TiffTag_CAMERASERIALNUMBER \ camera's serial number
+50736 TIFFconst TiffTag_LENSINFO           \  info about the lens
+50737 TIFFconst TiffTag_CHROMABLURRADIUS   \ chroma blur radius
+50738 TIFFconst TiffTag_ANTIALIASSTRENGTH  \ relative strength of the camera's anti-alias filter
+50739 TIFFconst TiffTag_SHADOWSCALE        \ used by Adobe Camera Raw
+50740 TIFFconst TiffTag_DNGPRIVATEDATA     \ manufacturer's private data
+50741 TIFFconst TiffTag_MAKERNOTESAFETY    \ whether the EXIF MakerNote tag is safe to preserve along with the rest of the EXIF data
+50778 TIFFconst TiffTag_CALIBRATIONILLUMINANT1 \ illuminant 1
+50779 TIFFconst TiffTag_CALIBRATIONILLUMINANT2 \ illuminant 2
+50780 TIFFconst TiffTag_BESTQUALITYSCALE   \ best quality multiplier
+50781 TIFFconst TiffTag_RAWDATAUNIQUEID    \ unique identifier for the raw image data
+50827 TIFFconst TiffTag_ORIGINALRAWFILENAME \ file name of the original raw file
+50828 TIFFconst TiffTag_ORIGINALRAWFILEDATA \ contents of the original raw file
+50829 TIFFconst TiffTag_ACTIVEAREA         \ active (non-masked) pixels of the sensor
+50830 TIFFconst TiffTag_MASKEDAREAS        \ list of coordinates of fully masked pixels
+50831 TIFFconst TiffTag_ASSHOTICCPROFILE   \ these two tags used to
+50832 TIFFconst TiffTag_ASSHOTPREPROFILEMATRIX \ map cameras's color space into ICC profile space
+50833 TIFFconst TiffTag_CURRENTICCPROFILE  \ 
+50834 TIFFconst TiffTag_CURRENTPREPROFILEMATRIX \ 
+\  tag 65535 is an undefined tag used by Eastman Kodak
+65535 TIFFconst TiffTag_DCSHUESHIFTVALUES    \ hue shift correction data
+
+\ The following are 'pseudo tags' that can be used to control
+\ codec-specific functionality.  These tags are not written to file.
+\ Note that these values start at $ffff+1 so that they'll never
+\ collide with Aldus-assigned tags.
+\ 
+\ If you want your private pseudo tags 'registered' (i.e. added to
+\ this file), please post a bug report via the tracking system at
+\ http://www.remotesensing.org/libtiff/bugs.html with the appropriate
+\ C definitions to add.
+
+65536 TIFFconst TiffTag_FAXMODE            \ Group 3/4 format control
+0     constant  FAXMODE_CLASSIC            \ default, include RTC
+1     constant  FAXMODE_NORTC              \ no RTC at end of data
+2     constant  FAXMODE_NOEOL              \ no EOL code at end of row
+4     constant  FAXMODE_BYTEALIGN          \ byte align row
+8     constant  FAXMODE_WORDALIGN          \ word align row
+FAXMODE_NORTC constant  FAXMODE_CLASSF     \ TIFF Class F
+65537 TIFFconst TiffTag_JPEGQUALITY        \ Compression quality level
+\  Note: quality level is on the IJG 0-100 scale.  Default value is 75
+65538 TIFFconst TiffTag_JPEGCOLORMODE      \ Auto RGB<=>YCbCr convert?
+0     constant JPEGCOLORMODE_RAW           \ no conversion (default)
+1     constant JPEGCOLORMODE_RGB           \ do auto conversion
+65539 TIFFconst TiffTag_JPEGTABLESMODE     \ What to put in JPEGTables
+1     constant  JPEGTABLESMODE_QUANT       \ include quantization tbls
+2     constant  JPEGTABLESMODE_HUFF        \ include Huffman tbls
+\  Note: default is JPEGTABLESMODE_QUANT | JPEGTABLESMODE_HUFF
+65540 TIFFconst TiffTag_FAXFILLFUNC        \ G3/G4 fill function
+65549 TIFFconst TiffTag_PIXARLOGDATAFMT    \ PixarLogCodec I/O data sz
+0     constant  PIXARLOGDATAFMT_8BIT       \ regular u_char samples
+1     constant  PIXARLOGDATAFMT_8BITABGR   \ ABGR-order u_chars
+2     constant  PIXARLOGDATAFMT_11BITLOG   \ 11-bit log-encoded (raw)
+3     constant  PIXARLOGDATAFMT_12BITPICIO \ as per PICIO (1.0==2048)
+4     constant  PIXARLOGDATAFMT_16BIT      \ signed short samples
+5     constant  PIXARLOGDATAFMT_FLOAT      \ IEEE float samples
+\  65550-65556 are allocated to Oceana Matrix <dev@oceana.com>
+65550 TIFFconst TiffTag_DCSIMAGERTYPE      \ imager model & filter
+0     constant  DCSIMAGERMODEL_M3          \ M3 chip (1280 x 1024)
+1     constant  DCSIMAGERMODEL_M5          \ M5 chip (1536 x 1024)
+2     constant  DCSIMAGERMODEL_M6          \ M6 chip (3072 x 2048)
+0     constant  DCSIMAGERFILTER_IR         \ infrared filter
+1     constant  DCSIMAGERFILTER_MONO       \ monochrome filter
+2     constant  DCSIMAGERFILTER_CFA        \ color filter array
+3     constant  DCSIMAGERFILTER_OTHER      \ other filter
+65551 TIFFconst TiffTag_DCSINTERPMODE      \ interpolation mode
+0     constant  DCSINTERPMODE_NORMAL       \ whole image, default
+1     constant  DCSINTERPMODE_PREVIEW      \ preview of image (384x256)
+65552 TIFFconst TiffTag_DCSBALANCEARRAY    \ color balance values
+65553 TIFFconst TiffTag_DCSCORRECTMATRIX   \ color correction values
+65554 TIFFconst TiffTag_DCSGAMMA           \ gamma value
+65555 TIFFconst TiffTag_DCSTOESHOULDERPTS  \ toe & shoulder points
+65556 TIFFconst TiffTag_DCSCALIBRATIONFD   \ calibration file desc
+\  Note: quality level is on the ZLIB 1-9 scale. Default value is -1
+65557 TIFFconst TiffTag_ZIPQUALITY         \ compression quality level
+65558 TIFFconst TiffTag_PIXARLOGQUALITY    \ PixarLog uses same scale
+\  65559 is allocated to Oceana Matrix <dev@oceana.com>
+65559 TIFFconst TiffTag_DCSCLIPRECTANGLE   \ area of image to acquire
+65560 TIFFconst TiffTag_SGILOGDATAFMT      \ SGILog user data format
+0     constant  SGILOGDATAFMT_FLOAT        \ IEEE float samples
+1     constant  SGILOGDATAFMT_16BIT        \ 16-bit samples
+2     constant  SGILOGDATAFMT_RAW          \ uninterpreted data
+3     constant  SGILOGDATAFMT_8BIT         \ 8-bit RGB monitor values
+65561 TIFFconst TiffTag_SGILOGENCODE       \ SGILog data encoding control
+0     constant  SGILOGENCODE_NODITHER      \ do not dither encoded values
+1     constant  SGILOGENCODE_RANDITHER     \ randomly dither encd values
+\ EXIF tags
+33434 TIFFconst ExifTag_EXPOSURETIME       \ Exposure time
+33437 TIFFconst ExifTag_FNUMBER            \ F number
+34850 TIFFconst ExifTag_EXPOSUREPROGRAM    \ Exposure program
+34852 TIFFconst ExifTag_SPECTRALSENSITIVITY \ Spectral sensitivity
+34855 TIFFconst ExifTag_ISOSPEEDRATINGS    \ ISO speed rating
+34856 TIFFconst ExifTag_OECF               \ Optoelectric conversion factor
+36864 TIFFconst ExifTag_EXIFVERSION        \ Exif version
+36867 TIFFconst ExifTag_DATETIMEORIGINAL   \ Date and time of original data generation
+36868 TIFFconst ExifTag_DATETIMEDIGITIZED  \ Date and time of digital data generation
+37121 TIFFconst ExifTag_COMPONENTSCONFIGURATION \ Meaning of each component
+37122 TIFFconst ExifTag_COMPRESSEDBITSPERPIXEL \ Image compression mode
+37377 TIFFconst ExifTag_SHUTTERSPEEDVALUE  \ Shutter speed
+37378 TIFFconst ExifTag_APERTUREVALUE      \ Aperture
+37379 TIFFconst ExifTag_BRIGHTNESSVALUE    \ Brightness
+37380 TIFFconst ExifTag_EXPOSUREBIASVALUE  \ Exposure bias
+37381 TIFFconst ExifTag_MAXAPERTUREVALUE   \ Maximum lens aperture
+37382 TIFFconst ExifTag_SUBJECTDISTANCE    \ Subject distance
+37383 TIFFconst ExifTag_METERINGMODE       \ Metering mode
+37384 TIFFconst ExifTag_LIGHTSOURCE        \ Light source
+37385 TIFFconst ExifTag_FLASH              \ Flash
+37386 TIFFconst ExifTag_FOCALLENGTH        \ Lens focal length
+37396 TIFFconst ExifTag_SUBJECTAREA        \ Subject area
+37500 TIFFconst ExifTag_MAKERNOTE          \ Manufacturer notes
+37510 TIFFconst ExifTag_USERCOMMENT        \ User comments
+37520 TIFFconst ExifTag_SUBSECTIME         \ DateTime subseconds
+37521 TIFFconst ExifTag_SUBSECTIMEORIGINAL \ DateTimeOriginal subseconds
+37522 TIFFconst ExifTag_SUBSECTIMEDIGITIZED \ DateTimeDigitized subseconds
+40960 TIFFconst ExifTag_FLASHPIXVERSION    \ Supported Flashpix version
+40961 TIFFconst ExifTag_COLORSPACE         \ Color space information
+40962 TIFFconst ExifTag_PIXELXDIMENSION    \ Valid image width
+40963 TIFFconst ExifTag_PIXELYDIMENSION    \ Valid image height
+40964 TIFFconst ExifTag_RELATEDSOUNDFILE   \ Related audio file
+41483 TIFFconst ExifTag_FLASHENERGY        \ Flash energy
+41484 TIFFconst ExifTag_SPATIALFREQUENCYRESPONSE \ Spatial frequency response
+41486 TIFFconst ExifTag_FOCALPLANEXRESOLUTION \ Focal plane X resolution
+41487 TIFFconst ExifTag_FOCALPLANEYRESOLUTION \ Focal plane Y resolution
+41488 TIFFconst ExifTag_FOCALPLANERESOLUTIONUNIT \ Focal plane resolution unit
+41492 TIFFconst ExifTag_SUBJECTLOCATION    \ Subject location
+41493 TIFFconst ExifTag_EXPOSUREINDEX      \ Exposure index
+41495 TIFFconst ExifTag_SENSINGMETHOD      \ Sensing method
+41728 TIFFconst ExifTag_FILESOURCE         \ File source
+41729 TIFFconst ExifTag_SCENETYPE          \ Scene type
+41730 TIFFconst ExifTag_CFAPATTERN         \ CFA pattern
+41985 TIFFconst ExifTag_CUSTOMRENDERED     \ Custom image processing
+41986 TIFFconst ExifTag_EXPOSUREMODE       \ Exposure mode
+41987 TIFFconst ExifTag_WHITEBALANCE       \ White balance
+41988 TIFFconst ExifTag_DIGITALZOOMRATIO   \ Digital zoom ratio
+41989 TIFFconst ExifTag_FOCALLENGTHIN35MMFILM \ Focal length in 35 mm film
+41990 TIFFconst ExifTag_SCENECAPTURETYPE   \ Scene capture type
+41991 TIFFconst ExifTag_GAINCONTROL        \ Gain control
+41992 TIFFconst ExifTag_CONTRAST           \ Contrast
+41993 TIFFconst ExifTag_SATURATION         \ Saturation
+41994 TIFFconst ExifTag_SHARPNESS          \ Sharpness
+41995 TIFFconst ExifTag_DEVICESETTINGDESCRIPTION \ Device settings description
+41996 TIFFconst ExifTag_SUBJECTDISTANCERANGE \ Subject distance range
+42016 TIFFconst ExifTag_IMAGEUNIQUEID      \ Unique image ID
+
+: .Tag ( n)   case
+      TIFF-OF: TiffTag_SUBFILETYPE
+      TIFF-OF: TiffTag_OSUBFILETYPE
+      TIFF-OF: TiffTag_IMAGEWIDTH
+      TIFF-OF: TiffTag_IMAGELENGTH
+      TIFF-OF: TiffTag_BITSPERSAMPLE
+      TIFF-OF: TiffTag_COMPRESSION
+      TIFF-OF: TiffTag_PHOTOMETRIC
+      TIFF-OF: TiffTag_THRESHHOLDING
+      TIFF-OF: TiffTag_CELLWIDTH
+      TIFF-OF: TiffTag_CELLLENGTH
+      TIFF-OF: TiffTag_FILLORDER
+      TIFF-OF: TiffTag_DOCUMENTNAME
+      TIFF-OF: TiffTag_IMAGEDESCRIPTION
+      TIFF-OF: TiffTag_MAKE
+      TIFF-OF: TiffTag_MODEL
+      TIFF-OF: TiffTag_STRIPOFFSETS
+      TIFF-OF: TiffTag_ORIENTATION
+      TIFF-OF: TiffTag_SAMPLESPERPIXEL
+      TIFF-OF: TiffTag_ROWSPERSTRIP
+      TIFF-OF: TiffTag_STRIPBYTECOUNTS
+      TIFF-OF: TiffTag_MINSAMPLEVALUE
+      TIFF-OF: TiffTag_MAXSAMPLEVALUE
+      TIFF-OF: TiffTag_XRESOLUTION
+      TIFF-OF: TiffTag_YRESOLUTION
+      TIFF-OF: TiffTag_PLANARCONFIG
+      TIFF-OF: TiffTag_PAGENAME
+      TIFF-OF: TiffTag_XPOSITION
+      TIFF-OF: TiffTag_YPOSITION
+      TIFF-OF: TiffTag_FREEOFFSETS
+      TIFF-OF: TiffTag_FREEBYTECOUNTS
+      TIFF-OF: TiffTag_GRAYRESPONSEUNIT
+      TIFF-OF: TiffTag_GRAYRESPONSECURVE
+      TIFF-OF: TiffTag_GROUP3OPTIONS
+      TIFF-OF: TiffTag_T4OPTIONS
+      TIFF-OF: TiffTag_GROUP4OPTIONS
+      TIFF-OF: TiffTag_T6OPTIONS
+      TIFF-OF: TiffTag_RESOLUTIONUNIT
+      TIFF-OF: TiffTag_PAGENUMBER
+      TIFF-OF: TiffTag_COLORRESPONSEUNIT
+      TIFF-OF: TiffTag_TRANSFERFUNCTION
+      TIFF-OF: TiffTag_SOFTWARE
+      TIFF-OF: TiffTag_DATETIME
+      TIFF-OF: TiffTag_ARTIST
+      TIFF-OF: TiffTag_HOSTCOMPUTER
+      TIFF-OF: TiffTag_PREDICTOR
+      TIFF-OF: TiffTag_WHITEPOINT
+      TIFF-OF: TiffTag_PRIMARYCHROMATICITIES
+      TIFF-OF: TiffTag_COLORMAP
+      TIFF-OF: TiffTag_HALFTONEHINTS
+      TIFF-OF: TiffTag_TILEWIDTH
+      TIFF-OF: TiffTag_TILELENGTH
+      TIFF-OF: TiffTag_TILEOFFSETS
+      TIFF-OF: TiffTag_TILEBYTECOUNTS
+      TIFF-OF: TiffTag_BADFAXLINES
+      TIFF-OF: TiffTag_CLEANFAXDATA
+      TIFF-OF: TiffTag_CONSECUTIVEBADFAXLINES
+      TIFF-OF: TiffTag_SUBIFD
+      TIFF-OF: TiffTag_INKSET
+      TIFF-OF: TiffTag_INKNAMES
+      TIFF-OF: TiffTag_NUMBEROFINKS
+      TIFF-OF: TiffTag_DOTRANGE
+      TIFF-OF: TiffTag_TARGETPRINTER
+      TIFF-OF: TiffTag_EXTRASAMPLES
+      TIFF-OF: TiffTag_SAMPLEFORMAT
+      TIFF-OF: TiffTag_SMINSAMPLEVALUE
+      TIFF-OF: TiffTag_SMAXSAMPLEVALUE
+      TIFF-OF: TiffTag_CLIPPATH
+      TIFF-OF: TiffTag_XCLIPPATHUNITS
+      TIFF-OF: TiffTag_YCLIPPATHUNITS
+      TIFF-OF: TiffTag_INDEXED
+      TIFF-OF: TiffTag_JPEGTABLES
+      TIFF-OF: TiffTag_OPIPROXY
+      TIFF-OF: TiffTag_JPEGPROC
+      TIFF-OF: TiffTag_JPEGIFOFFSET
+      TIFF-OF: TiffTag_JPEGIFBYTECOUNT
+      TIFF-OF: TiffTag_JPEGRESTARTINTERVAL
+      TIFF-OF: TiffTag_JPEGLOSSLESSPREDICTORS
+      TIFF-OF: TiffTag_JPEGPOINTTRANSFORM
+      TIFF-OF: TiffTag_JPEGQTABLES
+      TIFF-OF: TiffTag_JPEGDCTABLES
+      TIFF-OF: TiffTag_JPEGACTABLES
+      TIFF-OF: TiffTag_YCBCRCOEFFICIENTS
+      TIFF-OF: TiffTag_YCBCRSUBSAMPLING
+      TIFF-OF: TiffTag_YCBCRPOSITIONING
+      TIFF-OF: TiffTag_REFERENCEBLACKWHITE
+      TIFF-OF: TiffTag_XMLPACKET
+      TIFF-OF: TiffTag_OPIIMAGEID
+      TIFF-OF: TiffTag_REFPTS
+      TIFF-OF: TiffTag_REGIONTACKPOINT
+      TIFF-OF: TiffTag_REGIONWARPCORNERS
+      TIFF-OF: TiffTag_REGIONAFFINE
+      TIFF-OF: TiffTag_MATTEING
+      TIFF-OF: TiffTag_DATATYPE
+      TIFF-OF: TiffTag_IMAGEDEPTH
+      TIFF-OF: TiffTag_TILEDEPTH
+      TIFF-OF: TiffTag_PIXAR_IMAGEFULLWIDTH
+      TIFF-OF: TiffTag_PIXAR_IMAGEFULLLENGTH
+      TIFF-OF: TiffTag_PIXAR_TEXTUREFORMAT
+      TIFF-OF: TiffTag_PIXAR_WRAPMODES
+      TIFF-OF: TiffTag_PIXAR_FOVCOT
+      TIFF-OF: TiffTag_PIXAR_MATRIX_WORLDTOSCREEN
+      TIFF-OF: TiffTag_PIXAR_MATRIX_WORLDTOCAMERA
+      TIFF-OF: TiffTag_WRITERSERIALNUMBER
+      TIFF-OF: TiffTag_COPYRIGHT
+      TIFF-OF: TiffTag_RICHTIFFIPTC
+      TIFF-OF: TiffTag_IT8SITE
+      TIFF-OF: TiffTag_IT8COLORSEQUENCE
+      TIFF-OF: TiffTag_IT8HEADER
+      TIFF-OF: TiffTag_IT8RASTERPADDING
+      TIFF-OF: TiffTag_IT8BITSPERRUNLENGTH
+      TIFF-OF: TiffTag_IT8BITSPEREXTENDEDRUNLENGTH
+      TIFF-OF: TiffTag_IT8COLORTABLE
+      TIFF-OF: TiffTag_IT8IMAGECOLORINDICATOR
+      TIFF-OF: TiffTag_IT8BKGCOLORINDICATOR
+      TIFF-OF: TiffTag_IT8IMAGECOLORVALUE
+      TIFF-OF: TiffTag_IT8BKGCOLORVALUE
+      TIFF-OF: TiffTag_IT8PIXELINTENSITYRANGE
+      TIFF-OF: TiffTag_IT8TRANSPARENCYINDICATOR
+      TIFF-OF: TiffTag_IT8COLORCHARACTERIZATION
+      TIFF-OF: TiffTag_IT8HCUSAGE
+      TIFF-OF: TiffTag_IT8TRAPINDICATOR
+      TIFF-OF: TiffTag_IT8CMYKEQUIVALENT
+      TIFF-OF: TiffTag_FRAMECOUNT
+      TIFF-OF: TiffTag_PHOTOSHOP
+      TIFF-OF: TiffTag_EXIFIFD
+      TIFF-OF: TiffTag_ICCPROFILE
+      TIFF-OF: TiffTag_JBIGOPTIONS
+      TIFF-OF: TiffTag_GPSIFD
+      TIFF-OF: TiffTag_FAXRECVPARAMS
+      TIFF-OF: TiffTag_FAXSUBADDRESS
+      TIFF-OF: TiffTag_FAXRECVTIME
+      TIFF-OF: TiffTag_FAXDCS
+      TIFF-OF: TiffTag_STONITS
+      TIFF-OF: TiffTag_FEDEX_EDR
+      TIFF-OF: TiffTag_INTEROPERABILITYIFD
+      TIFF-OF: TiffTag_DNGVERSION
+      TIFF-OF: TiffTag_DNGBACKWARDVERSION
+      TIFF-OF: TiffTag_UNIQUECAMERAMODEL
+      TIFF-OF: TiffTag_LOCALIZEDCAMERAMODEL
+      TIFF-OF: TiffTag_CFAPLANECOLOR
+      TIFF-OF: TiffTag_CFALAYOUT
+      TIFF-OF: TiffTag_LINEARIZATIONTABLE
+      TIFF-OF: TiffTag_BLACKLEVELREPEATDIM
+      TIFF-OF: TiffTag_BLACKLEVEL
+      TIFF-OF: TiffTag_BLACKLEVELDELTAH
+      TIFF-OF: TiffTag_BLACKLEVELDELTAV
+      TIFF-OF: TiffTag_WHITELEVEL
+      TIFF-OF: TiffTag_DEFAULTSCALE
+      TIFF-OF: TiffTag_DEFAULTCROPORIGIN
+      TIFF-OF: TiffTag_DEFAULTCROPSIZE
+      TIFF-OF: TiffTag_COLORMATRIX1
+      TIFF-OF: TiffTag_COLORMATRIX2
+      TIFF-OF: TiffTag_CAMERACALIBRATION1
+      TIFF-OF: TiffTag_CAMERACALIBRATION2
+      TIFF-OF: TiffTag_REDUCTIONMATRIX1
+      TIFF-OF: TiffTag_REDUCTIONMATRIX2
+      TIFF-OF: TiffTag_ANALOGBALANCE
+      TIFF-OF: TiffTag_ASSHOTNEUTRAL
+      TIFF-OF: TiffTag_ASSHOTWHITEXY
+      TIFF-OF: TiffTag_BASELINEEXPOSURE
+      TIFF-OF: TiffTag_BASELINENOISE
+      TIFF-OF: TiffTag_BASELINESHARPNESS
+      TIFF-OF: TiffTag_BAYERGREENSPLIT
+      TIFF-OF: TiffTag_LINEARRESPONSELIMIT
+      TIFF-OF: TiffTag_CAMERASERIALNUMBER
+      TIFF-OF: TiffTag_LENSINFO
+      TIFF-OF: TiffTag_CHROMABLURRADIUS
+      TIFF-OF: TiffTag_ANTIALIASSTRENGTH
+      TIFF-OF: TiffTag_SHADOWSCALE
+      TIFF-OF: TiffTag_DNGPRIVATEDATA
+      TIFF-OF: TiffTag_MAKERNOTESAFETY
+      TIFF-OF: TiffTag_CALIBRATIONILLUMINANT1
+      TIFF-OF: TiffTag_CALIBRATIONILLUMINANT2
+      TIFF-OF: TiffTag_BESTQUALITYSCALE
+      TIFF-OF: TiffTag_RAWDATAUNIQUEID
+      TIFF-OF: TiffTag_ORIGINALRAWFILENAME
+      TIFF-OF: TiffTag_ORIGINALRAWFILEDATA
+      TIFF-OF: TiffTag_ACTIVEAREA
+      TIFF-OF: TiffTag_MASKEDAREAS
+      TIFF-OF: TiffTag_ASSHOTICCPROFILE
+      TIFF-OF: TiffTag_ASSHOTPREPROFILEMATRIX
+      TIFF-OF: TiffTag_CURRENTICCPROFILE
+      TIFF-OF: TiffTag_CURRENTPREPROFILEMATRIX
+      TIFF-OF: TiffTag_DCSHUESHIFTVALUES
+      TIFF-OF: TiffTag_FAXMODE
+      TIFF-OF: TiffTag_JPEGQUALITY
+      TIFF-OF: TiffTag_JPEGCOLORMODE
+      TIFF-OF: TiffTag_JPEGTABLESMODE
+      TIFF-OF: TiffTag_FAXFILLFUNC
+      TIFF-OF: TiffTag_PIXARLOGDATAFMT
+      TIFF-OF: TiffTag_DCSIMAGERTYPE
+      TIFF-OF: TiffTag_DCSINTERPMODE
+      TIFF-OF: TiffTag_DCSBALANCEARRAY
+      TIFF-OF: TiffTag_DCSCORRECTMATRIX
+      TIFF-OF: TiffTag_DCSGAMMA
+      TIFF-OF: TiffTag_DCSTOESHOULDERPTS
+      TIFF-OF: TiffTag_DCSCALIBRATIONFD
+      TIFF-OF: TiffTag_ZIPQUALITY
+      TIFF-OF: TiffTag_PIXARLOGQUALITY
+      TIFF-OF: TiffTag_DCSCLIPRECTANGLE
+      TIFF-OF: TiffTag_SGILOGDATAFMT
+      TIFF-OF: TiffTag_SGILOGENCODE
+      TIFF-OF: ExifTag_EXPOSURETIME
+      TIFF-OF: ExifTag_FNUMBER
+      TIFF-OF: ExifTag_EXPOSUREPROGRAM
+      TIFF-OF: ExifTag_SPECTRALSENSITIVITY
+      TIFF-OF: ExifTag_ISOSPEEDRATINGS
+      TIFF-OF: ExifTag_OECF
+      TIFF-OF: ExifTag_EXIFVERSION
+      TIFF-OF: ExifTag_DATETIMEORIGINAL
+      TIFF-OF: ExifTag_DATETIMEDIGITIZED
+      TIFF-OF: ExifTag_COMPONENTSCONFIGURATION
+      TIFF-OF: ExifTag_COMPRESSEDBITSPERPIXEL
+      TIFF-OF: ExifTag_SHUTTERSPEEDVALUE
+      TIFF-OF: ExifTag_APERTUREVALUE
+      TIFF-OF: ExifTag_BRIGHTNESSVALUE
+      TIFF-OF: ExifTag_EXPOSUREBIASVALUE
+      TIFF-OF: ExifTag_MAXAPERTUREVALUE
+      TIFF-OF: ExifTag_SUBJECTDISTANCE
+      TIFF-OF: ExifTag_METERINGMODE
+      TIFF-OF: ExifTag_LIGHTSOURCE
+      TIFF-OF: ExifTag_FLASH
+      TIFF-OF: ExifTag_FOCALLENGTH
+      TIFF-OF: ExifTag_SUBJECTAREA
+      TIFF-OF: ExifTag_MAKERNOTE
+      TIFF-OF: ExifTag_USERCOMMENT
+      TIFF-OF: ExifTag_SUBSECTIME
+      TIFF-OF: ExifTag_SUBSECTIMEORIGINAL
+      TIFF-OF: ExifTag_SUBSECTIMEDIGITIZED
+      TIFF-OF: ExifTag_FLASHPIXVERSION
+      TIFF-OF: ExifTag_COLORSPACE
+      TIFF-OF: ExifTag_PIXELXDIMENSION
+      TIFF-OF: ExifTag_PIXELYDIMENSION
+      TIFF-OF: ExifTag_RELATEDSOUNDFILE
+      TIFF-OF: ExifTag_FLASHENERGY
+      TIFF-OF: ExifTag_SPATIALFREQUENCYRESPONSE
+      TIFF-OF: ExifTag_FOCALPLANEXRESOLUTION
+      TIFF-OF: ExifTag_FOCALPLANEYRESOLUTION
+      TIFF-OF: ExifTag_FOCALPLANERESOLUTIONUNIT
+      TIFF-OF: ExifTag_SUBJECTLOCATION
+      TIFF-OF: ExifTag_EXPOSUREINDEX
+      TIFF-OF: ExifTag_SENSINGMETHOD
+      TIFF-OF: ExifTag_FILESOURCE
+      TIFF-OF: ExifTag_SCENETYPE
+      TIFF-OF: ExifTag_CFAPATTERN
+      TIFF-OF: ExifTag_CUSTOMRENDERED
+      TIFF-OF: ExifTag_EXPOSUREMODE
+      TIFF-OF: ExifTag_WHITEBALANCE
+      TIFF-OF: ExifTag_DIGITALZOOMRATIO
+      TIFF-OF: ExifTag_FOCALLENGTHIN35MMFILM
+      TIFF-OF: ExifTag_SCENECAPTURETYPE
+      TIFF-OF: ExifTag_GAINCONTROL
+      TIFF-OF: ExifTag_CONTRAST
+      TIFF-OF: ExifTag_SATURATION
+      TIFF-OF: ExifTag_SHARPNESS
+      TIFF-OF: ExifTag_DEVICESETTINGDESCRIPTION
+      TIFF-OF: ExifTag_SUBJECTDISTANCERANGE
+      TIFF-OF: ExifTag_IMAGEUNIQUEID
+   drop  s" Tag type not found!"  0
+  endcase
+  2dup drop 8 s" TiffTag_" compare 0=
+  if
+     8 - 0 max  swap 8 + swap
+  then
+  type
+;
+
+decimal
+
+\ *****************************************************************************
+\ General constants and values
+\ *****************************************************************************
+
+42    constant TIFF_VERSION
+43    constant TIFF_BIGTIFF_VERSION
+$4d4d constant TIFF_BIGENDIAN
+$4949 constant TIFF_LITTLEENDIAN
+$5045 constant MDI_LITTLEENDIAN
+$4550 constant MDI_BIGENDIAN
+
+0 value CurrentTag   \  TIFF Tag
+0 value CurrentType  \ of TIFF Tag
+0 value CurrentCount \ of values in the TIFF Tag
+0 value CurrentSize  \ of all valuesin the TIFF Tag
+
+0 value LimitDisplay \ only show a few of the values
+0 value IFD#  \ number of IFDs so far
+
+: .float ( d n)   drop  9 .hex 9 .hex ;
+
+\ : D.P3 ( ud c)   >r  1000 UM/MOD  4 - 0 max r> U.R  ." ." 0 <#  # # #  #> type ;
+
+: D.P3 ( d n -- )
+   >R  <#  # # #  [char] . hold  #S  #>  R> OVER - 0 MAX SPACES  TYPE ;
+
+: .rational ( u u n)   
+\ >r  1000 dup >r  swap  */  r> /mod  r> 4 - 0 max .dec  ." ." 0 <#  # # #  #> type 
+  >r  
+\  2dup  swap . ." / " .  ." ="
+  1 swap */ r> u.r 
+;
+
+: .Value 
+      CurrentType case
+         TIFF_NOTYPE    of  cr ." No type??? "  key 27 = if  quit  then  0  endof
+         TIFF_BYTE      of  Fkey8 3 .hex  1    endof
+         TIFF_ASCII     of  Fkey8 emit  0  endof
+         TIFF_SHORT     of  Fkey16 7 .dec  1  endof
+         TIFF_LONG      of  Fkey32 9 .dec  1  endof
+         TIFF_RATIONAL  of  Fkey32 Fkey32 9 .rational  1  endof
+         TIFF_SBYTE     of  Fkey8 3 .hex  1  endof
+         TIFF_UNDEFINED of  Fkey8 3 .hex  0  endof
+         TIFF_SSHORT    of  Fkey16 7 .dec  1  endof
+         TIFF_SLONG     of  Fkey32 9 .dec  1  endof
+         TIFF_SRATIONAL of  Fkey32 Fkey32 9 .rational  1  endof
+         TIFF_FLOAT     of  Fkey64 9 .float  1  endof
+         TIFF_DOUBLE    of  Fkey32 9 .hex  Fkey32 9 .hex  1  endof
+         TIFF_IFD       of    endof
+         TIFF_LONG8     of  Fkey32 9 .hex  Fkey32 9 .hex  1  endof
+         TIFF_SLONG8    of  Fkey32 9 .hex  Fkey32 9 .hex  1  endof
+         TIFF_IFD8      of  Fkey32 9 .hex  Fkey32 9 .hex  1  endof
+         TIFF_UTF-8     of  Fkey8 emit  0  endof \ To do : make it UTF-8
+         cr ." Unknown data type = "  9 .dec   0
+      endcase
+      to LimitDisplay
+;
+
+: .Values
+      CurrentTag case
+         TiffTag_ICCPROFILE of  $10 0 do  Fkey8 3 .hex  loop  endof
+         TiffTag_COMPRESSION of  Fkey16 dup 5 .hex  2 spaces  .Compression  endof 
+         CurrentCount 0 ?do
+            .Value
+            LimitDisplay if  i 8 > if  ."  ...."  leave  then  then
+         loop
+      endcase
+;
+
+\ *****************************************************************************
+\ TIFF ( i.e. not Big TIFF )
+\ *****************************************************************************
+
+\ If the value is 4 bytes or less ( 8 bytes for BigTIFF), then it is placed in the offset
+\ field to save space.  If the value is less than 4 bytes, it is
+\ left-justified in the offset field.
+
+: .IFDentry ( -- )
+   Fkey16 dup to CurrentTag 5 .hex
+   Fkey16 to CurrentType
+   CurrentType dup 2 .dec space  .ValueType >r
+   Fkey32 to CurrentCount
+   CurrentCount dup 9 .hex  r> * to CurrentSize
+   CurrentSize 9 .hex
+   2 spaces  CurrentTag .Tag  72 >tab
+
+   MyFilePos 2@ 2>r         \ save the current pointer position
+   CurrentSize 4 > if
+      Fkey32 S>D MyFilePos 2! \ re-direct the pointer
+   then
+   .Values
+   2r> 4. d+ MyFilePos 2!  \ restore the pointer to the next entry
+;
+
+: .IFD ( n)
+   cr ." IFD" IFD# 1 u.r  ."  has " dup . ."  entries"
+   IFD# 1+ to IFD#
+   cr ."   #    Tag Type             Count     Size  Name                          Value"
+   0 do
+      cr i 3 u.r 2 spaces  .IFDentry
+   loop
+;
+
+: .IFDs
+   0 to IFD#
+   begin
+      Fkey32 dup if
+      s>d MyFilePos 2!  \ go to the IFD address in the file
+         Fkey16         \ number of entries in this IFD
+         dup 12 * s>d MyFilePos 2@ D+ 2>r  \ the address of the next IFD pointer
+         .IFD
+         2r@ MyFilePos 2@ D= not if
+            cr ." Ptr is at " .  ."  should be at " .
+            2r@ MyFilePos 2!   \ fix the link
+         then
+         2r> 2drop
+         0  \ look for another IFD
+      else
+         drop
+         -1 \ all done
+      then
+   until
+;
+
+\ *****************************************************************************
+\ BigTIFF ( i.e. not TIFF )
+\ *****************************************************************************
+
+: .BigIFDentry ( -- )
+   Fkey16 dup to CurrentTag 5 .hex
+   Fkey16 to CurrentType
+   CurrentType dup 2 .dec space  .ValueType >r
+
+\   Fkey64 drop to CurrentCount \     <--- documentation says this
+   Fkey32 to CurrentCount      \     <--- but it needs to be this
+
+   CurrentCount dup 9 .hex  r> * to CurrentSize
+   CurrentSize 9 .hex
+   2 spaces  CurrentTag .Tag  72 >tab
+
+   MyFilePos 2@ 2>r         \ save the current pointer position
+   CurrentSize 8 > if
+      Fkey32 S>D MyFilePos 2! \ re-direct the pointer
+   then
+   .Values
+   2r> 8. d+ MyFilePos 2!  \ restore the pointer to the next entry
+;
+
+: .BigIFD ( n)
+   cr ." IFD" IFD# 1 u.r  ."  has " dup . ."  entries"
+   IFD# 1+ to IFD#
+   cr ."   #    Tag Type             Count     Size  Name                          Value"
+   0 do
+      cr i 3 u.r 2 spaces  .BigIFDentry
+   loop
+;
+
+: .BigIFDs
+
+   Fkey16 8 = not if  cr ." Offset 4 should be 8 "  4 throw  then
+   Fkey16 0 = not if  cr ." Offset 6 should be 0 "  4 throw  then
+
+   0 to IFD#
+   begin
+      Fkey64 drop dup if
+      s>d MyFilePos 2!  \ go to the IFD address in the file
+         Fkey64 drop   \ number of entries in this IFD
+\         dup 20 * s>d MyFilePos 2@ D+ 2>r   \ the address of the next IFD pointer  <--- documentation says this
+         dup 16 * s>d MyFilePos 2@ D+ 2>r  \ the address of the next IFD pointer   <--- but it needs to be this
+         .BigIFD                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+         2r@ MyFilePos 2@ D= not if
+            cr ." Ptr is at " .  ."  should be at " .
+            2r@ MyFilePos 2!   \ fix the link
+         then
+         2r> 2drop
+         0  \ look for another IFD
+      else
+         drop
+         -1 \ all done
+      then
+   until
+;
+
+\ *****************************************************************************
+\ Display a TIFF or BigTIFF file
+\ *****************************************************************************
+
+: .tif ( a n)
+   CurrentFilename place
+\   0 unmap  0 CurrentFilename count map  0 ReadOnly
+   CurrentFilename count OpenBlockFile
+\   OpenTiff
+\   GetFile if  exit  then
+   InitFkey
+   cr cr  CurrentFilename count type  2 spaces
+   FileHandle FILE-SIZE if  1001 throw  then 2dup D. ." bytes"
+   2dup  1024 dup M* DU< not if
+      s>d  1024 UT/  1024 UM/MOD swap drop  2 spaces  ." ( " . ."  Mbytes )" 
+   else
+      2drop
+   then
+
+   2 spaces  Fkey16 case
+      TIFF_LITTLEENDIAN of  ." LittleEndian" 0 to BigEndian  endof
+      TIFF_BIGENDIAN    of  ." BigEndian "  -1 to BigEndian  endof
+      ." Unknown Endian value = "  5 .hex  1 throw
+   endcase
+
+   2 spaces  Fkey16 case
+      TIFF_VERSION         of  ." TIFF"     .IFDs     endof
+      TIFF_BIGTIFF_VERSION of  ." BigTiff"  .BigIFDs  endof
+      ." Unknown Version value = "  5 .hex  2 throw
+   endcase
+   CloseBlockFile
+;
+
+: tttif  s" test.tif" .tif ;
+: ttbtf  s" test.btf" .tif ;
+
+cr .( tiff.f TIFF and BigTIFF file header display )
+cr .( To do : find out where the image data is, add decompression and display code... )
+cr .( To do : find out why BigTIFF requires Big Endian changes compared to TIFF, and why )
+cr .( the STRIPOFFSETS and STRIPBYTECOUNTS in the btf file are longs, but look like they are shorts...)
+cr
+cr .( Type tttif or ttbtf to view sample files )
+cr .( Type locate tttif g to see the source )
+
+: ttbig s" BigTiff.btf" .tif ;
+: ttp1 s" c:\Files\Plan1.tif" .tif ;
+: ttp2 s" c:\Files\Plan2.tif" .tif ;
+
+: TDMP   ( OpenTiff ) InitFkey  $40 0 do  i $0f and 0= if  cr  then  Fkey8 3 .hex  loop ;
+
+: TDMP16   ( OpenTiff ) InitFkey  $40 0 do  i $0f and 0= if  cr  then  Fkey16 5 .hex  2 +loop ;
+
+: go   tttif ttbtf ;

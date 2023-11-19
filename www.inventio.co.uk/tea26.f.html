@@ -1,0 +1,83 @@
+\ tea26.f  Tiny Encryption Algorithm limited to 26 bits. 2006 Jan 04
+\ The 26 bit value is split into two 13 bit numbers.
+\ Each calculation is performed modulo 2**13 , then the two 13 bit results
+\ are converted back to 26 bits. 
+\ An 8 digit decimal number can be used to describe the 26 bit value.
+\ Some of the 26 bits ( say 10 ) should be used to make random guesses
+\ unlikely. This could be used to encrypt a 16 bit number with a 0.1%
+\ chance that a random number appears as valid - equivalent to a 
+\ three digit PIN code.
+
+\ user inputs - you choose the number of rounds and initial key :
+#32 constant #ROUNDS \ should be > 8, increase for stronger encryption
+
+variable k[0]  variable k[1]  variable k[2]  variable k[3] \ the 128 bit key
+: key! ( k0 k1 k2 k3)   k[3] !  k[2] !  k[1] !  k[0] ! ;
+decimal 200 1 200 1 key!
+
+\ working variables
+variable sum  variable y  variable z
+
+\ The Golden Ratio ( 5 sqrt 1+ 2/ ) = 1.618033989, - 1 , scaled up to 32 bits
+$9e3779b9 constant delta    \ could be anything except "bad" values...
+
+#26 constant #BITS  \ must be even and not greater than 32
+-1 #BITS    lshift invert constant BITMASK  \ mask of the required bits
+-1 #BITS 2/ lshift invert constant HALFBITMASK  \ mask half of the req'd bits
+
+: Mask ( u - u')  HALFBITMASK and ;
+
+: encrypt0   y @  z @ 4 lshift k[0] @ +  z @ sum @ +  xor
+   z @ 5 rshift k[1] @ + xor  +  Mask  y !  ;
+
+: encrypt1   z @  y @ 4 lshift k[2] @ +  y @ sum @ +  xor
+   y @ 5 rshift k[3] @ + xor  +  Mask  z ! ;
+
+: encrypt ( y z - y' z')   z !  y !  0 sum !
+   #ROUNDS 0 do  delta sum +!  encrypt0  encrypt1  loop  y @  z @ ;
+
+: decrypt0   z @  y @ 4 lshift k[2] @ +  y @ sum @ +  xor
+   y @ 5 rshift k[3] @ + xor  -  Mask  z ! ;
+
+: decrypt1   y @  z @ 4 lshift k[0] @ +  z @ sum @ +  xor
+   z @ 5 rshift k[1] @ + xor  -  Mask  y ! ;
+
+: decrypt ( y z - y' z')   z !  y !  delta #ROUNDS * sum !
+   #ROUNDS 0 do  decrypt0  decrypt1  delta negate sum +!  loop  y @  z @ ;
+
+\ break u apart into two half-size chunks
+: apart ( u - y z)   dup Mask  swap #BITS 2/ rshift Mask ;
+
+\ join two half-size parts back to u
+: join ( y z - u)    #BITS 2/ lshift or ;
+
+\ encrypt and decrypt using 26 bit values
+: +tea ( u - u')   BITMASK and  apart  encrypt  join ;
+: -tea ( u - u')   apart  decrypt  join ;
+
+\\ Tests
+variable #errors
+
+: tttea ( u)  dup >r  apart  encrypt join
+   BITMASK and \ limit to the required size ( to prove that it works )
+   apart  decrypt  join
+   r> = if   else  ." Failed!!!"  1 #errors +!  then ;
+
+251 constant STEP
+
+: ttteas   counter >r  0 #errors !
+   BITMASK STEP 1- + STEP / dup  0 do  i STEP * tttea  loop
+   cr  #errors @ if  ." Failed with "  #errors @ .  ."  errors!!! "
+   else  ." Passed "  then   decimal  cr dup . ." tests took "  counter r> -
+   dup . ." ms => "  swap 1000 swap */ . ." us each." ;
+
+: ttt
+   cr hex ." k[0 - 3] = "  k[0] @ .  k[1] @ .  k[2] @ . k[3] @ .
+   cr hex ." input = "  $116d043 dup 9 u.r
+   cr hex ."       apart --> "  apart  2dup swap 5 u.r  5 u.r  encrypt
+   cr hex  ." encrypt = "  2dup swap 5 u.r  5 u.r
+   cr hex ."       join --> "  2dup join 9 u.r
+   cr hex ." decrypt = "  decrypt join 9 u.r ;
+
+\\ 
+: debug   hex cr ." sum=" sum @ 9 u.r ."  y =" y @ 5 u.r ."  z =" z @ 5 u.r ;

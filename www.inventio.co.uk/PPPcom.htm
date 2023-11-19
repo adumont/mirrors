@@ -1,0 +1,259 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>PPPcom</TITLE>
+<META NAME="Template" CONTENT="C:\PROGRAM FILES\MICROSOFT OFFICE\OFFICE\html.dot">
+</HEAD>
+<BODY LINK="#0000ff" VLINK="#800080">
+
+<B><FONT FACE="Arial" SIZE=6 COLOR="#0000ff"><P ALIGN="CENTER">PPP.com</P>
+</FONT><FONT FACE="Arial" SIZE=4><P ALIGN="CENTER">1 Aug 2001</P>
+<P ALIGN="CENTER">&nbsp;</P>
+</FONT><FONT FACE="Arial" SIZE=5><P ALIGN="CENTER">Disclaimer</P>
+</FONT><FONT FACE="Arial" SIZE=5 COLOR="#ff0000"><P>PPP.com is supplied as a helpful tool to analyse PPP and Internet protocols.</P>
+<P>It accesses the serial ports and display memory directly, and files using DOS.</P>
+<P>There are no backdoors, and it is neither aware of, nor cares about any other operating system.</P>
+<P>Obviously, you use it at your own risk!</P>
+</B></FONT><P><A HREF="PPP1V0.exe"><FONT FACE="Arial" SIZE=4>Download PPP1V0.exe</FONT></A><B><FONT FACE="Arial" SIZE=4 COLOR="#ff0000"> </FONT><FONT FACE="Arial" SIZE=4>self-extracting zip file.</P>
+</FONT><FONT FACE="Arial" SIZE=4 COLOR="#ff0000"><P>&nbsp;</P>
+</B></FONT><FONT FACE="Arial" SIZE=5><P ALIGN="CENTER">Contents</P>
+<B><P>&nbsp;</P>
+<OL>
+<OL>
+<OL>
+<OL>
+
+</B></FONT><LI><A HREF="PPPcom.htm#Overview"><B><FONT FACE="Arial">Overview</B></FONT></A><B><FONT FACE="Arial"> &#9;</LI>
+</B></FONT><LI><A HREF="PPPcom.htm#Function_Key_Commands"><B><FONT FACE="Arial">Function Key Commands </B></FONT></A><B><FONT FACE="Arial">&#9;</LI>
+</B></FONT><LI><A HREF="PPPcom.htm#Command_Line_Interpreter"><B><FONT FACE="Arial">Command Line Interpreter </B></FONT></A></LI>
+<LI><A HREF="PPPcom.htm#Forth_Script_Interpreter"><B><FONT FACE="Arial">Forth Script Interpreter</B></FONT></A></LI>
+<LI><A HREF="PPPcom.htm#PPP_character_disturbance_injector"><B><FONT FACE="Arial">PPP character disturbance injector </B></FONT></A><B><FONT FACE="Arial">&#9;</LI>
+</B></FONT><LI><A HREF="PPPcom.htm#PPP_packet_disturbance_injector"><B><FONT FACE="Arial">PPP packet disturbance injector </B></FONT></A><B><FONT FACE="Arial">&#9;</LI>
+</B></FONT><LI><A HREF="PPPcom.htm#Miscellaneous_Commands"><B><FONT FACE="Arial">Miscellaneous Commands </B></FONT></A><B><FONT FACE="Arial">&#9;</LI>
+</B></FONT><LI><A HREF="PPPcom.htm#Configuration_Blocks"><B><FONT FACE="Arial">Configuration Blocks </B></FONT></A><B><FONT FACE="Arial">&#9;</LI>
+</B></FONT><LI><A HREF="PPPcom.htm#Configuration_Editor"><B><FONT FACE="Arial">Configuration Editor </B></FONT></A><B><FONT FACE="Arial">&#9;</LI>
+</B></FONT><LI><A HREF="PPPcom.htm#Packet_echo_timer"><B><FONT FACE="Arial">Packet echo timer</B></FONT></A></LI>
+<LI><A HREF="PPPcom.htm#PPP_cfg_Configuration_File"><B><FONT FACE="Arial">PPP.cfg Configuration File </B></FONT></A><FONT FACE="Arial" SIZE=2>&#9;<A NAME="_Toc506699468"></LI></OL>
+</OL>
+</OL>
+</OL>
+<DIR>
+<DIR>
+<DIR>
+<DIR>
+
+</FONT><B><FONT FACE="Arial" SIZE=4><P>&nbsp;</P></DIR>
+</DIR>
+
+<P><A NAME="Overview">Overview</A></P>
+</FONT><FONT FACE="Arial"><P ALIGN="JUSTIFY"></A>PPP.com is the latest version of a generic communications protocol debug package supplied freely by </B></FONT><A HREF="index.html"><FONT FACE="Arial">Inventio Software Ltd</FONT></A><B><FONT FACE="Arial">. You may use it and its source code for non-commercial purposes.</P>
+</B><P ALIGN="JUSTIFY">PPP.com is a PC/DOS based program to analyse, display and create PPP and Internet protocols. PPP.com is the current evolution of a general purpose scripting environment, adapted to the Point to Point Protocol. Currently it can open a PPP connection to an ISP and send ICMP, UDP or TCP packets to any IP address on the Internet. PPP.com has not been optimised for program size, as it is a 16 bit Forth program, and nearly fills up the maximum 63K bytes allowed for a .com program. This includes 4K of help text, roughly 3K of protocol descriptor text, an editor, 8086 assembler and Forth compiler. It supports five tasks, two of which monitor PPP and IP packets on each of COM1 and COM2 serial ports.<B>&nbsp;</P>
+</B><P ALIGN="JUSTIFY">PPP.com allows a user to interact with PPP packets and the Point to Point Protocol. </P>
+<P ALIGN="JUSTIFY">It requires the COM1 serial port ( and COM2 if used ) to be at the default I/O address and interrupt. </P>
+<P ALIGN="JUSTIFY">COM1 must be at 0x3F8 and interrupt 0x0C [ 4 on PIC 2 ] , COM2 at 0x2F8 and interrupt 0x0B [ 3 on PIC 2 ].</P>
+<P ALIGN="JUSTIFY">PPP packets may be viewed on either COM1, COM2 or both ( displayed in different colours ) . </P>
+<P ALIGN="JUSTIFY">PPP packets may be constructed and outputted to either COM1 or COM2. </P>
+<P ALIGN="JUSTIFY">PPP configuration parameters may be setup and a PPP link opened, and the following packets may be sent and/or displayed LCP, PAP, CHAP, IPCP, IP, UDP and TCP. </P>
+<P ALIGN="JUSTIFY">Address and Control Field Compression ( ACFC ) and Protocol Field Compression ( PFC ) are supported for received PPP packets ( whether negotiated or not ). Van Jacobson TCP header compression is supported for received packets. </P>
+<P ALIGN="JUSTIFY">IP fragmentation is supported for UDP output, but reassembly is not performed on received UDP fragments ( each fragment is displayed ).</P>
+<P ALIGN="JUSTIFY">TCP has only minimal support : TCP packets are displayed, and a TCP packet may be sent, but the timing and retry parts of the protocol are not fully implemented yet.</P>
+<P ALIGN="JUSTIFY">The program can also be configured to corrupt the serial data stream between COM1 and COM2 by adding, removing or changing characters. or packets</P>
+<P ALIGN="JUSTIFY">&nbsp;</P>
+</FONT><B><FONT FACE="Arial" SIZE=4><P><A NAME="Function_Key_Commands"><A NAME="_Toc506699469">Function Key Commands</P><DIR>
+<DIR>
+
+</B></FONT><FONT FACE="Arial"><P></A></A>Note : controlBreak will usually restart a halted program</P>
+<B><P>F4</B> will reset the configuration and restart the program.</P>
+<P>The PC's function keys are set to perform the following actions :</P></DIR>
+</DIR>
+
+<B><P>F1 </B>displays the Help text. Use <B>N &lt;cr&gt; </B>and <B>B &lt;cr&gt;</B> to view the help text. The file PPP.src must be in the same directory as PPP.com.</P>
+<B><P>shiftF1</B> lists the PPP code numbers and names.</P>
+<B><P>F2 </B>starts opening a PPP link, you will only need this if the other PPP peer has not done this already.</P>
+<B><P>shiftF2</B> displays the current state of all PPP options, including negotiated values. The remote PPP peer's values are referred to as "her". The local PPP peer's values are referred to as "my". The ACCM is shared and is therefore called "our" ACCM.</P>
+<B><P>F3</B> closes the PPP link.</P>
+<B><P>shiftF3</B> starts a background task which sends a PING every second.</P>
+<B><P>F4</B> is the master reset and loads the configuration blocks. </P>
+<B><P>shiftF4</B> edits the configuration blocks. See CONFIG below for details.</P>
+<B><P>F5</B> selects "View only mode" . No acks or requests are sent.</P>
+<B><P>shiftF5 </B>selects "View +Ack mode" . No requests are sent, but acks are returned when requests are received.</P>
+<B><P>F6</B> enables dumb terminal mode. All bytes received on the COM1 serial port are displayed on the console screen, all keyboard keys are sent to the COM1 serial port.</P>
+<B><P>shiftF6</B> enables dumb terminal "hex" mode : as dumb terminal mode, except that all received bytes are displayed in hex. A PPP flag character ( 0x7E ) causes a new line to be displayed, to make packets easier to read.</P>
+<B><P>F7 </B>sends an ICMP "ping" message.</P>
+<B><P>shiftF7</B> sets the PPP link into "open" state and sends a test UDP packet.</P>
+<P>See U1 below.</P>
+<B><P>F8</B> ( plus typing ‘Y’ ) will exit the program.</P>
+<B><P>shiftF8</B> executes the Forth script in the entered block number</P>
+<B><P>F9</B> monitors packets on COM1, displaying them in ASCII, </P>
+<B><P>shiftF9</B> monitors packets on COM1, displaying them in hex</P>
+<B><P>F10</B> Stops all background tasks - this will stop the Monitor programs from updating the screen</P>
+<B><P>shiftF10</B> Monitors both ports. COM1 is displayed in the default white-on-black, COM2 uses purple on black.</P>
+<P>Alternate <B>F10</B> and <B>shiftF10</B> to stop/start the monitoring.</P>
+<P ALIGN="JUSTIFY">&nbsp;</P>
+</FONT><B><FONT FACE="Arial" SIZE=4><P><A NAME="Command_Line_Interpreter"><A NAME="_Toc506699470">Command Line Interpreter</A></P>
+</B></FONT><FONT FACE="Arial"><P></A>Most commands are executed by one or more background tasks, the exceptions being <B>TTY1 </B>, <B>TTY2 </B>, <B>BOTH </B>and <B>DISTURB </B>which require keyboard input and so are run in the main <B>OPERATOR </B>task.</P>
+<P>To stop all background tasks press F10 or type <B>\TASKS</B> .</P>
+<P>Commands may be entered while background tasks are active in order to change parameters or functionality.</P>
+<P>The function keys simply execute the functions specified in block 779.</P>
+<P>Pressing F9 executes the function <B>K9</B> which calls <B>BOTH</B> . Typing <B>BOTH</B> has the same effect. </P>
+<P>Note that the function keys are named <B>K1 , K2... K0 </B>avoid confusion with the hexadecimal values F1, F2... F0. <B>K0 </B>is function key F10 </P>
+<P>Commands must be in <B>UPPERCASE</B> and are entered by pressing Enter.</P>
+<B><P>123 NUM</B> &#9;sets up 123 byte packets</P>
+<B><P>U1</B> sends a UDP fragment 0 packet with a 123 byte payload</P>
+<B><P>P1</B>&#9;sends 123 'X' characters with a PPP Flag character before and after</P>
+<B><P>UN </B>&#9;repeats U1</P>
+<B><P>PN</B>&#9;repeats P1</P>
+<B><P>\TASKS</B> stops UN or PN</P>
+<B><P>HH</B>&#9;kick starts UN or PN if no packet is received.</P>
+<P>Any command which sends an IP packet (<B> TEST_IP , PING</B> etc ) will attempt to open the PPP link if it is not already open, except <B>U1</B> and <B>UN</B> which force the local end of the link state to "open". This is useful if PPP.com has been reset ( by pressing F4 for example ) and you would like to send a packet to the other PPP peer without renegotiating PPP.</P>
+<B><P>BOTH </B>and <B>BOTHX </B>give a dump of characters received on both COM1 and COM2 serial ports in ASCII or hexadecimal respectively. </P>
+<P>See F9 and shiftF9 above.</P>
+</FONT><B><FONT FACE="Arial" SIZE=4><P><A NAME="_Toc513533184"><A NAME="Forth_Script_Interpreter">Forth Script Interpreter</A></P>
+</B></FONT><FONT FACE="Arial"><P></A>Pressing <B>shiftF8</B> or typing <B>SELECT </B>and entering in a number from 0 to 99 will run the Forth script in the corresponding block. In the file PPP.cfg.</P>
+<P>Entering 0 will execute the script in block 1800, 1 will execute the script in block 1801 etc.</P>
+<P>i.e. the entered number is the offset in blocks in the file PPP.cfg which is mapped to start at block 1800.</P>
+<P>The Forth scripts in the file PPP.cfg are currently set to dial out to WAP sites.</P>
+<P>Type <B>1800 QX</B> lists the top line of the first 60 scripts. <B>NX </B>shows the next 60.</P>
+<P>For example : <B>shiftF8</B> and entering 85 &lt;cr&gt; will execute the script in block 1885, which will dial up a modem and initiate a PPP connection.</P>
+<P>Type <B>1885 LIST</B> to view and edit the script</P>
+<P>Any valid Forth source can be put into the PPP.cfg scripts.</P>
+<P>&nbsp;</P>
+</FONT><B><FONT FACE="Arial" SIZE=4><P><A NAME="PPP_character_disturbance_injector"><A NAME="_Toc506699471">PPP character disturbance injector</A></P>
+</FONT><FONT FACE="Arial"><P></A>DISTURB</B> runs the PPP character disturbance injector </P>
+<P>COM1 and COM2 are connected straight through ( note that there is a one character delay in each direction ). Use a null modem cable on one of the serial ports to create a "virtual cable".</P>
+<P>Pressing 1 will remove the next character received on COM1, and will not send it out of COM2. Press 2 to add a random character into the byte stream coming out of COM2. Press 3 to bit-wise invert the next character received on COM1 before sending it out of COM2. Press R to start a random selection of these disturbances, press S to stop it.</P>
+<P>The PC must have COM1 and COM2 at the default I/O addresses and interrupts :</P>
+<P>COM1 hex 3F8 interrupt hex 0C ( 4 on PIC 2 )</P>
+<P>COM2 hex 2F8 interrupt hex 0B ( 3 on PIC 2 )</P>
+<P>Several of the system option values may be changed, shiftF2 displays them :</P>
+<P>OUT indicates that the option will be included in the Configure Request sent to the other PPP peer.</P>
+<P>IN indicates that this option will be accepted in a Configure Request received from the other PPP peer.</P>
+<P>&nbsp;</P>
+</FONT><B><FONT FACE="Arial" SIZE=4><P><A NAME="PPP_packet_disturbance_injector"><A NAME="_Toc506699472">PPP packet disturbance injector</A></A></P>
+</FONT><FONT FACE="Arial"><P>PPPDIST</B> runs the PPP packet disturbance injector. </P>
+<P>COM1 and COM2 are connected straight through ( note that there is a one character delay in each direction ). See <B>DISTURB </B>above.</P>
+<P>With the phone connected to COM2 and the PPP peer to COM1, PPP configure-ack packets ( except CHAP ) and CHAP success packets when received on COM1 are optionally not transmitted on COM2.</P>
+<P>This allows the phone's timeout and retry to be tested.</P>
+<P>A variable is set up for each packet type as follows :</P>
+<B><P>3 LCP_RXD# ! </P>
+<P>2 PAP_RXD# ! </P>
+<P>1 CHAP_RXD# ! </P>
+<P>2 CCP_RXD# ! </P>
+<P>3 IPCP_RXD# ! </P>
+<P>3 ALL </B>sets up all of the variables to the same value ( 3 in this case )</P>
+<B><P>.ALL</B> displays the variables' values.</P>
+<P>The value in each variable gives the number of configure-ack packets that will be discarded. For example :</P>
+<B><P>0 ALL 3 LCP_RXD# ! .ALL </P>
+</B><P>will cause the next three LCP configure-ack packets to be discarded.</P>
+<P>Normal operation will be resumed on the fourth configure-ack.</P>
+<P>The file PPPinj.com is a version of PPP.com with</P>
+<B><P>3 ALL PPPDIST</P>
+</B><P>in block 3 of the configuration blocks.</P>
+<P>Press shiftF4 and PageUp 3 times to view or edit this.</P>
+</FONT><B><FONT FACE="Arial" SIZE=4><P>&nbsp;</P>
+<P><A NAME="Miscellaneous_Commands"><A NAME="_Toc506699473">Miscellaneous Commands</A></FONT><FONT FACE="Arial"> </A></P>
+<P>+PAP</B> adds the PAP option to the LCP configure request sent to the other PPP peer. <B>-PAP </B>turns it off again.</P>
+<B><P>+MRU</B> adds the MRU option to the LCP configure request sent to the other PPP peer. <B>-MRU </B>turns it off again.</P>
+<B><P>HEX 12.34.56.78 IP! </B>changes our IP address to decimal 18.52.86.120</P>
+<B><P>DECIMAL IP= 192.168.10.1 IP! </B>parses the number and sets our IP address</P></DIR>
+</DIR>
+
+<OL START=0>
+<OL START=0>
+<OL START=0>
+
+<B><LI>IP! </B>sets our IP address to zero. This will request the other PPP peer to give us our IP address.</LI></OL>
+</OL>
+</OL>
+<DIR>
+<DIR>
+
+<B><P>PHONE</B> sets up options the same as the phone ( IP address 0 , -PAP ).</P>
+<B><P>HEX 0A00000. ACCM! </B>sets our ACCM with bits hex 11 and 13 on ( XON and XOFF ).</P>
+<B><P>DECIMAL 1000 MRU! </B>sets our MRU to 1000</P>
+<B><P>HEX 12345678. MAGIC#! </B>sets our magic number </P>
+<P>Press shiftF2 to display the results of these changes</P>
+<P>Press F4 to reset all values to their defaults.</P>
+<P>Values labled "HER_XXX" refer to the other PPP peer's values which we now know. A value of 0 means not set.</P>
+<P>OUR_ACCM refers to the ACCM agreed between both PPP peers, the OR'd value of each peer's ACCM.</P>
+<P>After the system values have been changed press F2 to re-negotiate using them. Do not press F4 because this will reset the default values.</P>
+<P>&nbsp;</P>
+</FONT><B><FONT FACE="Arial" SIZE=4><P><A NAME="Configuration_Blocks"><A NAME="_Toc506699474">Configuration Blocks</A></A></P>
+</B></FONT><FONT FACE="Arial"><P>Pressing F4 or typing <B>RUN</B> restarts the program and loads the system configuration.</P>
+<P>The system configuration is set up by editing the configuration "blocks".</P>
+<P>These are four 1K byte arrays in the file PPP.com ( or PPPinj.com ) which are Forth "blocks", and contain Forth source code or script.</P>
+<P>Note : this Forth is 8086 polyForth and is case-sensitive.</P>
+<P>For more information on Forth, go to </FONT><A HREF="http://www.Forth.com/"><FONT FACE="Arial">www</FONT><FONT FACE="Arial" SIZE=2>.</FONT><FONT FACE="Arial">Forth</FONT><FONT FACE="Arial" SIZE=2>.</FONT><FONT FACE="Arial">com</FONT></A><FONT FACE="Arial"> , </FONT><A HREF="http://www.Forth.org/"><FONT FACE="Arial">www</FONT><FONT FACE="Arial" SIZE=2>.</FONT><FONT FACE="Arial">Forth</FONT><FONT FACE="Arial" SIZE=2>.</FONT><FONT FACE="Arial">org</FONT></A><FONT FACE="Arial">, or follow the links at </FONT><A HREF="index.html"><FONT FACE="Arial">www</FONT><FONT FACE="Arial" SIZE=2>.</FONT><FONT FACE="Arial">inventio</FONT><FONT FACE="Arial" SIZE=2>.</FONT><FONT FACE="Arial">co</FONT><FONT FACE="Arial" SIZE=2>.</FONT><FONT FACE="Arial">uk</FONT></A><FONT FACE="Arial">.</P>
+<P>In order to understand the content of the configuration blocks you will need to understand Forth, so here is a tutorial :</P>
+<P>Forth functions are called <I>words</I> and are ASCII strings bounded by spaces.</P>
+<P>When the configuration blocks are <I>loaded</I> the text they contain is interpreted by executing each Forth word in turn in the order that they appear in the block. This is equivalent to typing each word in turn and pressing Enter.</P>
+<P>A word may take parameters from the <I>parameter stack. </I>Parameters are put on the parameter stack either by preceding Forth words or by strings containing only numeric characters or the characters . , + - which are interpreted as literals. Numbers containing . , + are interpreted as 32 bit doubles, otherwise as 16 bit values. The number base is globally defined by <B>HEX </B>or <B>DECIMAL</B> . To see the current values on the parameter stack type <B>.S </P>
+</B><P>Examples :</P>
+<B><P>DECIMAL 115,200. BAUD \ </B>sets the default baud rate to 115,200. </P>
+<P>Note that the number <U>must</U> contain either . or , to make it a 32 bit double, required by <B>BAUD</B> .</P>
+<B><P>IP= 192.168.2.1 HER_IP_DEFAULT 2!</P>
+</B><P>\ <B>IP= </B>parses the following text and leaves the 32 bit IP address on the stack</P>
+<P>\ <B>HER_IP_DEFAULT</B> is a double variable</P>
+<P>\ <B>2!</B> stores the 32 bit double into the variable</P>
+<B><P>4445 HER_PORT !</P>
+<P>\ </B>as above, but <B>HER_PORT </B>is a 16 bit variable, so <B>!</B> must be used</P>
+<P>Note that the number <U>must not</U> contain . or , otherwise it will be interpreted as a double and put two 16 bit values on the stack.</P>
+<B><P>LOC HER_PORT </B>\ displays the source code for <B>HER_PORT</P>
+</B><P>This requires PPP.src to be in the same directory as PPP.com</P>
+<P>Note that <B>LOC ! </B>will display "Can't" because <B>!</B> is a Forth system word and the source is not public domain. See the Web sites listed above for books and information on Forth. <B>Q</B> shows the documentation block or source block.</P>
+<P>&nbsp;</P>
+</FONT><B><FONT FACE="Arial" SIZE=4><P><A NAME="Configuration_Editor"><A NAME="_Toc506699475">Configuration Editor</A></P>
+</B></FONT><FONT FACE="Arial"><P></A>Typing CONFIG or pressing shiftF4 displays the first of four configuration screens, so that the default configuration can be changed. </P>
+<P>These blocks are part of the file PPP.com ( or PPPinj.com ) , so that it is completely self-contained. The file PPP.src contains the source code for PPP.com and the Help text displayed by F1.</P>
+<P>The editor is described in any polyForth or chipForth manual, or in the book "Starting Forth" by Leo Brodie.</P>
+<P>&nbsp;</P>
+<P>Press F1 , then B &lt;cr&gt; to see the editor help screen :</P>
+<P>&nbsp;</P></DIR>
+</DIR>
+
+</FONT><FONT FACE="Courier New"><P>892 Ext= 64</P>
+<P>0 ( Command line block editor help screen )</P>
+<P>1 Block actions : UNDO to undo, FLUSH to save</P>
+<P>2 123 LIST \ lists block 123</P>
+<P>3 N \ lists the Next block = 124</P>
+<P>4 B \ goes Back one block = 122 ( from block 123 )</P>
+<P>5 Line actions :</P>
+<P>6 5 T \ highlights line 5 for editing</P>
+<P>7 X \ deletes the highlighted line 5 and saves it for :</P>
+<P>8 P \ Puts the saved line over the highlighted line</P>
+<P>9 P some text \ Puts "some text" over the highlighted line</P>
+<P>10 U \ acts like P , but puts Under the highlighted line</P>
+<P>11 String actions :</P>
+<P>12 F this \ Finds and highlights next instance of "this" text</P>
+<P>13 E \ Erases "this" highighted text. D does both F and E</P>
+<P>14 I that \ Inserts "that" text. R does both E and I</P>
+<P>15 K \ swaps "this" and "that" buffers ok</P>
+</FONT><FONT FACE="Arial"><P>&nbsp;</P><DIR>
+<DIR>
+
+</FONT><B><FONT FACE="Arial" SIZE=4><P><A NAME="Packet_echo_timer"><A NAME="_Toc513533190">Packet echo timer</A></A></P>
+</B></FONT><FONT FACE="Arial"><P>Type 1472 PET to run the Packet Echo Timer.</P>
+<P>This will send one UDP packet with 1472 bytes of ASCII 'U' payload, then echo back any received packets as UDP packets with the same payload. ( This is the maximum for an MRU of 1500, allowing for 20 bytes of IP header and 8 bytes of UDP header ). </P>
+<P>It displays the time before and after, and difference in seconds, and the number of bytes ( raw characters ) sent.</P>
+<P>This may be used to time the PPP peers stack for various packet sizes and fragmentations.</P>
+<P>&nbsp;</P>
+</FONT><B><FONT FACE="Arial" SIZE=4><P><A NAME="PPP_cfg_Configuration_File"><A NAME="_Toc506699476">PPP.cfg Configuration File</A></A></P>
+</B></FONT><FONT FACE="Arial"><P>In order to allow different configurations to be used, the file PPP.cfg contains eight 8 block configuration options. This is intended for future functionality.</P>
+<B><P>0 CONF</P>
+<P>1 CONF</P>
+<P>...</P>
+<P>7 CONF</P>
+</B><P>loads configuration 0 , 1 .... 7</P>
+<B><P>3 EDIT-CONF</P>
+</B><P>edits the first block of option 3. </P>
+<P>&nbsp;</P><DIR>
+<DIR>
+
+</FONT><FONT FACE="Arial" SIZE=4><P>Please give feedback and bug reports to Howerd Oakford :</P>
+</FONT><P><A HREF="mailto:Howerd@inventio.co.uk"><FONT FACE="Arial" SIZE=4>Howerd@inventio.co.uk</FONT></A></P></DIR>
+</DIR>
+</DIR>
+</DIR>
+</BODY>
+</HTML>

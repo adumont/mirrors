@@ -1,0 +1,4374 @@
+\ wsa.f  Howerd Oakford  www.inventio.co.uk
+\ WinSock - Windows Sockets API ( Berkeley-like interface ) for SwiftForth ANS Forth.
+\ A simple TCP/IP server and client, an HTTP client and FTP client interfaces.
+\ The Server simply echoes back what you send it, seen in blue on the Client.
+\ Add your own code to process commands for HTTP or another service at this point...
+\
+\ New : added HTTP POST tests in (HTTP), FTP partially working - FTPclient
+\ 
+\ You must start separate instances of SwiftForth for the Server and for each Client. 
+\ You can only have one Server running on one instance of Windows, as the first one will grab the port.
+\ 
+\ Type :
+\ Server
+\ in one SwiftForth, and
+\ Client
+\ in as many other SwiftForth windows as you like, up to around 1500 if you have the patience...
+\ You can also connect to the Server with Putty or a Telnet program on 127.0.0.1 port 27015 .
+\ If you know your machine's IP address you can connect to the Server from anywhere on the Internet.
+\ Change the "localhost" 127.0.0.1 IP address in CLIENT_IP_ADDRESS to make the Client program connect over the Internet.
+\ The Server IP address in ListeningLoopTask is set to NULL - it is always "localhost" 127.0.0.1 - 
+\   that is, it is always on your local machine.
+\ 
+\ Press the Esc key to exit either the Server or Client programs.
+\ 
+\ You can also type
+\ tt1 
+\ to download a file from my website using HTTP. "ttall" does some more HTTP tests...
+\ 
+\ Written in ANS Forth using the SwiftForth Windows interface.
+\ There is some code for VFX Forth and Win32Forth, but not completed - any help appreciated :-)
+\ To compile this file, run the SwiftForth compiler and type  
+\ include wsa.f <cr>
+\ Then type  ShowHelp <cr>  to see the available options.
+
+\ A short overview
+\ ================
+\ The Windows Sockets API defines the way in which an application program uses Windows Sockets.
+\ Sockets are an abstract concept analagous to a telephone exchange jack socket, originally used to connect telephone lines together.
+\ API is an ancronym for Application Progam Interface.
+\ A "client" is a program running on a PC that connects to a "server"
+\ A "server" is a program running on a PC that responds to the client's requests.
+\ The protocol ( TCP/IP in this case ) defines an interface between the client and server programs - this is handled for you by the Windows Sockets API.
+\ A "host name" is a string which defines the "host" - the PC running the server program.
+\ An IP (Internet Protocol) address is a 32 bit number (for IP version 4) which allows the IP packet to be routed to a given PC.
+\ This code does not support IP version 6.
+\ 
+\ A POP3 email server (for example) acts on ASCII text commands such a "LIST" (sent using TCP/IP), as defined by POP3 
+\ (Post Office Protocol version 3).
+\ HTTP is a text-based protocol that uses TCP/IP to read files, and more.
+\ 
+\ Note : the Winsock API is very confusing, because it tries to define an abstract "socket" and use this for everything.
+\ Some "sockets" are just for Windows own internal use, some are for a UDP connectionless protocol, some are for 
+\ a TCP connection-based protocol to a remote machine. 
+\ Which is which depends of fields that are set within the all-singing all-dancing socket structure. 
+\ I have tried to give the sockets meaningful names. This code only deals with TCP/IP connections.
+\ UDP is different, and I do not cover it here...
+\ 
+\ While I am having a whinge...
+\ If you search for "TCP/IP Server" you can find a lot of C/C++ code examples, and plenty of tutorial websites.
+\ What is not immediately apparent is that almost all of these define a Server that can handle one Client connection
+\ at a time - not very useful as a public Web Server.
+\ The advice about how to make a multi-client Server is confusing and different on different sites, is usually
+\ out of date, and often refers to older versions of Windows.
+\ 
+\ Server
+\ The Server code is for a multi-client TCP/IP Server using the  "select"  function and a Fork-like threading scheme,
+\ plus a listening task to allow user control of the Server. This is running on Windows 7 Ultimate SP1 64 bit.
+\ On a machine with 4GBytes of RAM it can support about 1500 threads.
+\ By expanding the "select" function to poll up to 64 sockets this could theoretically be expanded to 96000 clients.
+\ The Listening socket is set to non-blocking mode, so that the connection can be polled.
+\ 
+\ Client
+\ The client uses a blocking socket to send data, so there is no need to poll to see if the socket is ready
+\ The main Client loop runs in the Operator task, and polls for received data, key presses and the ChildDone flag.
+\ 
+\ Server and Client
+\ Both handle error conditions or exceptions in as sensible way as possible, and both try to re-connect when something goes wrong.
+\ 
+\ 
+\ WinSock options
+\ Some sites say that "select" is "l*me" ( can I use the L word these days???) because it is inefficient 
+\ and you should use "ioctlsocket" instead, but ioctlsocket does not tell you about dropped connections.
+\ Also, the use of "select" with FD_Except does not seem to return any useful information.
+\ 
+\ I don't think Microsoft have gone out of their way to make the writing of multi-client Servers easy.
+\ Linux is looking ever more tempting...
+
+decimal
+
+
+\ *****************************************************************************
+\ Configuration
+\ *****************************************************************************
+
+: HostVersion ( a n -- )   s" WSA V1.0 2017 Dec 25"; 
+
+\ *****************************************************************************
+\ IP address display
+\ *****************************************************************************
+
+2variable CurrentIP:port
+
+\ convert an 8 bit value into a string in the "hold" buffer
+: #ip ( du -- 0 )   #s  [char] . hold  2drop 0 ;
+
+\ convert a network order IP address into its www.xxx.yyy.zzz form
+: (.ip)  ( ip -- addr u )
+   base @ >r  decimal
+   0 #256 um/mod 0 #256 um/mod 0 #256 um/mod
+   0 <#  #ip #ip #ip #s  #>
+   r> base !
+;
+
+\ display an IP address
+: .ip ( u)   (.ip) type ;
+
+\ convert an IP address string into its 32 bit network order value
+: ip= ( -- ip)   \ "aaa.bbb.ccc.ddd " -- u
+  [char] . word count evaluate 255 and
+  [char] . word count evaluate 255 and  8 lshift or
+  [char] . word count evaluate 255 and 16  lshift or
+  bl word count evaluate 255 and 24 lshift or ; 
+
+variable ip_default
+ip= 192.168.1.101 ip_default !
+
+: >ip ( $ -- u )
+   base @ >r  decimal
+   2dup [char] . scan  1 /string  2>r  r@ 1+ - 0 max NUMBER  2r> 
+   2dup [char] . scan  1 /string  2>r  r@ 1+ - 0 max NUMBER  2r>    
+   2dup [char] . scan  1 /string  2>r  r@ 1+ - 0 max NUMBER  2r>    
+   NUMBER 
+   8 lshift  or
+   8 lshift  or
+   8 lshift  or
+   r> base !
+;
+
+: tt>ip   cr s" 11.22.33.44" >ip .ip ;
+
+\ s" 127.0.0.1">ip constant CLIENT_IP_ADDRESS   ( -- u ) \ this is the address used by the Client
+\ #27015 constant DEFAULT_PORT                  ( -- u ) \ this is the port used by both Client and Server
+\ s" 10.0.0.10" >ip constant CLIENT_IP_ADDRESS    ( -- u ) \ this is the address of the FTP server used by the Client
+\ #21 constant DEFAULT_PORT                       ( -- u ) \ this is the port used by both Client and Server
+\ #49153 constant DEFAULT_PORT                  ( -- u ) \ this is the port used by both Client and Server
+
+( hvate01 ) s" 10.42.43.200" >ip constant CLIENT_IP_ADDRESS    ( -- u ) \ this is the address of the FTP server used by the Client
+#1390 constant DEFAULT_PORT                       ( -- u ) \ this is the port used by both Client and Server
+
+create WSN_GetMAC ," ASCII_MAC,1?"
+\ EMAC18673F00010D 
+\ EMAC18673F000110 8F
+
+create WSN_GetWSN  ," ASCII_WSN,1?"    \ -->  WRKS-4VL7-TG15-Q34W
+\ WRKS4VL7TG15Q34W WRKS4VL7TG15Q34W A9
+{ 
+ASCII_WSN,1?
+WRKS4VL7TG15Q34RWRKS4VL7TG15Q34R84
+WRKS4VL7TG15Q34SWRKS4VL7TG15Q34S8D
+WRKS4VL7TG15Q34TWRKS4VL7TG15Q34TB2
+WRKS4VL7TG15Q34UWRKS4VL7TG15Q34UBB
+WRKS4VL7TG15Q34VWRKS4VL7TG15Q34VA0
+}
+
+
+
+: ShowConnection ( -- )   2 spaces  CLIENT_IP_ADDRESS .ip  ." :"  DEFAULT_PORT . ;
+
+
+\ *****************************************************************************
+\ ForkLike
+\ Adapted from the SwiftForth file fork.f - thanks!
+\ Not quite a real Unix  fork() , as it does not clone the callers state
+\ but useful nonetheless
+\ *****************************************************************************
+
+{ --------------------------------------------------------------------
+param0 has a pointer to the startup data, which needs to be
+released as soon as it is used. The callback will initialize
+a dictionary, a user area, and the stacks. The data passed
+is simply a pointer to a structure which contains
+
+   +0  'this
+   +4  'self
+   +8  xt to run
+   +12 user parameter
+
+local variables and objects may not be passed across this interface
+
+The variations with () allow the user to pass a parameter into the
+new thread as top-of-stack.
+-------------------------------------------------------------------- }
+variable #forks  
+
+: InitForks  0 #forks ! ;
+
+:NONAME ( -- )
+   _PARAM_0 @+ 'THIS !  @+ 'SELF !  @+  SWAP @  _PARAM_0 FREE DROP
+   CATCH ExitThread ;  1 CB: FORKED
+
+: ForkLike() ( param xt -- handle )   
+   1 #forks +!  #forks @ 1500 > if  2drop  INVALID_HANDLE_VALUE  exit  then  
+   SWAP  0 >R
+   4 CELLS ALLOCATE IF DROP INVALID_HANDLE_VALUE EXIT THEN
+   DUP >R  THIS !+  SELF !+  SWAP !+ !
+   0 65536 FORKED R> 0 RP@ CreateThread   R> DROP ;
+
+: ForkLike ( xt -- )   0 SWAP ForkLike() drop ;
+
+\ *****************************************************************************
+\ The Windows Sockets API functions - MPE VFX dialect
+\ http://www.mpeforth.com/arena.htm#trial
+\ *****************************************************************************
+
+[defined] VFXFORTH [if]    \ untested - please port and I will update this file...
+
+\ Library: WSOCK32.DLL  init-libs
+EXTERN: int PASCAL  WSAIoctl ( s, dwIoControlCode, lpvInBuffer, cbInBuffer, lpvOutBuffer, cbOutBuffer, lpcbBytesReturned, lpOverlapped, lpCompletionRoutine )
+EXTERN: int PASCAL  WSAStartup ( wVersionRequired, lpWSAData );
+EXTERN: int PASCAL  WSACleanup ( );
+EXTERN: int PASCAL  WSASetLastError ( iError );
+EXTERN: int PASCAL  WSAGetLastError ( );
+EXTERN: int PASCAL  WSAIsBlocking ( );
+EXTERN: int PASCAL  WSAUnhookBlockingHook ( );
+EXTERN: int PASCAL  WSASetBlockingHook ( lpBlockFunc );
+EXTERN: int PASCAL  WSACancelBlockingCall ( );
+EXTERN: int PASCAL  WSAAsyncGetServByName ( hWnd, wMsg, *name, *proto, *buf, buflen );
+EXTERN: int PASCAL  WSAAsyncGetServByPort ( hWnd, wMsg, port, *proto, *buf, buflen );
+EXTERN: int PASCAL  WSAAsyncGetProtoByName ( hWnd, wMsg, *name, *buf, buflen );
+EXTERN: int PASCAL  WSAAsyncGetProtoByNumber ( hWnd, wMsg, number, *buf, buflen );
+EXTERN: int PASCAL  WSAAsyncGetHostByName ( hWnd, wMsg, *name, *buf, buflen );
+EXTERN: int PASCAL  WSAAsyncGetHostByAddr ( hWnd, wMsg, *addr, len, type, *buf, buflen );
+EXTERN: int PASCAL  WSACancelAsyncRequest ( hAsyncTaskHandle );
+EXTERN: int PASCAL  WSAAsyncSelect ( s, hWnd, wMsg, lEvent );
+EXTERN: int PASCAL  WSARecvEx ( s, *buf, len, *flags );
+
+EXTERN: int PASCAL  accept ( s, 'sock, len );
+EXTERN: int PASCAL  bind ( s, 'sock, namelen );
+EXTERN: int PASCAL  closesocket ( s );
+EXTERN: int PASCAL  connect ( s, 'sock, len );
+EXTERN: int PASCAL  ioctlsocket ( s, cmd, *argp );
+EXTERN: int PASCAL  getpeername ( s, sockaddr, *namelen );
+EXTERN: int PASCAL  getsockname ( s, sockaddr, *namelen );
+EXTERN: int PASCAL  getsockopt ( s, level, optname, *optval, *optlen );
+EXTERN: int PASCAL  htonl ( hostlong );
+EXTERN: int PASCAL  htons ( hostshort );
+EXTERN: int PASCAL  inet_addr ( *cp );
+EXTERN: int PASCAL  inet_ntoa ( in_addr );
+EXTERN: int PASCAL  listen ( s, backlog );
+EXTERN: int PASCAL  ntohl ( netlong );
+EXTERN: int PASCAL  ntohs ( netshort );
+EXTERN: int PASCAL  recv ( s, *buf, len, flags );
+EXTERN: int PASCAL  recvfrom ( s, *buf, len, flags, *from, *fromlen );
+EXTERN: int PASCAL  select ( nfds, *readfds, *writefds, *exceptfds, *timeout );
+EXTERN: int PASCAL  send ( s, *buf, len, flags );
+EXTERN: int PASCAL  sendto ( s, *buf, len, flags, *to, tolen );
+EXTERN: int PASCAL  setsockopt ( s, level, optname, *optval, optlen );
+EXTERN: int PASCAL  shutdown ( s, how );
+EXTERN: int PASCAL  socket ( af, type, protocol );
+EXTERN: int PASCAL  gethostbyaddr ( *addr, len, type );
+EXTERN: int PASCAL  gethostbyname ( *name );
+EXTERN: int PASCAL  gethostname ( *name, namelen );
+EXTERN: int PASCAL  getservbyport ( port, *proto );
+EXTERN: int PASCAL  getservbyname ( *name, *proto);
+EXTERN: int PASCAL  getprotobynumber ( proto );
+EXTERN: int PASCAL  getprotobyname ( *name );
+EXTERN: int PASCAL  getaddrinfo ( pNodeName, pServiceName, *pHints, *ppResult );
+EXTERN: int PASCAL  freeaddrinfo ( addrinfo );
+
+: Ws2_32::accept       accept ; ( s 'sock 'len -- SOCKET )
+: Ws2_32::bind         bind ; ( s 'sock namelen -- int )
+: Ws2_32::connect      connect ; ( s 'sock len -- int )
+: Ws2_32::select       select ; ( nfds, *readfds, *writefds, *exceptfds, *timeout -- int )
+: Ws2_32::socket       socket ; ( af, type, protocol -- SOCKET )
+: Ws2_32::getaddrinfo  getaddrinfo ; ( pNodeName, pServiceName, *pHints, *ppResult )
+: Ws2_32::freeaddrinfo freeaddrinfo ; ( addrinfo -- )
+
+: attribute ( c)   drop ; \ change text colour - see  help
+
+: counter ( -- ms )
+   gettickcount ;
+
+: expired ( ms -- t)
+   counter -  -86400000 1 within ;
+
+: ms ( n -- )
+   ?dup if
+      counter + begin
+         PAUSE
+         dup expired
+      until drop
+   then ;
+
+\ counted string to single integer
+: number ( a n -- n )   >r  0 0 rot  r>  >number  2drop  drop ;
+
+: append ( from len to -- )   2dup 2>r  count + swap move  2r> c+! ;
+
+create CRLF$   02 c, $0D c, $0A c, 0 c,
+
+[then]
+
+\ *****************************************************************************
+\ The Windows Sockets API functions - SwiftForth dialect
+\ http://www.forth.com/swiftforth/trial-system.html
+\ *****************************************************************************
+
+[defined] LIBRARY [if]  \ SwiftForth
+
+\ LIBRARY WSOCK32.DLL 
+LIBRARY Ws2_32.DLL
+
+create CRLF$   02 c, $0D c, $0A c, 0 c,
+
+[then]
+
+\ *****************************************************************************
+\ The Windows Sockets API functions - Win32Forth V6.12 dialect
+\ *****************************************************************************
+[defined] winlibrary [if]  \ WIN32FORTH \ untested - please port and I will update this file...
+
+winlibrary wsock32.dll  \ Import WinSock2 Dll
+[UNDEFINED] import: [IF] 
+: import: ( c - )       \ <name>
+   \in-system-ok
+   >IN @ >r dup  proc  r> >IN ! \ make sure proc exists before doing create
+   create
+   winproc-last @ proc>cfa , ,  \ cfa then number of arguments for this proceedure
+   does>
+   dup>r cell+ @ S-REVERSE      \ reverse the stack arguments
+   r> perform
+;
+[THEN]
+
+[UNDEFINED] Buffer: [IF]
+: buffer:   dup  create  here  swap  allot  swap erase  ;
+
+[THEN]
+
+[UNDEFINED] number [IF]
+\ counted string to single integer
+: number ( a n - n)   >r  0 0 rot  r>  >number  2drop  drop ;
+[THEN]
+
+: attribute ( n)   drop ;
+
+: pause   WINPAUSE ;
+
+[UNDEFINED] counter [IF]
+: counter ( - n)   ms@ ;
+[THEN]
+
+[UNDEFINED] expired [IF]
+: expired ( ms -- t)
+   counter -  -86400000 1 within ;
+[THEN]
+
+[UNDEFINED] append [IF]
+: append ( a n a)   +place ;
+[THEN]
+
+[then]
+
+[defined] LIBRARY [defined] winlibrary or [if]  \ SwiftForth or Win32Forth
+9 import: WSAIoctl  ( s, dwIoControlCode, lpvInBuffer, cbInBuffer, lpvOutBuffer, cbOutBuffer, lpcbBytesReturned, lpOverlapped, lpCompletionRoutine -- int )
+2 import: WSAStartup ( wVersionRequired, lpWSAData -- int )
+0 import: WSACleanup ( -- int )
+1 import: WSASetLastError ( iError -- void )
+0 import: WSAGetLastError ( -- int )
+0 import: WSAIsBlocking ( -- BOOL )
+0 import: WSAUnhookBlockingHook ( -- int )
+1 import: WSASetBlockingHook ( lpBlockFunc -- FARPROC )
+0 import: WSACancelBlockingCall ( -- int )
+6 import: WSAAsyncGetServByName ( hWnd, wMsg, *name, *proto, *buf, buflen -- HANDLE )
+6 import: WSAAsyncGetServByPort ( hWnd, wMsg, port, *proto, *buf, buflen -- HANDLE )
+5 import: WSAAsyncGetProtoByName ( hWnd, wMsg, *name, *buf, buflen -- HANDLE )
+5 import: WSAAsyncGetProtoByNumber ( hWnd, wMsg, number, *buf, buflen -- HANDLE )
+5 import: WSAAsyncGetHostByName ( hWnd, wMsg, *name, *buf, buflen -- HANDLE )
+7 import: WSAAsyncGetHostByAddr ( hWnd, wMsg, *addr, len, type, *buf, buflen -- HANDLE )
+1 import: WSACancelAsyncRequest ( hAsyncTaskHandle -- int )
+4 import: WSAAsyncSelect ( s, hWnd, wMsg, lEvent -- int )
+\ 4 import: WSARecvEx ( s, *buf, len, *flags -- int )
+As Ws2_32::accept 3 import: accept ( s 'sock 'len -- SOCKET )
+As Ws2_32::bind 3 import: bind ( s 'sock namelen -- int )
+As Ws2_32::closesocket 1 import: closesocket ( s -- int )
+As Ws2_32::connect 3 import: connect ( s 'sock len -- int )
+3 import: ioctlsocket ( s cmd, *argp -- int )
+3 import: getpeername ( s sockaddr, *namelen -- int )
+3 import: getsockname ( s sockaddr, *namelen -- int )
+As Ws2_32::getsockopt 5 import: getsockopt ( s level, optname, *optval, *optlen -- int )
+1 import: htonl ( hostlong -- u_long )
+1 import: htons ( hostshort -- u_short )
+1 import: inet_addr ( *cp -- in_addr )
+1 import: inet_ntoa ( in_addr -- *char )
+2 import: listen ( s backlog -- int )
+1 import: ntohl ( netlong -- u_long )
+1 import: ntohs ( netshort -- u_short )
+As Ws2_32::recv 4 import: recv ( s *buf, len, flags -- int )
+As Ws2_32::recvfrom 6 import: recvfrom ( s *buf, len, flags, *from, *fromlen -- int )
+As Ws2_32::select 5 import: select ( nfds, *readfds, *writefds, *exceptfds, *timeout -- int )
+As Ws2_32::send 4 import: send ( s *buf, len, flags -- int )
+As Ws2_32::sendto 6 import: sendto ( s *buf, len, flags, *to, tolen -- int )
+5 import: setsockopt ( s level, optname, *optval, optlen -- int )
+As Ws2_32::shutdown 2 import: shutdown ( s how -- int )
+As Ws2_32::socket 3 import: socket ( af, type, protocol -- SOCKET )
+3 import: gethostbyaddr ( *addr, len, type -- hostent )
+1 import: gethostbyname ( *name -- hostent )
+2 import: gethostname ( *name, namelen -- int )
+2 import: getservbyport ( port, *proto -- servent )
+2 import: getservbyname ( *name, *proto -- servent )
+1 import: getprotobynumber ( proto -- servent )
+1 import: getprotobyname ( *name -- servent )
+As Ws2_32::getaddrinfo 4 import: getaddrinfo ( pNodeName, pServiceName, *pHints, *ppResult )
+As Ws2_32::freeaddrinfo 1 import: freeaddrinfo ( addrinfo -- )
+
+[then]
+
+\ *****************************************************************************
+\ Support
+\ *****************************************************************************
+
+: 2**   ( c -- u )   \ takes 2 to the power c
+   1 swap lshift
+;
+
+8 2** constant |AttributeStack|  \ must be a power of 2
+|AttributeStack| cells Buffer: AttributeStack[]  
+variable AttributeStackPtr
+: InitAttributeStack ( -- )
+   0 AttributeStackPtr ! AttributeStack[] |AttributeStack| cells erase
+;
+InitAttributeStack
+
+: >AttributeStackPtr ( n -- a )     |AttributeStack| 1-  and cells  AttributeStack[] + ; 
+
+: AttributePush ( u -- )   1 AttributeStackPtr +!  AttributeStackPtr @ >AttributeStackPtr ! ;
+: AttributePop  ( -- u )   AttributeStackPtr @ >AttributeStackPtr @  -1 AttributeStackPtr +! ;
+: GetPreviousAttribute ( -- )   AttributeStackPtr @ 1+ >AttributeStackPtr @ ;
+: CurrentAttribute ( -- a )   0 >AttributeStackPtr ;
+
+: ?NullConsole ( -- f )   'ATTRIBUTE @ ['] drop = ;
+
+: ATTRIBUTE+ ( c -- ) 
+\   ?NullConsole if  drop  exit  then 
+   DUP AttributePush ATTRIBUTE
+;
+
+: GREEN.    ( -- )   7 ATTRIBUTE+ ;
+: YELLOW.   ( -- )   6 ATTRIBUTE+ ;
+: MAGENTA.  ( -- )   5 ATTRIBUTE+ ;
+: CYAN.     ( -- )   4 ATTRIBUTE+ ;
+: BLUE.     ( -- )   3 ATTRIBUTE+ ;
+: RED.      ( -- )   2 ATTRIBUTE+ ;
+: INVERSE.  ( -- )   1 ATTRIBUTE+ ;
+: NORMAL.   ( -- )   0 ATTRIBUTE+ ;
+: RESTORE.  ( -- )   AttributePop drop AttributePop ATTRIBUTE+ ;
+: PREVIOUS. ( -- )   GetPreviousAttribute ATTRIBUTE+ ;
+
+: -."  \ compiling: ( "ccc<">" -- )  executing: ( -- )
+   POSTPONE S"  POSTPONE MAGENTA.  POSTPONE TYPE  POSTPONE RESTORE. ;  IMMEDIATE
+
+: +."  \ compiling: ( "ccc<">" -- )  executing: ( -- )
+   POSTPONE S"  POSTPONE INVERSE. POSTPONE TYPE  POSTPONE RESTORE. ;  IMMEDIATE
+
+variable Silence
+
+: cr."  \ compiling: ( "ccc<">" -- )  executing: ( -- )
+   POSTPONE Silence POSTPONE @ POSTPONE 0= POSTPONE if
+      POSTPONE cr
+      POSTPONE S" POSTPONE NORMAL. POSTPONE TYPE  POSTPONE RESTORE.  
+   POSTPONE then 
+;  IMMEDIATE
+
+\ *****************************************************************************
+\ Alternative to S" and ."  using  %  as a delimiter
+\ *****************************************************************************
+
+: ,% ( -- )   [CHAR] % STRING ;
+
+: S% ( "ccc"<"> -- )
+   STATE @ IF  POSTPONE (S") ,%  EXIT  THEN
+   [CHAR] % PARSE  >QPAD COUNT ;  IMMEDIATE
+
+: .%  \ compiling: ( "ccc<">" -- )  executing: ( -- )
+   POSTPONE S% POSTPONE TYPE ;  IMMEDIATE
+
+\ : ttalternate% ( -- )   .% hello "world"!% ;
+
+: "FOX" ( -- c-addr n )  
+   s" THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG" 
+;
+
+\ display u as an unsigned hexadecimal number in a c character right justified field
+: .hex ( u c -- )   base @ >r  hex  u.r  r> base ! ;
+\ these include leading zeros 01  0123  01234567 
+: 2.hex ( c -- )   base @ >r  hex  0 <#  # #  #> type  r> base ! ;
+: 3.hex ( c -- )   base @ >r  hex  0 <#  # # #  #> type  r> base ! ;
+: 4.hex ( w -- )   base @ >r  hex  0 <#  # # # #  #> type  r> base ! ;
+: 6.hex ( w -- )   base @ >r  hex  0 <#  # # # # # #  #> type  r> base ! ;
+: 8.hex ( u -- )   base @ >r  hex  0 <#  # # # # # # # #  #> type  r> base ! ;
+\ these start with a '$' and include leading zeros  $01  $0123  $01234567 
+: $2.hex ( c -- )   base @ >r  hex  0 <#  # #  [char] $ HOLD #> type  r> base ! ;
+: $3.hex ( c -- )   base @ >r  hex  0 <#  # # # [char] $ HOLD #> type  r> base ! ;
+: $4.hex ( w -- )   base @ >r  hex  0 <#  # # # #  [char] $ HOLD #> type  r> base ! ;
+: $6.hex ( w -- )   base @ >r  hex  0 <#  # # # # # #  [char] $ HOLD #> type  r> base ! ;
+: $8.hex ( u -- )   base @ >r  hex  0 <#  # # # # # # # #  [char] $ HOLD #> type  r> base ! ;
+\ these start with a '$' and include leading zeros and end with a space and ','  $01 ,  $0123 ,  $01234567 , 
+: $2.hex, ( c -- )   base @ >r  hex  0 <#  BL HOLD [char] , HOLD BL HOLD  # #  [char] $ HOLD #> type  r> base ! ;
+: $3.hex, ( c -- )   base @ >r  hex  0 <#  BL HOLD [char] , HOLD BL HOLD  # # #  [char] $ HOLD #> type  r> base ! ;
+: $4.hex, ( w -- )   base @ >r  hex  0 <#  BL HOLD [char] , HOLD BL HOLD  # # # #  [char] $ HOLD #> type  r> base ! ;
+: $6.hex, ( w -- )   base @ >r  hex  0 <#  BL HOLD [char] , HOLD BL HOLD  # # # # # #  [char] $ HOLD #> type  r> base ! ;
+: $8.hex, ( u -- )   base @ >r  hex  0 <#  BL HOLD [char] , HOLD BL HOLD  # # # # # # # #  [char] $ HOLD #> type  r> base ! ;
+
+\ display u as an unsigned decimal number in a c character right justified field
+: .dml ( u c -- )   base @ >r  decimal  u.r  r> base ! ;
+
+: .L ( u n -- )   >r  s>d  (D.) dup >r TYPE  2r> - spaces ;    \ Left justifed signed
+: U.L ( u n -- )   >r  s>d  (DU.) dup >r TYPE  2r> - spaces ;  \ Left justifed unsigned
+
+: .P1 ( n -- )   S>D SWAP OVER DUP 0< if DNEGATE  then  <# #     [char] . HOLD #S  ROT SIGN  #> type ;
+: .P2 ( n -- )   S>D SWAP OVER DUP 0< if DNEGATE  then  <# # #   [char] . HOLD #S  ROT SIGN  #> type ;
+: .P3 ( n -- )   S>D SWAP OVER DUP 0< if DNEGATE  then  <# # # # [char] . HOLD #S  ROT SIGN  #> type ;
+: R.P1 ( n u -- )   >r  S>D SWAP OVER DUP 0< if DNEGATE  then  <# #     [char] . HOLD #S  ROT SIGN  #>  r> over - 0 max spaces type ;
+: R.P2 ( n u -- )   >r  S>D SWAP OVER DUP 0< if DNEGATE  then  <# # #   [char] . HOLD #S  ROT SIGN  #>  r> over - 0 max spaces type ;
+: R.P3 ( n u -- )   >r  S>D SWAP OVER DUP 0< if DNEGATE  then  <# # # # [char] . HOLD #S  ROT SIGN  #>  r> over - 0 max spaces type ;
+
+
+: DIGIT> ( c -- c )   [char] 0 - 0 max  dup 9 > if  #223 and 7 -  then  $0F and ;   \ convert the hex ASCII digit 0 to 9 or A to F or a to z to a 4 bit number
+: HexC@ ( a -- c )   dup c@ DIGIT> $10 * swap 1+ c@ DIGIT> or ;                     \ convert the BigEndian hex value byte pair at a to an 8 bit number
+: HexW@ ( a -- c )   cr ." please rename HexW@ as HexC@... " HexC@ ;
+
+: ShowAttributes ( -- )   
+   $100 0 do  
+      i $0F and 0= if  cr  then 
+      BLUE. i 3 .hex  1 spaces  i RESTORE. attribute+  1234 .  RESTORE.  2 spaces  
+   loop 
+;
+
+: .Len ( u -- )   dup  .  1023 + 1024 /  ."   = "  .  ." Ki bytes"  ;
+
+: BE! ( x addr -- )     \ BigEndian !  for LittleEndian processors
+   over $0000000FF and             over 3 + c!
+   over $00000FF00 and $08 Rshift  over 2 + c!
+   over $000FF0000 and $10 Rshift  over 1 + c!
+   swap $0FF000000 and $18 Rshift  swap     c! 
+;
+
+\ : BE@ ( addr -- x )     \ BigEndian @ for LittleEndian processors
+\    dup  3 + c@
+\    over 2 + c@ $08 Lshift or
+\    over 1 + c@ $10 Lshift or
+\    swap     c@ $18 Lshift or
+\ ;
+
+\ like +! , but OR's the bits in u into the variable
+: +or ( u a -- )   >r  r@ @ or r> ! ;
+
+\ like +! , but AND's out the bits in u from the variable
+: -or ( u a -- )   >r -1 xor  r@ @ and r> ! ;
+
+: v+ ( n1 n2 n -- n1+n n2+n )   >r  r@ +  swap r> +  swap ;
+
+\ move to the given column number
+: ToColumn ( u -- )   get-xy drop - 1 max 200 min  spaces ;
+
+\ Move to the next column tab position
+: AlignColumn ( u -- )   
+   >r  get-xy drop r@ / 1+ r@ * get-xy drop - 1 max r@ min spaces 
+   get-xy drop #80 r> - > if  cr  then
+;
+
+: ttac  40 0 do  9 AlignColumn i . loop ;
+
+: struct ( a c -- a' )   over  CONSTANT + ;
+
+variable DumpOffset
+
+: DUMPLINE+ ( addr u -- )
+   1 ?SCROLL  BASE @ >R  HEX
+   DumpOffset @ 3 U.R 2 spaces  $10 DumpOffset +!  2DUP DUMPHEX  DUMPTEXT  ."   \ "  
+   R> BASE ! ;
+
+: DUMP+ ( addr u -- )   0 DumpOffset !  /SCROLL
+   BEGIN ( a n)  2DUP 16 MIN DUMPLINE+
+      16 /STRING  DUP 0 <= UNTIL 2DROP ;
+
+: DUMPLINEcapture ( addr u -- )
+   1 ?SCROLL  BASE @ >R  HEX
+   ."    16c,  "  2DUP DUMPHEX  DUMPTEXT  ."   \ "  DumpOffset @ 3 U.R 2 spaces  $10 DumpOffset +!
+   R> BASE ! ;
+
+: DUMPcapture ( addr u -- )   0 DumpOffset !  /SCROLL
+   BEGIN ( a n)  2DUP 16 MIN DUMPLINEcapture
+      16 /STRING  DUP 0 <= UNTIL 2DROP ;
+
+\ Add 16 bytes to the structure, using the 16 hex ASCII words following, then ignore the rest of the line
+\ This allows captured packet data to be copied and pasted...
+: 16c,   base @ >r  hex 
+   16 0 do   bl word  count number  c,  loop 
+   r> base ! 
+   postpone \ 
+;  
+
+\ Add n bytes to the structure, using the n hex ASCII words following, then ignore the rest of the line
+\ This allows captured packet data to be copied and pasted...
+: nc, ( -- )  base @ >r  hex 
+   ( n -- ) 0 do   bl word  count number  c,  loop 
+   r> base ! 
+   postpone \ 
+;  
+
+\ Add n bytes to the structure, using the n hex ASCII words following, then ignore the rest of the line
+\ This allows captured packet data to be copied and pasted...
+: c," ( -- )  base @ >r  hex 
+   [char] " word count dup 2/ c, 
+   over + swap ?do  i HexC@  c,  2 +loop 
+   r> base ! 
+   postpone \ 
+;  
+: c,"- ( -- )  base @ >r  hex 
+   [char] " word count \ dup 2/ c, 
+   over + swap ?do  i HexC@  c,  2 +loop 
+   r> base ! 
+   postpone \ 
+; 
+
+: ekeyQuit?
+   ekey #06 ( ctrlF) = if  cr ." Done. "  cr  ."  ok "  quit  then 
+;
+
+\ Limited length type, replace control characters by '.'
+: Ltype ( a n c -- )   -rot dup >r  over + swap ?do  i c@ dup $20 < if  drop  [char] .  then  emit  loop   r> - 0 max  spaces ;
+
+: ttlt  s" Fred" 10 Ltype ;
+
+\ dump on the same line
+: dumpL ( a n -- )   0 max  $100 min  space  dup 2.hex ."  |  " over + swap ?do  i c@  2.hex space  loop ; 
+
+variable LineXpos
+\ dump on the same line, up to 64 bytes, then move to the next line
+: dumpL+ ( a n -- )   
+   Get-XY drop LineXpos !
+   0 max  $100 min  space  dup 2.hex ."  |  "  
+   ( n -- ) 0 ?do  i $1F and 0=  i 0= not and if  cr  LineXpos @ 7 + ToColumn  then dup i + c@  2.hex space  loop ; 
+
+\ dump on the same line, up to 64 bytes, then move to the next line
+: dumpL++ ( a n -- )   
+   Get-XY drop LineXpos !
+   0 max  $1000 min  space  dup 2.hex ."  |  "  
+   ( n -- ) 0 ?do  i $1F and 0=  i 0= not and if  cr  LineXpos @ 7 + ToColumn  then dup i + c@  
+   
+   dup [char] : = if  INVERSE. 2.hex  RESTORE.  else  2.hex  then  space  loop ; 
+
+
+: Y/N-EXIT ( -- )   cr  ." 'Y/N-EXIT'  is deprecated... please use  'PressY' "  key UPPER [char] Y = not if   r> drop  exit  then ;
+
+: PressY ( -- f )   key UPPER [char] Y = ;
+
+variable seed
+
+: InitRandom   0 seed ! ;
+
+: Random ( - u )   seed @  3141592621 *  1+  DUP seed !  ; 
+: Rand ( n - u )   1+ Random UM* NIP ;
+
+InitRandom
+
+
+: 2Tone 1760 200 beep drop 100 ms  2640 200 beep drop  100 ms ;
+
+: AudibleWait
+   0 
+   5 0 do  2Tone  key? if  1- leave  then  loop 
+   0= if  key drop  then 
+;
+
+variable StackDepthValue   \ used to saved stack depth changes deep in code...
+
+: .StackDepths
+   depth if   cr ." *** depth = "  depth .   ."     TOS = "  dup . depth 1 > if  over .  then   then
+   StackDepthValue @ if  ." *** StackDepthValue change = "  StackDepthValue @ . then
+;
+
+\ *****************************************************************************
+\ Character analysis
+\ *****************************************************************************
+
+: Cspace= ( c -- f )
+   >r
+   r@ 32 =           \ space
+   r@ [char] ( = or  \ ( will count as a space
+   r@ [char] ) = or  \ ) will count as a space
+   r@ [char] [ = or  \ [ will count as a space
+   r@ [char] ] = or  \ ] will count as a space
+   r> drop
+;
+
+: Cvalid= ( c -- f )  \ only these characters are valid in a C name
+   >r  0
+   r@ [char] _ = or \ an underscore
+   r@ [char] 0 [char] 9 1+ within or
+   r@ [char] a [char] z 1+ within or
+   r@ [char] A [char] Z 1+ within or
+   r> drop
+;
+
+3 constant INDENT_SPACES
+
+variable Indent 
+
+: cr+   cr  Indent @ INDENT_SPACES * spaces ;
+
+\ *****************************************************************************
+\ rotating wheel
+\ *****************************************************************************
+variable WheelState
+
+: .Wheel
+   Get-XY 2>r
+   WheelState @ 1 + 3 and  dup WheelState !
+   case
+   0 of  [char] -  endof
+   1 of  [char] \  endof
+   2 of  [char] |  endof
+   3 of  [char] /  endof
+   dup
+   endcase
+   emit
+   2r> At-XY
+;
+
+: InitWheel    
+   0 WheelState !  
+;
+
+
+\ *****************************************************************************
+\ stack depth tests
+\ *****************************************************************************
+variable StartDepth
+
+: Init?Depth   depth StartDepth ! ;
+
+: ?Depth ( $ -- )   depth dup  StartDepth @ 2+ = not if  cr ." ?Depth = " .   2 spaces type   key 27 = if  quit  then  else  2drop  drop  then ;
+
+\ *****************************************************************************
+\ High-level versions of -Trailing
+\ *****************************************************************************
+variable -trail#
+
+: -TrailingPlusReverse ( a n - a n' )
+   -trail# !
+   dup
+
+   dup -trail# @ + 1-     \ address of last character
+   -trail# @ 0 ?do
+      dup i - c@ Cspace= not if  leave  else  -1 -trail# +!  then
+   loop
+   drop
+   -trail# @
+;
+
+: -TrailingPlus ( a n - a n' )
+   0 -trail# !
+   2dup
+   over + swap ?do
+      i c@ Cspace= if  leave  else  1 -trail# +!  then
+   loop
+   drop
+   -trail# @
+;
+
+: -Leading ( a n - a' n' )
+   2dup 
+   over + swap ?do
+      i c@ Cspace= not if  leave  then
+      1 /string
+   loop  
+   0 max
+;
+
+: NumberOfLeading ( a n - c )    \ number of leading spaces in the given string
+   0 -rot
+   over + swap ?do
+      i c@ Cspace= not if  leave  then
+      1+
+   loop  
+;
+
+: ttnl
+   cr  s" 1234"         2dup type NumberOfLeading 20 ToColumn .
+   cr  s"     1234"     2dup type NumberOfLeading 20 ToColumn .
+   cr  s"     1234  "   2dup type NumberOfLeading 20 ToColumn .
+   cr  s"     "         2dup type NumberOfLeading 20 ToColumn .
+;
+
+: tt-l
+   cr
+   s" hello   " 
+   cr  ." Original string |" 2dup type ." |"
+   cr  ."        -Leading |" 2dup -Leading  type ." |"
+   cr
+   s"    hello   " 
+   cr  ." Original string |" 2dup type ." |"
+   cr  ."        -Leading |" 2dup -Leading  type ." |"
+   cr
+   s"    hello" 
+   cr  ." Original string |" 2dup type ." |"
+   cr  ."        -Leading |" 2dup -Leading  type ." |"
+;
+
+: tt-t  
+   s" hello(args        " 
+   cr  ." Original string |" 2dup type ." |"
+   cr  ."       -Trailing |" 2dup -Trailing  type ." |"
+   cr  ."   -TrailingPlus |" -TrailingPlus  type ." |"
+   cr
+   s" helloargs     " 
+   cr  ." Original string |"  2dup type ." |"
+   cr  ."       -Trailing |"  2dup -Trailing  type ." |"
+   cr  ."   -TrailingPlus |"   -TrailingPlus  type ." |"
+
+   cr
+   s" helloargs" 
+   cr  ." Original string |"  2dup type ." |"
+   cr  ."       -Trailing |"  2dup -Trailing  type ." |"
+   cr  ."   -TrailingPlus |"   -TrailingPlus  type ." |"
+
+;
+
+\ *****************************************************************************
+\ Titles
+\ *****************************************************************************
+
+: CharLine ( n c -- )   swap 0 ?do  dup EMIT  loop drop ;
+: stars ( n -- )   [char] * CharLine ;
+
+variable LengthSoFar
+#60 constant TITLE_LINE_WIDTH
+#120 constant TITLE_WIDTH
+
+: (ShowTitleLine) ( $ c -- )
+   >r
+\   cr TITLE_LINE_WIDTH r@ CharLine
+   cr  -Trailing  dup 4 + LengthSoFar !      \ the text plus 2 spaces before and two after
+   TITLE_LINE_WIDTH LengthSoFar @ -          \ room left for 'stars'
+   2/ dup r@ CharLine                        \ half of them before
+   LengthSoFar +!
+   2 spaces 
+   NORMAL.  type  RESTORE.
+   2 spaces 
+   TITLE_LINE_WIDTH LengthSoFar @ - r@ CharLine   \ room left for 'stars' at the end
+\   cr TITLE_LINE_WIDTH r@ CharLine
+   r> drop
+;
+
+: ShowTitleLine= ( $ -- )   [char] = (ShowTitleLine) ;
+: ShowTitleLine- ( $ -- )   [char] - (ShowTitleLine) ;
+
+
+: ShowTitle ( $ -- ) 
+   cr TITLE_WIDTH stars
+   cr  -Trailing  dup 4 + LengthSoFar !   \ the text plus 2 spaces before and two after
+   TITLE_WIDTH LengthSoFar @ -            \ room left for stars
+   2/ dup stars                           \ half of them before
+   LengthSoFar +!
+   2 spaces 
+   NORMAL.  type  RESTORE.
+   2 spaces 
+   TITLE_WIDTH LengthSoFar @ - stars      \ room left for stars at the end
+   cr TITLE_WIDTH stars
+;
+
+
+\ *****************************************************************************
+\ Unix timestamp
+\ 
+\ Unix0DAY is the Modified Julian Date for the start of Unix time.
+\ 
+\ Unix@NOW returns time of day in seconds since midnight and modified Julian
+\ date (MJD) in days since 01/01/1970.
+\ 
+\ *****************************************************************************
+
+60 60 * 24 * constant SECONDS_PER_DAY
+
+variable UnixTimeStamp
+
+01/01/1970 M/D/Y CONSTANT Unix0DAY
+01/01/2000 M/D/Y CONSTANT 0DAY
+
+0DAY Unix0DAY - SECONDS_PER_DAY * constant 30years    \ number of seconds from 1970 Jan 01 to 2000 Jan 01 = 946684800
+
+: Unix@NOW ( timestamp -- ud u )  SECONDS_PER_DAY /MOD 0 SWAP Unix0DAY + ;
+: Unix@DATE ( timestamp -- n )    SECONDS_PER_DAY / Unix0DAY + ;
+: Unix@TIME ( timestamp -- ud )   SECONDS_PER_DAY MOD 0 ;
+
+: UnixTIME&DATE ( timestamp -- sec min hour day month year )
+   Unix@NOW >R  60 UM/MOD 60 /MOD  R> Y-DD DM ROT ;
+
+\ 2016Dec21 format 
+: (date)+ ( u1 -- c-addr u2)   BASE @ >R  DECIMAL  Y-DD  DM
+   swap 
+   0 <#  
+\   [CHAR] _ HOLD
+   # #
+   2drop  
+   3 * C" JanFebMarAprMayJunJulAugSepOctNovDec" +  3 0 DO  DUP C@ HOLD 1-  LOOP DROP  
+   0 # # # #  
+   #>  R> BASE ! 
+;
+
+\ 2016 Dec 21 format 
+: (date_)+ ( u1 -- c-addr u2)   BASE @ >R  DECIMAL  Y-DD  DM
+   swap 
+   0 <#  
+   # #
+   BL HOLD
+   2drop  
+   3 * C" JanFebMarAprMayJunJulAugSepOctNovDec" +  3 0 DO  DUP C@ HOLD 1-  LOOP DROP  
+   BL HOLD
+   0 # # # #  
+   #>  R> BASE ! 
+;
+
+: :00+ ( ud1 -- ud2)   DECIMAL  #  6 BASE !  # ( [CHAR] - HOLD ) ;
+
+: (TIME)+ ( ud -- c-addr u)   BASE @ >R  <#  :00+ :00+
+   DECIMAL # #  #>  R> BASE ! ;
+
+: tttime  @date (date)+ type  ." _"  @time (time)+ type ;
+
+\ *****************************************************************************
+\ *****************************************************************************
+\ *****************************************************************************
+
+\ convert the ASCII string a , n to a double number
+: Dnumber ( a n -- d )
+   over c@ [char] , = if  1 /string  then    \ remove a possible leading  ','
+   over c@ [char] , = if  1 /string  then    \ remove a possible second leading  ','
+   2dup 2>r NUMBER? case
+   0 of 
+      #1008 throw
+      \ RED.  ."  Invalid number string : " 2r@ Dumpl  NORMAL.  0.   ( key drop ) 
+   endof
+   1 of  s>d  endof
+   2 of  endof
+   cr ." Dnumber?"
+   endcase
+   2r> 2drop
+;
+
+\ convert 21/12/2016 to the number of days since 1st Jan 1900
+\ Like M/D/Y but with days and months swapped
+: D/M/Y ( ud -- u)   10000 UM/MOD  100 /MOD  swap ROT D-M-Y ;
+
+\ ASCII control characters
+$0A constant '/n' \ linefeed (newline)
+$0D constant '/r' \ carriage return
+
+$00 constant <NUL>  \ Null char
+$01 constant <SOH>  \ Start of Heading
+$02 constant <STX>  \ Start of Text
+$03 constant <ETX>  \ End of Text
+$04 constant <EOT>  \ End of Transmission
+$05 constant <ENQ>  \ Enquiry
+$06 constant <ACK>  \ Acknowledgment
+$07 constant <BEL>  \ Bell
+$08 constant <BS>    \ Back Space
+$09 constant <HT>    \ Horizontal Tab
+$0A constant <LF>    \ Line Feed
+$0B constant <VT>    \ Vertical Tab
+$0C constant <FF>    \ Form Feed
+$0D constant <CR>    \ Carriage Return
+$0E constant <SO>    \ Shift Out / X-On
+$0F constant <SI>    \ Shift In / X-Off
+$10 constant <DLE>  \ Data Line Escape
+$11 constant <DC1>  \ Device Control 1 (oft. XON)
+$12 constant <DC2>  \ Device Control 2
+$13 constant <DC3>  \ Device Control 3 (oft. XOFF)
+$14 constant <DC4>  \ Device Control 4
+$15 constant <NAK>  \ Negative Acknowledgement
+$16 constant <SYN>  \ Synchronous Idle
+$17 constant <ETB>  \ End of Transmit Block
+$18 constant <CAN>  \ Cancel
+$19 constant <EM>      \ End of Medium
+$1A constant <SUB>  \ Substitute
+$1B constant <ESC>  \ Escape
+$1C constant <FS>    \ File Separator
+$1D constant <GS>    \ Group Separator
+$1E constant <RS>    \ Record Separator
+$1F constant <US>    \ Unit Separator
+
+variable SerialChecksum
+
+: emit+ ( c -- ) 
+   dup <CR> = not over 0 $20 within and  dup >r if  MAGENTA.  then 
+   dup SerialChecksum @ xor SerialChecksum !
+   dup case
+   <NUL> of  ." <NUL>" drop  endof  \  Null char                     
+   <SOH> of  ." <SOH>" drop  endof  \  Start of Heading              
+   <STX> of  ." <STX>" drop  endof  \  Start of Text                 
+   <ETX> of  ." <ETX>" drop  endof  \  End of Text                   
+   <EOT> of  ." <EOT>" drop  endof  \  End of Transmission           
+   <ENQ> of  ." <ENQ>" drop  endof  \  Enquiry                       
+   <ACK> of  ." <ACK>" drop  endof  \  Acknowledgment                
+   <BEL> of  ." <BEL>" drop  endof  \  Bell                          
+   <BS>  of  ." <BS>"  drop  endof  \  Back Space                    
+   <HT>  of  ." <HT>"  drop  endof  \  Horizontal Tab                
+   <LF>  of  ." <LF>"  drop  endof  \  Line Feed                     
+   <VT>  of  ." <VT>"  drop  endof  \  Vertical Tab                  
+   <FF>  of  ." <FF>"  drop  endof  \  Form Feed                     
+   <CR>  of  ." <CR>"  drop  endof  \  Carriage Return               
+   <SO>  of  ." <SO>"  drop  endof  \  Shift Out / X-On              
+   <SI>  of  ." <SI>"  drop  endof  \  Shift In / X-Off              
+   <DLE> of  ." <DLE>" drop  endof  \  Data Line Escape              
+   <DC1> of  ." <DC1-Xon>" drop  endof  \  Device Control 1 (oft. XON)   
+   <DC2> of  ." <DC2>" drop  endof  \  Device Control 2              
+   <DC3> of  ." <DC3-Xoff>" drop  endof  \  Device Control 3 (oft. XOFF)  
+   <DC4> of  ." <DC4>" drop  endof  \  Device Control 4              
+   <NAK> of  ." <NAK>" drop  endof  \  Negative Acknowledgement      
+   <SYN> of  ." <SYN>" drop  endof  \  Synchronous Idle              
+   <ETB> of  ." <ETB>" drop  endof  \  End of Transmit Block         
+   <CAN> of  ." <CAN>" drop  endof  \  Cancel                        
+   <EM>  of  ." <EM>"  drop  endof  \  End of Medium                 
+   <SUB> of  ." <SUB>" drop  endof  \  Substitute                    
+   <ESC> of  ." <ESC>" drop  endof  \  Escape                        
+   <FS>  of  ." <FS>"  drop  endof  \  File Separator                
+   <GS>  of  ." <GS>"  drop  endof  \  Group Separator               
+   <RS>  of  ." <RS>"  drop  endof  \  Record Separator              
+   <US>  of  ." <US>"  drop  endof  \  Unit Separator                
+     emit
+  endcase
+  r> if  RESTORE.  then
+;
+
+: type+ ( c-addr n -- )   over + swap ?do  i c@ emit+  loop ;
+
+\ *****************************************************************************
+\ Line buffer
+\ *****************************************************************************
+
+\ process the accumulated line buffer
+: ProcessLine ( c-addr u -- )
+   cr -Trailing 2dup type
+    -Leading  ['] Dnumber catch if  2drop  else  D/M/Y space 10 u.r  then
+;
+
+9 2** constant |LineBuffer|       \ the size of our send buffer - must be a power of 2
+|LineBuffer| Buffer: LineBuffer[]     \ our send buffer
+variable #LineBuffer              \ how many bytes to send so far
+variable #LastLineBuffer          \ how many bytes to send so far
+
+: LineBufferEmit ( c -- )
+   LineBuffer[] #LineBuffer @ |LineBuffer| 1- and + c!    \ store the character in the send buffer
+   1 #LineBuffer +!             \ increment the count
+;
+
+: InitLineBuffer ( -- )   0 #LineBuffer ! ;
+
+\ accumulate characters, act on Backspace, ctrlC, Escape and Enter
+\ Note the  ProcessLine  which does all of the work when you press Enter
+: xxxLineBufferEmit ( c -- )
+   dup <LF> = if  drop  exit  then  \ ignore LineFeeds
+   dup <CR> = if
+      drop
+      #LineBuffer @ #LastLineBuffer !
+      #LineBuffer @ if
+         LineBuffer[] #LineBuffer @ ProcessLine 
+         InitLineBuffer
+      then
+   else  
+\   dup $08 = if  08 emit  bl emit  08 emit  #LineBuffer @ 1- 0 max  #LineBuffer !  drop  exit  then
+\   dup <ESC> = if  cr ." Done."  #1006 throw  then 
+\   dup $03 = if  cr ." ctrlC"  #1007 throw  then 
+\   dup emit
+      LineBufferEmit
+   then
+;
+
+: GetLineBuffer ( -- $ )
+   LineBuffer[] #LineBuffer @
+;
+
+\ *****************************************************************************
+\ Misc
+\ *****************************************************************************
+
+: #define ( -<name expression>- )
+        create
+        bl word count Dnumber drop ,  does>  @
+;
+
+: TestBit ( c a -- f )   @ swap 2** and ;
+
+
+: SetBit ( c a -- )   >r  2** r@ @ or r> ! ;
+: ClearBit ( c a -- )   >r  2** invert r@ @ and r> ! ;
+
+: ToggleBit ( c a -- )   2dup TestBit if  ClearBit  else  SetBit  then ;
+
+: .On/Off ( c a -- )   TestBit if  INVERSE.  ." +"  else  NORMAL. ." -"  then  RESTORE. ;
+
+
+\ *****************************************************************************
+\ User help
+\ *****************************************************************************
+
+: ShowHelp
+   MAGENTA.
+   HostVersion ShowTitle
+   cr 
+   cr ." Windows Socket API ( WSA ) demonstration in SwiftForth"
+   cr
+   cr ." Type :"
+   cr ." Server <cr>"
+   cr ." to start a TCP/IP simple echo server on localhost ( 127.0.0.1 ) : port " DEFAULT_PORT .
+   cr 
+   cr ." Start another instance of Forth, include WSA.f and type :"
+   cr ." Client <cr>"
+   cr ." to start a program that repeatedly tries to make a connection."
+   cr ." Pressing some characters followed by the enter key will send the string to the server"
+   cr ." You should see them echoed back in blue"
+   cr ." Press F8 to start a Test program, sending and receiving data to the Server"
+   cr ." Start as many of these as you like, up to about 1500 depending on your available memory"
+   cr
+   cr ." Type:
+   cr ." ttall"
+   cr ." to run the set of HTTP client tests
+   cr ." or
+   cr ." tt1"
+   cr ." to perform a simple GET of a file from a remote HTTP server"
+   cr
+   NORMAL.
+;
+
+\ *****************************************************************************
+\ Some Windows Sockets API constants
+\ *****************************************************************************
+$4004667F constant FIONREAD
+$8004667E constant FIONBIO
+$8004667D constant FIOASYNC
+$8905     constant SIOCATMARK
+
+decimal
+\ some "well-known" ports
+#13   constant DAYTIME_PORT          
+#17   constant QOTD_PORT             
+#21   constant FTP_PORT              
+#23   constant TELNET_PORT           
+#43   constant WHOIS_PORT            
+#25   constant SMTP_PORT             
+#80   constant HTTP_PORT             
+#110  constant POP3_PORT             
+#119  constant NNTP_PORT             
+#123  constant NTP_PORT              
+#5010 constant TELESTARTPATH_PORT    
+
+\ socket types
+1 constant SOCK_STREAM  \ Provides sequenced, reliable, two-way, connection-based byte streams with an OOB data transmission mechanism. 
+                        \ Uses the Transmission Control Protocol (TCP) for the Internet address family (AF_INET or AF_INET6).
+2 constant SOCK_DGRAM   \ Supports datagrams, which are connectionless, unreliable buffers of a fixed (typically small) maximum length. 
+                        \ Uses the User Datagram Protocol (UDP) for the Internet address family (AF_INET or AF_INET6).
+3 constant SOCK_RAW     \ Provides a raw socket that allows an application to manipulate the next upper-layer protocol header. 
+                        \ To manipulate the IPv4 header, the IP_HDRINCL socket option must be set on the socket.
+4 constant SOCK_RDM     \ Provides a reliable message datagram. An example of this type is the Pragmatic General Multicast (PGM) 
+                        \ multicast protocol implementation in Windows, often referred to as reliable multicast programming.
+5 constant SOCK_SEQPACKET  \ Provides a pseudo-stream packet based on datagrams.
+
+\ protocol types
+06  constant IPPROTO_TCP  \ The Transmission Control Protocol (TCP).
+\ This is a possible value when the ai_family member is AF_INET or AF_INET6 and the
+\ ai_socktype member is SOCK_STREAM.
+17  constant IPPROTO_UDP  \ The User Datagram Protocol (UDP).
+\ This is a possible value when the ai_family member is AF_INET or AF_INET6 and the
+\ type parameter is SOCK_DGRAM.
+113 constant IPPROTO_RM   \ The PGM protocol for reliable multicast.
+\ This is a possible value when the ai_family member is AF_INET and the
+\ ai_socktype member is SOCK_RDM.
+
+\ Internet family
+ 2 constant AF_INET     \ IP version 4 ( 32 bit IP addresses )
+ 2 constant PF_INET
+
+\ returned error codes
+-1 constant INVALID_SOCKET
+-1 constant SOCKET_ERROR
+
+
+\  WinSock 2 extension -- manifest constants for return values of the condition function
+$0000 constant  CF_ACCEPT       
+$0001 constant  CF_REJECT       
+$0002 constant  CF_DEFER        
+
+\ WinSock 2 extension -- manifest constants for shutdown()
+$00 constant  SD_RECEIVE      
+$01 constant  SD_SEND         
+$02 constant  SD_BOTH         
+
+\ *****************************************************************************
+\ Display the Windows Sockets API data structure and error codes
+\ *****************************************************************************
+
+\ display the WSA error value
+\ see http://msdn2.microsoft.com/en-us/library/ms740668.aspx
+: .WSAerror ( u -- )   
+\   dup .
+   case
+       0 of  ." Not an error"  endof 
+   WSAEACCES          ( 10013 ) of  ." WSAEACCES : An attempt was made to access a socket in a way forbidden by its access permissions"  endof \ Note : "Run as Administrator" to fix this
+   WSAEFAULT          ( 10014 ) of  ." WSAEFAULT : Invalid pointer address"  endof
+   WSAEINVAL          ( 10022 ) of  ." WSAEINVAL : Invalid argument"  endof
+   WSAEWOULDBLOCK     ( 10035 ) of  ." WSAEWOULDBLOCK : Waiting for data ( not an error at all )"  endof
+   WSAEINPROGRESS     ( 10036 ) of  ." WSAEINPROGRESS : A blocking operation is currently executing"  endof
+   WSAENOTSOCK        ( 10038 ) of  ." WSAENOTSOCK : Not a socket"  endof
+   WSAESOCKTNOSUPPORT ( 10044 ) of  ." Socket type not supported."  endof 
+         \ The support for the specified socket type does not exist in this address family. For example, the optional type SOCK_RAW might be selected in a socket call, and the implementation does not support SOCK_RAW sockets at all.
+   WSAEOPNOTSUPP      ( 10045 ) of  ." WSAEOPNOTSUPP : Not supported (can't connect to a UDP socket)"  endof
+   WSAEAFNOSUPPORT    ( 10047 ) of  ." WSAEAFNOSUPPORT : Incompatible address"  endof
+   WSAEADDRINUSE      ( 10048 ) of  ." WSAEADDRINUSE : Socket already in use"  endof
+   WSAEADDRNOTAVAIL   ( 10049 ) of  ." WSAEADDRNOTAVAIL : Invalid IP address"  endof
+   WSAENETDOWN        ( 10050 ) of  ." WSAENETDOWN : Network is down"  endof
+   WSAENETUNREACH     ( 10051 ) of  ." WSAENETUNREACH : Network is unreachable"  endof
+   WSAENETRESET       ( 10052 ) of  ." WSAENETRESET : Network dropped connection on reset"  endof
+   WSAECONNABORTED    ( 10053 ) of  ." WSAECONNABORTED : Software caused connection abort (maybe timed out)"  endof
+   WSAECONNRESET      ( 10054 ) of  ." WSAECONNRESET : Connection reset by server"  endof
+   WSAENOBUFS         ( 10055 ) of  ." WSAENOBUFS : Insufficient buffer space"  endof
+   WSAEISCONN         ( 10056 ) of  ." WSAEISCONN : Already connected"  endof
+   WSAENOTCONN        ( 10057 ) of  ." WSAENOTCONN : Not connected"  endof
+   WSAETIMEDOUT       ( 10060 ) of  ." WSAETIMEDOUT : Connection attempt timed out"  endof
+   WSAECONNREFUSED    ( 10061 ) of  MAGENTA. ." WSAECONNREFUSED : Connection refused (server not running on given port)"  RESTORE.  endof
+   WSAEPROCLIM        ( 10067 ) of  ." WSAEPROCLIM : Too many tasks running"  endof
+   WSASYSNOTREADY     ( 10091 ) of  ." WSASYSNOTREADY : Network subsystem is unavailable"  endof
+   WSAVERNOTSUPPORTED ( 10092 ) of  ." WSAVERNOTSUPPORTED : Winsock.dll version out of range"  endof
+   WSANOTINITIALISED  ( 10093 ) of  ." WSANOTINITIALISED : WSA not initialised "  endof
+   WSAHOST_NOT_FOUND  ( 11001 ) of  ." WSAHOST_NOT_FOUND : Host not found"  endof
+   WSANO_DATA         ( 11004 ) of  ." WSANO_DATA : Valid name, no data record of requested type (DNS can't find name)"  endof
+      ." Unknown WSA error = " dup .
+   endcase
+   space
+;
+
+: ShowWSAerror ( -- )   WSAGetLastError  ?dup if  [c  cr  RED.  .WSAerror  RESTORE.  c]  then ;
+
+\ display the WSA error if there is one
+: WSAerror ( u -- ) 
+\   cr ." WSAerror = " dup .
+   SOCKET_ERROR = if
+      Silence @ 0= if  ShowWSAerror  then 
+\      cr ." 1000 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< "
+      #1000 throw
+   then
+;
+
+\ *****************************************************************************
+\ The WinSock socket address structure
+\ *****************************************************************************
+
+\ Windows does this, so we do too...
+: AlignStructLength ( n -- n' ) 3 + -4 and ;                \ round up n to the next 4 byte boundary
+: AlignStructStart ( -- )   here AlignStructLength h ! ;    \ round up HERE to the next 4 byte boundary
+
+398 AlignStructLength constant |WSAData|
+AlignStructStart |WSAData| buffer: WSAData
+
+WSAData
+   2 struct wVersion
+   2 struct wHighVersion     
+   256 1+ struct szDescription[]
+   128 1+ struct szSystemStatus[]
+   2 struct iMaxSockets
+   2 struct iMaxUdpDg
+   4 struct lpVendorInfo
+drop \ cr .( WSAData size = ) WSAData - . 
+
+0 WSAData !    \ mark as not initialised
+
+: .WinVer ( w -- )   256 /mod  2 u.r ." ." . ;
+
+: .WSAdata ( -- )
+   CYAN.
+   cr ." WSA startup information "
+   cr ."   Versions hi,lo : " wHighVersion w@ .WinVer  ." ,"  wVersion w@ .WinVer
+   cr ."   Description    : " szDescription[]  zcount 3 spaces 256 min type
+   cr ."   System status  : " szSystemStatus[] zcount 128 min  type
+   cr ."   iMaxSockets    : " iMaxSockets w@ 4 .hex 
+   cr ."   iMaxUdpDg      : " iMaxUdpDg w@ 4 .hex
+\   cr ."   lpVendorInfo   : " lpVendorInfo  4 dump
+   RESTORE.
+;
+
+
+\ *****************************************************************************
+\ Startup and close down the Windows Sockets API
+\ *****************************************************************************
+
+\ : InitSocket ( -- )   addrinfo |addrinfo| erase ;
+
+\ Close down the Windows Sockets API
+: CloseWSA   
+   cr." CloseWSA"  
+   WSAdata @ if  0 WSAdata !  WSACleanup WSAerror  then 
+;
+
+\ WSAstartup must be called first. Note that it returns 0 if OK, not an ior.
+: (InitialiseWSA) ( -- )
+   ( Windows requires this version : ) $202  WSAdata WSAStartup
+   ?dup if  cr ." WSAStartup failed!"  CloseWSA  #1009 throw  then
+\   .WSAdata       \ enable this if you want to see the socket structure info
+;
+
+\ Startup WSA if not already started
+: InitialiseWSA  
+   cr." InitialiseWSA" 
+   WSAdata @ 0= if  (InitialiseWSA)  then 
+   InitForks
+;
+
+
+\ *****************************************************************************
+\ File (Socket) Descriptor arrays
+\ *****************************************************************************
+
+1 constant FD_SETSIZE   \ we only use one socket at a time
+
+#USER
+
+CELL  +USER vFD_CurrentSet  \ points to the current FDarray count field
+
+
+1 FD_SETSIZE + cells +USER FD_ReadSet    \ keep the structure the same as Windows expects
+FD_ReadSet        constant FD_ReadSet.Count 
+FD_ReadSet cell + constant FD_ReadSet.Array 
+
+1 FD_SETSIZE + cells +USER FD_WriteSet    \ keep the structure the same as Windows expects
+FD_WriteSet        constant FD_WriteSet.Count 
+FD_WriteSet cell + constant FD_WriteSet.Array 
+
+1 FD_SETSIZE + cells +USER FD_ExceptSet    \ keep the structure the same as Windows expects
+FD_ExceptSet        constant FD_ExceptSet.Count 
+FD_ExceptSet cell + constant FD_ExceptSet.Array 
+
+TO #USER
+
+: >FD_Set.Count ( -- a )   vFD_CurrentSet @ ;
+: >FD_Set.Array ( n -- a )   1+ cells vFD_CurrentSet @ + ;
+
+: FD_Erase ( -- )   >FD_Set.Count 1 FD_SETSIZE + cells erase ;
+
+: FD_READ ( -- )   FD_ReadSet  vFD_CurrentSet ! ;      \ set the context to the READ array
+: FD_WRITE ( -- )   FD_WriteSet  vFD_CurrentSet ! ;    \ set the context to the WRITE array
+: FD_EXCEPT ( -- )   FD_ExceptSet  vFD_CurrentSet ! ;  \ set the context to the EXCEPTION array
+
+FD_READ
+
+: FD_ISSET ( fd -- n )   \ returns the array element number +1 if it is in the array, else zero  
+    0 swap  
+    >FD_Set.Count @ 0 ?do
+        dup i >FD_Set.Array @ = if 
+            swap i + 1+ swap   
+            leave
+\            cr ." FD_ISSET leave " .s
+        then       
+    loop
+    drop
+;
+
+: FDdelete ( n -- )   
+    >FD_Set.Count @ swap ?do
+        i 1+ >FD_Set.Array @ i >FD_Set.Array !    \ copy the elements down one place  
+    loop  
+    >FD_Set.Count @ 1- 0 max >FD_Set.Count !
+;
+
+: FD_ZERO ( -- )     0 >FD_Set.Count ! ;    \ clear the array
+
+: FD_CLR ( fd -- )   \ remove file descriptor fd from the array
+    FD_ISSET ?dup if  1- FDdelete  then
+;
+
+: FD_SET ( fd -- )   \ add file descriptor fd to the array 
+    dup FD_ISSET if  drop  exit  then
+    >FD_Set.Count @ FD_SETSIZE < if 
+        ( fd -- ) >FD_Set.Count @ >FD_Set.Array !
+        1  >FD_Set.Count +!
+    else
+        drop
+    then
+;
+
+: InitFD    vFD_CurrentSet @ >r FD_READ FD_Erase  FD_WRITE FD_Erase  FD_EXCEPT FD_Erase  r>  vFD_CurrentSet ! ;
+InitFD
+
+\ Test only - only use in one thread at a time
+3 cells Buffer: NewFDs
+3 cells Buffer: LastFDs
+LastFDs 3 cells erase
+
+: .FDs  
+   vFD_CurrentSet @ >r 
+   FD_READ   >FD_Set.Count @ NewFDs !
+   FD_WRITE  >FD_Set.Count @ NewFDs cell + !
+   FD_EXCEPT >FD_Set.Count @ NewFDs 2 cells + !
+   0  3 0 do i cells NewFDs + @  i cells LastFDs + @ = not if  1-  then  loop 
+   if
+      cr
+      FD_READ    cr ." ReadSet   : " >FD_Set.Count @ 2 u.r  ."  | "  >FD_Set.Count @ 0 ?do  i >FD_Set.Array @ 8 u.r  loop
+      FD_WRITE   cr ." WriteSet  : " >FD_Set.Count @ 2 u.r  ."  | "  >FD_Set.Count @ 0 ?do  i >FD_Set.Array @ 8 u.r  loop
+      FD_EXCEPT  cr ." ExceptSet : " >FD_Set.Count @ 2 u.r  ."  | "  >FD_Set.Count @ 0 ?do  i >FD_Set.Array @ 8 u.r  loop
+      NewFDs LastFDs 3 cells move
+   then
+   r>  vFD_CurrentSet !
+; 
+
+\ *****************************************************************************
+\ ioctlsocket
+\ *****************************************************************************
+
+\ returns the number of bytes available from the given socket
+: NumReadBytes ( socket -- u )
+\   cr ." NumReadBytes = "
+\   100 ms  
+   FIONREAD  0 >r rp@ ioctlsocket WSAerror  r> 
+\   dup .  200 ms 
+;
+
+\ makes the socket non-blocking.
+\ This means that the call to  recv  will return even if there
+\ are no bytes available.
+: NonBlocking ( socket -- )  
+\   cr ." NonBlocking " 
+   FIONBIO -1 >r rp@ ioctlsocket WSAerror  r> drop
+;
+
+\ makes the socket blocking.
+\ This means that the call to  recv  will not return if there
+\ are no bytes available.
+: Blocking ( socket -- )  
+   cr ." Blocking " 
+   FIONBIO 0 >r rp@ ioctlsocket WSAerror  r> drop
+;
+
+\ *****************************************************************************
+\ select
+\ *****************************************************************************
+
+create MyTimeout  0 ,  0 , 
+
+: SelectAll ( socket -- )
+\   cr ." SelectRead = "  dup .
+   FD_READ   \ select the Read FD set
+   FD_ZERO   \ clear it
+   ( socket -- ) dup FD_SET  \ and set the socket we are interested in
+   
+   FD_WRITE   \ select the Read FD set
+   FD_ZERO    \ clear it
+   ( socket -- ) dup FD_SET  \ and set the socket we are interested in
+
+   FD_EXCEPT  \ select the Read FD set
+   FD_ZERO    \ clear it
+   ( socket -- ) dup FD_SET  \ and set the socket we are interested in
+   drop
+   FD_READ
+   0 FD_ReadSet FD_WriteSet FD_WriteSet MyTimeout Ws2_32::select 0> if  \ select worked ok
+      ( socket -- ) FD_ISSET if    \ our socket is in the returned list
+         >FD_Set.Count @   \ 0 if no sockets are ready to read, else number of sockets. We only put our one socket of interest in the FD_Set... 
+      else
+         0
+      then
+   else
+      drop -1
+   then 
+;
+
+\ returns true if the socket has data to be read
+: SocketReadyToRead ( socket -- f )
+   \   cr ." SocketReadyToRead "
+\   EnterCriticalSection
+   FD_READ   \ select the Read FD set
+   FD_ZERO   \ clear it
+   ( socket -- ) dup FD_SET  \ and set the socket we are interested in
+\  0  FD_ReadSet FD_WriteSet FD_ExceptSet MyTimeout select 
+   0  FD_ReadSet 0           0            MyTimeout Ws2_32::select 0> if  \ select worked ok
+      ( socket -- ) FD_ISSET if    \ our socket is in the returned list
+         >FD_Set.Count @   \ 0 if no sockets are ready to read, else number of sockets. We only put our one socket of interest in the FD_Set... 
+      else
+         0
+      then
+   else
+      drop 0
+   then 
+\   LeaveCriticalSection
+;
+
+\ returns true if the socket can be written to
+: SocketReadyToWrite ( socket -- f )
+   \   cr ." SocketReadyToWrite "
+\   EnterCriticalSection
+   FD_WRITE   \ select the Write FD set
+   FD_ZERO   \ clear it
+   ( socket -- ) dup FD_SET  \ and set the socket we are interested in
+\  0  FD_ReadSet FD_WriteSet FD_ExceptSet MyTimeout select 
+   0  0          FD_WriteSet 0            MyTimeout Ws2_32::select 0> if  \ select worked ok
+      ( socket -- ) FD_ISSET if    \ our socket is in the returned list
+         >FD_Set.Count @  \ 0 if no sockets are ready to read, else number of sockets. We only put our one socket of interest in the FD_Set... 
+      else
+         0
+      then
+   else
+      drop 0
+   then 
+\   LeaveCriticalSection
+;
+
+\ returns true if the socket has an exception pending
+: SocketException ( socket -- f )
+   \   cr ." SocketException "
+\   EnterCriticalSection
+   FD_EXCEPT   \ select the Exception FD set
+   FD_ZERO   \ clear it
+   ( socket -- ) dup FD_SET  \ and set the socket we are interested in
+\  0  FD_ReadSet FD_WriteSet FD_ExceptSet MyTimeout select 
+   0  0          0           FD_ExceptSet MyTimeout Ws2_32::select 0> if  \ select worked ok
+      ( socket -- ) FD_ISSET if    \ our socket is in the returned list
+         >FD_Set.Count @  \ 0 if no sockets are ready to read, else number of sockets. We only put our one socket of interest in the FD_Set... 
+      else
+         0
+      then
+   else
+      drop 0
+   then 
+\   LeaveCriticalSection
+;
+
+\ *****************************************************************************
+\ Display what we receive
+\ *****************************************************************************
+$8000 constant |RecvBuffer|           \ the size of our receive buffer
+ |RecvBuffer| Buffer: RecvBuffer[]  \ our receive buffer
+ |RecvBuffer| Buffer: RecvBuffer2[]  \ our receive buffer
+ |RecvBuffer| Buffer: AllocatedRecvBuffer \ our receive buffer
+variable RecvBuffer#
+variable RecvBuffer2#
+
+#USER
+\   |RecvBuffer| +USER RecvBuffer[] \ our receive buffer 
+   CELL +USER TheExternalSocket 
+   CELL +USER InternalSocket 
+   CELL +USER TheExternalFTPcontrolSocket 
+   CELL +USER TheExternalFTPdataSocket 
+   CELL +USER LocalChildDone
+   CELL +USER ppResult
+   CELL +USER ppResult2
+   CELL +USER pAllocatedRecvBuffer
+TO #USER
+
+: +emit ( c)   dup 10 =  over 13 = or  if  10 = if  4  emit  cr  else  5  emit  then  else  emit  then ;
+: +type ( a n)  over + swap ?do  i c@ +emit  loop ;
+: ++type ( a n)  BLUE.  over + swap ?do  i c@ +emit  loop   RESTORE. ;
+
+
+\ *****************************************************************************
+\ Read the socket
+\ *****************************************************************************
+
+$01 constant MSG_OOB         \ process out-of-band data 
+$02 constant MSG_PEEK        \ peek at incoming message 
+$04 constant MSG_DONTROUTE   \ send without using routing tables 
+$08 constant MSG_WAITALL 
+
+\ read from the socket into the RecvBuffer[] buffer, u is the number of bytes read
+: SktRead ( -- u )   
+    TheExternalSocket @ NumReadBytes 0= if  0  exit  then   \ blocking socket, so check first
+    TheExternalSocket @  RecvBuffer[] |RecvBuffer|  0  Ws2_32::recv dup WSAerror
+    dup 0= if  cr ." Connection closed!!!"  #5005 throw  then
+    dup RecvBuffer# ! \ the count
+\    dup if  cr ." SktRead >>> " cr  then
+;
+
+
+\ Socket Read buffer
+\ 10 2** 
+|RecvBuffer| 2* constant |SktReadBuffer|    \ must be a power of 2
+|SktReadBuffer| buffer: SktReadBuffer[]
+
+variable >SktReadIn
+variable >SktReadOut
+
+: SktKey# ( -- n )   >SktReadIn @ >SktReadOut @ -  |SktReadBuffer| 1- and ;
+
+: SktPutKey ( c -- )
+   SktReadBuffer[] >SktReadIn @ + c!
+   >SktReadIn @ 1+ |SktReadBuffer| 1- and  >SktReadIn !
+;
+
+: SktGetKey ( -- c )
+   SktReadBuffer[] >SktReadOut @ + c@
+   >SktReadOut @ 1+ |SktReadBuffer| 1- and  >SktReadOut !
+;
+
+: SktKeyRepeat ( -- )
+   >SktReadOut @ 1- |SktReadBuffer| 1- and  >SktReadOut !
+;
+
+\ When we receive some bytes from the socket put them in our SktReadBuffer[]
+: SktRefill   SktRead if  RecvBuffer[] RecvBuffer# @ over + swap do  i c@ SktPutKey  loop  then ; 
+
+\ Read any socket data into the circular buffer and return the number of bytes available
+: SktKey? ( -- n )
+   PAUSE
+   SktRefill
+   SktKey# 
+;
+
+\ Get a character from the input circular buffer, or if empty load data from the socket.
+\ If neither, wait for data to come in
+\ Use this one for raw content data
+: SktKey ( -- c )
+   begin
+      pause 
+   SktKey# 0= while
+      SktRefill
+   repeat
+   SktGetKey 
+;
+
+\ Convert all control characters except LF to spaces
+\ Only use this one for header data
+: SktKey+ ( -- c)
+   SktKey dup 10 = if
+      exit     \ return a LF
+   then
+   32 max
+;
+
+\ This is only required when the connection has been closed by the server
+\ without telling us how many bytes to expect.
+: ms-ShowRemaining ( n -- )   \ from socket for n ms
+   counter +
+   begin
+      PAUSE
+      SktKey# if  SktKey +emit  else  SktRefill  then
+   dup EXPIRED until  drop
+;
+
+\ *****************************************************************************
+\ Read the socket #2  - a second socket especially for the FTP data channel
+\ *****************************************************************************
+
+
+\ read from the socket into the RecvBuffer[] buffer, u is the number of bytes read
+: FTPreadDataSocket ( -- u )   
+\   TheExternalFTPdataSocket @ Blocking
+    TheExternalFTPdataSocket @ NumReadBytes 0= if  0  exit  then   \ blocking socket, so check first
+    TheExternalFTPdataSocket @  RecvBuffer2[] |RecvBuffer|  0  Ws2_32::recv dup WSAerror
+    dup 0= if  cr ." Connection closed!!!"  #5005 throw  then
+    dup RecvBuffer2# ! \ the count
+\    dup if  cr ." SktRead >>> " cr  then
+;
+
+{ 
+
+\ Socket Read buffer
+\ 10 2** 
+\ |RecvBuffer| 2* constant |SktReadBuffer|    \ must be a power of 2
+|SktReadBuffer| buffer: SktReadBuffer2[]
+
+variable >SktReadIn2
+variable >SktReadOut2
+
+: SktKey2# ( -- n )   >SktReadIn2 @ >SktReadOut2 @ -  |SktReadBuffer| 1- and ;
+
+: SktPutKey2 ( c -- )
+   SktReadBuffer2[] >SktReadIn2 @ + c!
+   >SktReadIn2 @ 1+ |SktReadBuffer| 1- and  >SktReadIn2 !
+;
+
+: SktGetKey2 ( -- c )
+   SktReadBuffer2[] >SktReadOut2 @ + c@
+   >SktReadOut2 @ 1+ |SktReadBuffer| 1- and  >SktReadOut2 !
+;
+
+: SktKeyRepeat2 ( -- )
+   >SktReadOut2 @ 1- |SktReadBuffer| 1- and  >SktReadOut2 !
+;
+
+\ When we receive some bytes from the socket put them in our SktReadBuffer2[]
+: SktRefill2 ( -- )   FTPreadDataSocket if  RecvBuffer2[] RecvBuffer2# @ over + swap do  i c@ SktPutKey2  loop  then ; 
+
+\ Read any socket data into the circular buffer and return the number of bytes available
+: SktKey2? ( -- n )
+   PAUSE
+   SktRefill2
+   SktKey2# 
+;
+
+\ Get a character from the input circular buffer, or if empty load data from the socket.
+\ If neither, wait for data to come in
+\ Use this one for raw content data
+: SktKey2 ( -- c )
+   begin
+      pause 
+   SktKey2# 0= while
+      SktRefill2
+   repeat
+   SktGetKey2 
+;
+
+\ Convert all control characters except LF to spaces
+\ Only use this one for header data
+: SktKey2+ ( -- c)
+   SktKey2 dup 10 = if
+      exit     \ return a LF
+   then
+   32 max
+;
+
+\ This is only required when the connection has been closed by the server
+\ without telling us how many bytes to expect.
+: ms-ShowRemaining2 ( n -- )   \ from socket for n ms
+   cr ." ms-ShowRemaining2 : " 
+   counter +
+   begin
+      PAUSE
+      SktKey2# if  SktKey2 +emit  else  SktRefill2  then
+   dup EXPIRED until  drop
+;
+}
+
+\ *****************************************************************************
+\ *****************************************************************************
+\ *****************************************************************************
+
+$100 constant |SktLineBuffer| \ must be a power of 2
+|SktLineBuffer| buffer: SktLineBuffer 
+variable >SktLineBuffer 
+
+: \SktLineBuffer   0 >SktLineBuffer ! ;
+
+: SktLinePutKey ( c)
+   SktLineBuffer >SktLineBuffer @  + c!
+   >SktLineBuffer @ 1+ |SktLineBuffer| 1- min  >SktLineBuffer !
+;
+
+: SkipToEndOfLine   begin  SktKey 10 = until ;
+
+\ Get a complete line of printable ASCII from the socket
+\ The line is terminated by a LF
+: SktLine ( -- a n )
+   0 >SktLineBuffer ! 
+   begin
+   SktKey+  
+\   dup 3 .hex 
+   dup #10 = not while
+      SktLinePutKey
+   repeat
+   drop
+   SktLineBuffer  >SktLineBuffer @ 
+;
+
+\ *****************************************************************************
+\ Send what we type
+\ *****************************************************************************
+
+variable NumberOfBytesSent
+
+\ send u bytes at c-addr to the given socket
+: SktWrite ( c-addr u socket -- )
+   0 NumberOfBytesSent !
+   -rot 0 Ws2_32::send dup WSAerror  NumberOfBytesSent ! 
+;
+
+$200 constant |MySend|        \ the size of our send buffer
+|MySend| Buffer: MySend[]     \ our send buffer
+variable #MySend              \ how many bytes to send so far
+variable #LastMySend          \ how many bytes to send so far
+
+: bufferEmit ( c -- )
+   MySend[] #MySend @ + c!    \ store the character in the send buffer
+   1 #MySend +!             \ increment the count
+;
+
+: InitNemit ( -- )   0 #MySend ! ;
+
+\ accumulate characters, act on Backspace, ctrlC, Escape and Enter
+\ Note the  SktWrite  which does all of the work when you press Enter
+: Nemit ( c -- )
+   dup $0D = if
+      #MySend @ 0= if   \ just a CR, so resend the last string
+         #LastMySend @ #MySend !      
+      then
+      #MySend @ #LastMySend !
+\      #MySend @ if
+         $0D bufferEmit  $0A bufferEmit   \ append a CRLF
+\         cr MySend[] #MySend @ BLUE. 2dup type cr dumpL    RESTORE.
+         MySend[] #MySend @ TheExternalSocket @ SktWrite 
+         InitNemit
+\      then
+      drop  exit  
+   then
+   dup $08 = if  08 emit  bl emit  08 emit  #MySend @ 1- 0 max  #MySend !  drop  exit  then
+   dup $1B = if  cr ." Done__."  #1006 throw  then 
+   dup $03 = if  cr ." ctrlC"  #1007 throw  then 
+   dup emit
+   bufferEmit
+;
+
+
+\ *****************************************************************************
+\ *****************************************************************************
+\ Socket interface
+\ *****************************************************************************
+\ *****************************************************************************
+
+
+\ : pStruct ( a c -- a' )    over  create ,  +  does>  @ ppResult @ + ;
+
+0
+\ the Windows Sockets API socket address structure
+4 struct o_ai_flags       ( -- a )    \ AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST    
+4 struct o_ai_family      ( -- a )    \ PF_xxx                                    
+4 struct o_ai_socktype    ( -- a )    \ SOCK_xxx                                  
+4 struct o_ai_protocol    ( -- a )    \ 0 or IPPROTO_xxx for IPv4 and IPv6        
+4 struct o_ai_addrlen     ( -- a )    \ Length of ai_addr                         
+4 struct o_ai_canonname   ( -- a )    \ Canonical name for nodename               
+4 struct o_ai_addr        ( -- a )    \ Binary address
+4 struct o_ai_next        ( -- a )    \ Next structure in linked list  
+AlignStructLength constant |addrinfo|
+\ cr .( addrinfo size = ) |addrinfo| . 
+
+$01       constant AI_PASSIVE       \ The socket address will be used in a call to the bind function.
+$02       constant AI_CANONNAME     \ The canonical name is returned in the first ai_canonname member.
+$04       constant AI_NUMERICHOST   \ The nodename parameter passed to the getaddrinfo function must be a numeric string.
+$0100     constant AI_ALL           \ If this bit is set, a request is made for IPv6 addresses and IPv4 addresses with AI_V4MAPPED. 
+\ The options below are only supported on Windows Vista and later.
+$0400     constant AI_ADDRCONFIG    \ The getaddrinfo will resolve only if a global address is configured. 
+                                    \ The IPv6 and IPv4 loopback address is not considered a valid global address. 
+$0800     constant AI_V4MAPPED      \ If the getaddrinfo request for IPv6 addresses fails, a name service request is made for 
+                                    \ IPv4 addresses and these addresses are converted to IPv4-mapped IPv6 address format. 
+$04000    constant AI_NON_AUTHORITATIVE      \ The address information can be from a non-authoritative namespace provider. 
+\ The options below are only supported on Windows Vista and later for the NS_EMAIL namespace.
+$08000    constant AI_SECURE                 \ The address information is from a secure channel. 
+$010000   constant AI_RETURN_PREFERRED_NAMES \ The address information is for a preferred name for a user. 
+\ The option below is only supported on Windows 7, Windows Server 2008 R2, and later.
+$00020000 constant AI_FQDN          \ If a flat name (single label) is specified, 
+                                    \ getaddrinfo will return the fully qualified domain name that the name eventually resolved to. 
+                                    \ The fully qualified domain name is returned in the ai_canonname member. 
+                                    \ This is different than AI_CANONNAME bit flag that returns the canonical name registered in DNS 
+                                    \ which may be different 
+                                    \ than the fully qualified domain name that the flat name resolved to. 
+                                    \ Only one of the AI_FQDN and AI_CANONNAME bits can be set. 
+                                    \ The getaddrinfo function will fail if both flags are present with EAI_BADFLAGS. 
+\ The option below is only supported on Windows 7, Windows Server 2008 R2, and later.
+$00040000 constant AI_FILESERVER    \ A hint to the namespace provider that the hostname being queried is being used 
+                                    \ in a file share scenario. The namespace provider may ignore this hint. 
+                                              
+: Show_ai_flags ( u -- )
+   >r
+   r@ AI_PASSIVE                and if  ." AI_PASSIVE "                then
+   r@ AI_CANONNAME              and if  ." AI_CANONNAME "              then 
+   r@ AI_NUMERICHOST            and if  ." AI_NUMERICHOST"             then 
+   r@ AI_ALL                    and if  ." AI_ALL "                    then 
+   r@ AI_ADDRCONFIG             and if  ." AI_ADDRCONFIG "             then 
+   r@ AI_V4MAPPED               and if  ." AI_V4MAPPED "               then 
+   r@ AI_NON_AUTHORITATIVE      and if  ." AI_NON_AUTHORITATIVE "      then 
+   r@ AI_SECURE                 and if  ." AI_SECURE "                 then 
+   r@ AI_RETURN_PREFERRED_NAMES and if  ." AI_RETURN_PREFERRED_NAMES " then 
+   r@ AI_FQDN                   and if  ." AI_FQDN "                   then 
+   r@ AI_FILESERVER             and if  ." AI_FILESERVER "             then 
+   r> drop
+;
+
+: Show_ai_family ( u -- )
+   case
+   #00 of  ." AF_UNSPEC "  endof  \ The address family is unspecified.                                                                                                                                                                                                                                                                                                                                                                                             
+   #02 of  ." AF_INET   "  endof  \ The Internet Protocol version 4 (IPv4) address family.                                                                                                                                                                                                                                                                                                                                                                         
+   #17 of  ." AF_NETBIOS"  endof  \ The NetBIOS address family. This address family is only supported if a Windows Sockets provider for NetBIOS is installed.                                                                                                                                                                                                                                                                                                      
+   #23 of  ." AF_INET6  "  endof  \ The Internet Protocol version 6 (IPv6) address family.                                                                                                                                                                                                                                                                                                                                                                         
+   #26 of  ." AF_IRDA   "  endof  \ The Infrared Data Association (IrDA) address family. This address family is only supported if the computer has an infrared port and driver installed.                                                                                                                                                                                                                                                                          
+   #32 of  ." AF_BTH    "  endof  \ The Bluetooth address family. This address family is only supported if a Bluetooth adapter is installed on Windows Server 2003 or later.                                                                                                                                                                                                                                                                                       
+      RED. ." Unknown ai_family = "                                                                                                                                                                                                                                                                                                                                                                                                                               
+   endcase 
+;
+
+: Show_ai_socktype ( u -- )
+   case
+   1 of  ." SOCK_STREAM   "  endof  \ Provides sequenced, reliable, two-way, connection-based byte streams with an OOB data transmission mechanism. Uses the Transmission Control Protocol (TCP) for the Internet address family (AF_INET or AF_INET6). If the ai_family member is AF_IRDA, then SOCK_STREAM is the only supported socket type.
+   2 of  ." SOCK_DGRAM    "  endof  \ Supports datagrams, which are connectionless, unreliable buffers of a fixed (typically small) maximum length. Uses the User Datagram Protocol (UDP) for the Internet address family (AF_INET or AF_INET6).
+   3 of  ." SOCK_RAW      "  endof  \ Provides a raw socket that allows an application to manipulate the next upper-layer protocol header. To manipulate the IPv4 header, the IP_HDRINCL socket option must be set on the socket. To manipulate the IPv6 header, the IPV6_HDRINCL socket option must be set on the socket.
+   4 of  ." SOCK_RDM      "  endof  \ Provides a reliable message datagram. An example of this type is the Pragmatic General Multicast (PGM) multicast protocol implementation in Windows, often referred to as reliable multicast programming.
+   5 of  ." SOCK_SEQPACKET"  endof  \ Provides a pseudo-stream packet based on datagrams.
+      RED. ." Unknown ai_socktype = " dup 3 .hex  RESTORE.
+   endcase 
+;
+ 
+: Show_ai_protocol ( u -- )
+   case
+   #6     of  ." IPPROTO_TCP "  endof  \ The Transmission Control Protocol (TCP). This is a possible value when the ai_family member is AF_INET or AF_INET6 and the ai_socktype member is SOCK_STREAM.                                                                                                                                                                                                                                                                               
+   #17    of  ." IPPROTO_UDP "  endof  \ The User Datagram Protocol (UDP). This is a possible value when the ai_family member is AF_INET or AF_INET6 and the type parameter is SOCK_DGRAM.                                                                                                                                                                                                                                                                                           
+   #113   of  ." IPPROTO_RM  "  endof  \ The PGM protocol for reliable multicast. This is a possible value when the ai_family member is AF_INET and the ai_socktype member is SOCK_RDM. On the Windows SDK released for Windows Vista and later, this value is also called IPPROTO_PGM.                                                                                                                                                                                              
+      RED. ." Unknown ai_protocol = " dup 3 .hex  RESTORE.
+   endcase 
+;
+
+: Show_ai_addr ( a -- )
+   >r 
+   ." Family = "  r@ w@ 4 .hex 
+   ."   IPaddress:port = " r@ 4 + @ .ip ." :" r@ 2 + w@ . 
+\   r@ 2 spaces $10 dumpL space 
+   r> drop
+;
+
+: .addrinfo ( a -- )
+   MAGENTA. 
+   >r 
+   1 Indent +!
+   cr+ ." .addrinfo "
+   1 Indent +!
+   cr+ ." ai_flags      = "  r@ o_ai_flags     + @ dup 8 .hex space  Show_ai_flags
+   cr+ ." ai_family     = "  r@ o_ai_family    + @ dup 8 .hex space  Show_ai_family
+   cr+ ." ai_socktype   = "  r@ o_ai_socktype  + @ dup 8 .hex space  Show_ai_socktype
+   cr+ ." ai_protocol   = "  r@ o_ai_protocol  + @ dup 8 .hex space  Show_ai_protocol
+   cr+ ." ai_addrlen    = "  r@ o_ai_addrlen   + @     8 .hex space  
+   cr+ ." ai_canonname  = "  r@ o_ai_canonname + @ dup 8 .hex space  ." Name = " ?dup if  zcount type  then
+   cr+ ." ai_addr       = "  r@ o_ai_addr      + @ dup 8 .hex space  Show_ai_addr
+   cr+ ." ai_next       = "  r@ o_ai_next      + @     8 .hex space  
+   -2 Indent +!
+   r> drop
+   RESTORE.
+;    
+
+: ShowAddrInfoIPaddress ( a -- )
+   ." IPaddress = " BLUE.  o_ai_addr + @  4 + @ .ip  RESTORE. space 
+;
+
+: ShowAddrInfoPort ( a -- )
+   ." port = " BLUE.  o_ai_addr + @  2+ w@ >< .  RESTORE.
+;
+
+
+
+: CreateSocket ( z$host port pHhints -- socket )
+   cr." CreateSocket " 
+    \ Resolve the server address and port
+   ppResult Ws2_32::getaddrinfo  0= not  WSAerror \ ppResult points to a socket structure containing the given parameters
+   ppResult @ o_ai_family + @ ppResult @ o_ai_socktype + @ ppResult @ o_ai_protocol + @  Ws2_32::socket dup WSAerror
+\   ppResult @ .addrinfo
+; 
+
+: CreateFTPdataSocket ( z$host port pHhints -- socket )
+   cr." CreateFTPdataSocket " 
+    \ Resolve the server address and port
+   ppResult2 Ws2_32::getaddrinfo  0= not  WSAerror \ ppResult2 points to a socket structure containing the given parameters
+   ppResult2 @ o_ai_family + @ ppResult2 @ o_ai_socktype + @ ppResult2 @ o_ai_protocol + @  Ws2_32::socket dup WSAerror
+\   ppResult2 @ .addrinfo
+; 
+
+: BindTheSocket ( socket -- )
+    cr." BindTheSocket"  
+    ppResult @ o_ai_addr + @ ppResult @ o_ai_addrlen + @ Ws2_32::bind WSAerror 
+   ppResult @ .addrinfo
+;
+
+: BindTheSocket2 ( socket -- )
+    cr." BindTheSocket2"  
+    ppResult2 @ o_ai_addr + @ ppResult2 @ o_ai_addrlen + @ Ws2_32::bind WSAerror 
+   ppResult2 @ .addrinfo
+;
+
+variable PassThePort
+
+: ListenForSocket ( socket -- ) 
+   cr." ListenForSocket "  Silence @ 0= if  CYAN. ."  on port "  RESTORE.  BLUE.  PassThePort @ zcount type  RESTORE.  then
+    SOMAXCONN listen WSAerror
+;
+
+1024 constant DEFAULT_BUFLEN 
+
+$20 constant |AcceptedSocket|
+|AcceptedSocket| Buffer: AcceptedSocket   \ a buffer to hold information about the accepted socket
+
+variable NumberOfClients
+variable LastNumberOfClients
+variable ChildDone      \ a global flag to abort all child processes
+
+\ Wait for Windows to accept an incoming client connection
+\ The Internal (listening) socket is made NonBlocking, then the result of  Ws2_32::accept is polled
+\ to allow us to exit this loop when the ChildDone flag is set
+: WaitToAcceptRemoteSocket ( -- socket | INVALID_SOCKET )
+\   cr." WaitToAcceptRemoteSocket "  NumberOfClients @ . 10 ms 
+   InternalSocket @ NonBlocking  \ make this socket non-blocking so that we can exit the accept loop when the ChildDone flag is set
+   0 
+   begin
+   drop
+   pause
+    InternalSocket @ AcceptedSocket |AcceptedSocket| >r rp@ Ws2_32::accept r> drop
+   dup INVALID_SOCKET = if                      \ if there is no connection yet 
+      WSAGetLastError WSAEWOULDBLOCK = not if   \ abort on every error except "would block"  
+         WSAerror    
+      then  
+      0     \ we have got an "error" that is saying that  Ws2_32::accept  would block , so we wait some more...
+   else
+      -1    \ we got a valid accepted socket, so exit the loop
+   then
+   ChildDone @ or until    \ exit this loop if the ChildDone flag is set, or when we get a valid socket
+\   cr ." WaitToAcceptRemoteSocket = " dup . cr 100 ms 
+\   cr ."   AcceptedSocket : "  AcceptedSocket |AcceptedSocket| dump
+;
+
+: (ShutDownSocket) ( socket -- )   \ shutdown the connection since we're done
+   SD_SEND Ws2_32::shutdown WSAerror
+;
+
+: ShutDownSocket ( socket -- )   \ shutdown the connection since we're done
+   cr ." ShutDownSocket " 
+   dup ['] (ShutDownSocket) catch if  drop  then 
+   Ws2_32::closesocket WSAerror
+;
+
+: ShutDownFTPcontrolSocket ( -- )   \ shutdown the connection since we're done
+   cr ." ShutDownFTPcontrolSocket " 
+   TheExternalFTPcontrolSocket @ 
+   dup ['] (ShutDownSocket) catch if  drop  then 
+   Ws2_32::closesocket WSAerror
+;
+
+: ShutDownFTPdataSocket ( -- )   \ shutdown the connection since we're done
+   TheExternalFTPdataSocket @ 
+   cr ." ShutDownFTPdataSocket " 
+   dup ['] (ShutDownSocket) catch if  drop  then 
+   Ws2_32::closesocket WSAerror
+;
+
+: SocketReceiveData ( socket -- )  
+   pause \ ."  recv1 "
+   0 RecvBuffer# c!
+   RecvBuffer[] |RecvBuffer| 0 Ws2_32::recv dup 0> not WSAerror  RecvBuffer# ! \ the count
+;
+
+: SocketReceiveData2 ( socket -- )  
+   pause \ ."  recv1 "
+   0 RecvBuffer2# c!
+   RecvBuffer2[] |RecvBuffer| 0 Ws2_32::recv dup 0> not WSAerror  RecvBuffer2# ! \ the count
+;
+
+: SocketReceiveDataAlloc ( socket -- )  
+   pause \ ."  recv1 "
+   0 pAllocatedRecvBuffer @ c!
+   pAllocatedRecvBuffer @ 1+ DEFAULT_BUFLEN 1-  0 Ws2_32::recv dup 0> not WSAerror  pAllocatedRecvBuffer @ c! \ the count
+;
+
+$100 constant |SockOptionValue|  
+|SockOptionValue| Buffer: SockOptionValue 
+variable SockOptionValueLength 
+
+: GetSocketSpecificError ( socket -- u )  
+   |SockOptionValue| SockOptionValueLength ! 
+   SOL_SOCKET  SO_ERROR SockOptionValue SockOptionValueLength Ws2_32::getsockopt WSAerror
+; 
+
+
+\ AI_PASSIVE 0x01 The socket address will be used in a call to the bind function.
+
+create pHints_Passive
+   AI_PASSIVE  ,   \ pHints.ai_flags      \ options : AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST    
+   AF_INET     ,   \ pHints.ai_family     \ PF_xxx                                      
+   SOCK_STREAM ,   \ pHints.ai_socktype   \ SOCK_xxx                                    
+   IPPROTO_TCP ,   \ pHints.ai_protocol   \ 0 or IPPROTO_xxx for IPv4 and IPv6          
+   0           ,   \ pHints.ai_addrlen    \ Length of ai_addr                           
+   0           ,   \ pHints.ai_canonname  \ Canonical name for nodename                 
+   0           ,   \ pHints.ai_addr       \ Binary address                              
+   0           ,   \ pHints.ai_next       \ Next structure in linked list        
+
+create pHints_Active 
+   0           ,   \ pHints.ai_flags      \ options : AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST    
+   AF_INET     ,   \ pHints.ai_family     \ PF_xxx                                      
+   SOCK_STREAM ,   \ pHints.ai_socktype   \ SOCK_xxx                                    
+   IPPROTO_TCP ,   \ pHints.ai_protocol   \ 0 or IPPROTO_xxx for IPv4 and IPv6          
+   0           ,   \ pHints.ai_addrlen    \ Length of ai_addr                           
+   0           ,   \ pHints.ai_canonname  \ Canonical name for nodename                 
+   0           ,   \ pHints.ai_addr       \ Binary address                              
+   0           ,   \ pHints.ai_next       \ Next structure in linked list               
+
+
+$12 Buffer: z$CurrentIPaddress
+$12 Buffer: z$CurrentPortAddress
+
+: MakePortString ( port -- z$port )
+   (.) -trailing z$CurrentPortAddress zplace  z$CurrentPortAddress
+;
+
+: MakeIPstring ( ip -- z$ip )
+   (.ip) z$CurrentIPaddress zplace  z$CurrentIPaddress 
+;
+
+: CreateSocket_Active ( z$ip port -- handle ) 
+   MakePortString  pHints_Active CreateSocket 
+;
+
+: CreateSocket_Passive ( z$ip port -- handle ) 
+   MakePortString  pHints_Passive CreateSocket 
+;
+
+: CreateFTPdataSocket_Active ( z$ip port -- handle ) 
+   MakePortString  pHints_Active CreateFTPdataSocket 
+;
+
+: CreateFTPdataSocket_Passive ( z$ip port -- handle ) 
+   MakePortString  pHints_Passive CreateFTPdataSocket 
+;
+
+
+\ *****************************************************************************
+\ *****************************************************************************
+\ Server
+\ waits for a connection request from a client
+\ *****************************************************************************
+\ *****************************************************************************
+
+variable vDone
+
+: (Server) ( socket -- ) 
+   
+   >r
+ 
+   InitNemit   
+   
+    begin
+
+      pause 
+    
+\     100 ms  r@ SelectAll .FDs 
+
+      r@ SocketReadyToRead if
+\      r@ NumReadBytes if
+         r@ SocketReceiveDataAlloc
+         pAllocatedRecvBuffer @ count r@ ['] SktWrite catch dup if  >r  cr ." SktWrite caught in (Server) throw = " r@ .  2drop drop r> throw  else  drop  then
+      then
+
+      r@ SocketException if 
+         cr ." SocketException "  
+         r@ GetSocketSpecificError ?dup if 
+            ."  : GetSocketSpecificError = "  8 .hex
+         then
+      then
+
+ \     200 ms ." ." 
+
+   ChildDone @ LocalChildDone @ or until 
+
+   r> drop
+;
+
+: MainServerLoop ( socket -- )  
+   OPERATOR'S  \ set the I/O to be the same as the OPERATOR task i.e. send output to the screen
+   |RecvBuffer| ALLOCATE if  RED.  cr ." Allocate failed - out of memory!!! "  RESTORE.  #1004 throw  then  
+   dup pAllocatedRecvBuffer ! |RecvBuffer| erase 
+\   pAllocatedRecvBuffer @ cr ." pAllocatedRecvBuffer = " . 
+   >r
+   1 NumberOfClients +!
+   r@ ['] (Server) catch if  ( cr  RED. ." (Server] caught"  RESTORE.  ) drop  then
+   r> ['] ShutDownSocket catch if  cr  RED. ." ShutDownSocket caught"  RESTORE.  drop  then 
+   NumberOfClients @ 1- 0 max NumberOfClients ! 
+\   cr  RED. ." MainServerLoop ending in child process "  RESTORE.  
+   pAllocatedRecvBuffer @ FREE if  RED.  cr ." Free failed !!! "  RESTORE.  #1005 throw  then
+   -1 LocalChildDone !
+;
+
+1024 Task WorkingTask 
+
+: ListeningLoopTask ( port -- )
+   dup ( port -- ) PassThePort !
+      
+   0 ChildDone ! 
+   0 LocalChildDone ! 
+   0 NumberOfClients !
+   0 LastNumberOfClients !
+   
+   WorkingTask activate 
+
+   NULL  PassThePort @ CreateSocket_Passive InternalSocket ! 
+
+   InternalSocket @ ['] BindTheSocket catch if  cr RED. ." Failed to BindTheSocket !!! " RESTORE.  
+      -123 ChildDone !  \ mark this task as finished 
+      stop  
+   then 
+   InternalSocket @ ListenForSocket  
+
+   OPERATOR'S  \ set the I/O to be the same as the OPERATOR task i.e. send output to the screen
+
+   cr  MAGENTA. ."  ListeningLoopTask  Press Esc to exit..."  RESTORE. 
+
+   InitialiseWSA
+   InitFD
+
+   begin
+
+      pause
+
+      WaitToAcceptRemoteSocket ( -- socket )
+
+      dup INVALID_SOCKET = not if
+         ['] MainServerLoop ForkLike() drop
+      else
+         drop
+      then
+
+   ChildDone @ until
+
+   InternalSocket @ Ws2_32::closesocket WSAerror 
+
+   -123 ChildDone !  \ mark this task as finished 
+
+   stop
+
+   begin  pause stop again \ we should never get here
+;
+
+: ShowStatus 
+   begin 
+      pause
+      key? if  key #27 = if  exit  then  then
+      NumberOfClients @ LastNumberOfClients @ = not if
+         cr ." NumberOfClients = "  MAGENTA.  NumberOfClients @ . RESTORE.
+         NumberOfClients @ LastNumberOfClients ! 
+      then
+   again
+;
+
+\ waits for a connection request from a client
+: Server ( -- ) 
+
+   cr  INVERSE.  ."  +++ Server +++ "  RESTORE. MAGENTA.  ShowConnection  RESTORE.
+
+   0 Silence !  \ show infomration text 
+
+    InitialiseWSA
+   
+   InitFD
+
+   DEFAULT_PORT ListeningLoopTask   \ creates a passive socket
+
+   ShowStatus
+
+   -1 ChildDone !
+
+\   cr ." Wait for Child processes to end... "  
+\   begin  pause  NumberOfClients @ 0= until 
+   
+   cr." Wait for ListeningLoopTask to end... "  
+   begin  pause  ChildDone @ -123 = until 
+
+   cr." Freeing adrinfo structure"  
+   ppResult @ Ws2_32::freeaddrinfo drop 
+
+   CloseWSA
+
+   cr." Done." cr 
+;
+
+\ *****************************************************************************
+\ *****************************************************************************
+\ Client
+\ Makes a connection to a server
+\ *****************************************************************************
+\ *****************************************************************************
+
+: ConnectToRemoteSocket ( socket -- )  
+   cr." ConnectToRemoteSocket"
+   ppResult @ o_ai_addr + @  ppResult @ o_ai_addrlen + @  Ws2_32::connect WSAerror
+
+   3 spaces ppResult @ ShowAddrInfoIPaddress ppResult @ ShowAddrInfoPort
+;
+
+: ConnectToFTPdataSocket ( -- )  
+   cr." ConnectToFTPdataSocket"
+   TheExternalFTPdataSocket @ 
+   ppResult2 @ o_ai_addr + @  ppResult2 @ o_ai_addrlen + @  Ws2_32::connect WSAerror
+   3 spaces ppResult2 @ ShowAddrInfoIPaddress ppResult2 @ ShowAddrInfoPort
+;
+
+$20 Buffer: LittleBuffer
+
+
+create MyTestString ,"  Test"  
+variable BlastItCounter
+variable LastEndDigit
+
+: ?CR?   get-XY drop 99 > if  cr+  then ;
+
+: typeCR (  a n -- )   over + swap ?do  i c@ dup <CR> = if  drop  cr+  else  dup <LF> = if  drop  else  emit  then  then  ?CR?  loop ;
+
+: GetReceivedNumber ( -- u )   
+   cr 
+   BLUE. 
+   begin  SktKey [char] T = until  space [char] T emit
+   begin  SktKey [char] e = until  [char] e emit
+   begin  SktKey [char] s = until  [char] s emit
+   begin  SktKey [char] t = until  [char] t emit
+   8 0 do  SktKey pad i + c!  loop    pad 8 type 
+   RESTORE.
+   LastEndDigit @
+   pad 7 + c@ [char] 0 - dup LastEndDigit !
+   swap - 
+   dup 0< if  10 + then 
+   1 = not if  cr RED. ." Oooops - skipped a packet!!!" RESTORE.  key drop  then
+   \ pad 8 Dnumber drop drop
+   
+;
+
+
+: BlastIt ( -- )   \ see what happens if you send more data than the socket can handle - test only
+   cr ." BlastIt start " 
+   0 BlastItCounter ! 
+   9 LastEndDigit !
+   begin 
+      MyTestString count LittleBuffer place  BlastItCounter @ 8 (U.R) LittleBuffer append
+      LittleBuffer count 2dup cr type TheExternalSocket @ SktWrite
+      1 BlastItCounter +!
+
+      \ SktKey? ?dup if  cr  BLUE.  0 do  SktKey emit  loop  RESTORE.  then
+      GetReceivedNumber 
+
+{ 
+      TheExternalSocket @ SocketReadyToRead if
+         TheExternalSocket @ SocketReceiveData
+         2 spaces BLUE.  RecvBuffer[] RecvBuffer# @ type  RESTORE. 
+      then
+} 
+
+\      begin  TheExternalSocket @ SocketReadyToWrite 0= while  ." ."  500 ms pause  repeat 
+\      TheExternalSocket @ SocketReadyToWrite 0= if
+\         cr ." Hang on a bit!"  exit    
+\      then
+   key? until 
+   cr ." BlastIt end" 
+   cr
+;
+
+: ShowSocketData ( -- )
+   TheExternalSocket @ SocketReadyToRead if
+      TheExternalSocket @ SocketReceiveData
+      cr  MAGENTA.  RecvBuffer[] RecvBuffer# @ typeCR  RESTORE. 
+   then
+
+   TheExternalSocket @ SocketException if
+      TheExternalSocket @ GetSocketSpecificError ?dup if 
+         RED.  cr ." GetSocketSpecificError = "  RESTORE.  BLUE. 8 .hex RESTORE.
+      then
+   then
+;
+
+: (Client) ( -- ) 
+   
+   InitNemit   
+   
+    begin 
+
+      pause 
+    
+      ShowSocketData
+
+       ekey? if  ekey 
+         dup $1B = if  drop -1 vDone !  cr MAGENTA. ." User pressed Esc while connected"  RESTORE.  #2001 throw  exit  then   
+         dup $10070 = if  cr ." F1 : "  ShowHelp  then
+ \        dup $10071 = if  cr ." F2 : "  s" 1234" TheExternalSocket @ SktWrite 100 ms SktRefill  SktKey emit  SktKey# . ." END" cr  then
+         dup $10077 = if  cr ." F8 : "  BlastIt  then
+         Nemit    \ accumulate characters typed by the user until the enter key is pressed
+      then 
+   
+   again
+;
+
+variable ConnectionMade
+
+
+: MainClientLoop ( -- ) 
+   ConnectionMade @ not if
+        CLIENT_IP_ADDRESS  MakeIPstring  DEFAULT_PORT CreateSocket_Active TheExternalSocket !
+      -1 ConnectionMade ! 
+   then
+
+   TheExternalSocket @ ['] ConnectToRemoteSocket catch if  #2000 throw  then
+
+   cr MAGENTA. ." Starting the Client - Type some characters, then press the <enter> key or Esc to exit..." RESTORE. 
+   cr
+   ['] (Client) catch ?dup if  #1000 = if  ( WSA error ) cr MAGENTA. ." The server has dropped the connection"  RESTORE.  then  then
+\   cr." ShutDownSocket"
+   TheExternalSocket @ ShutDownSocket  
+   0 ConnectionMade !  
+   #2002 throw  
+;
+
+\ Makes a connection to a server
+: Client
+   cr  INVERSE.  ."  --- Client --- "  RESTORE.  MAGENTA.  ShowConnection  RESTORE.
+   InitialiseWSA 
+   InitFD
+
+   0 vDone !  
+   0 ConnectionMade ! 
+   0 Silence !  \ show text 
+   begin  
+      pause  
+      
+      ['] MainClientLoop catch drop    \ creates an active socket
+
+      ekey? if  ekey 
+         $1B = if  -1 vDone !  cr MAGENTA.  ." User pressed Esc while trying to connect"  RESTORE.  then   
+      then
+   vDone @ until
+
+   TheExternalSocket @ Ws2_32::closesocket WSAerror
+
+   cr." Freeing adrinfo structure"  
+   ppResult @ Ws2_32::freeaddrinfo drop 
+
+   CloseWSA
+   cr." Done." cr 
+; 
+
+\ *****************************************************************************
+\ *****************************************************************************
+\ Port Proxy
+\ Sets up a client and server to forward packets from/to one port to/from another
+\ *****************************************************************************
+\ *****************************************************************************
+
+s" 127.0.0.1" >ip constant PROXY_CLIENT_IP_ADDRESS ( -- u )    \ this is the address used by the Client part of the Proxy
+#14444 constant PROXY_CLIENT_PORT                  ( -- u )    \ this is the port used by both Client part of the Proxy
+
+s" 127.0.0.1" >ip constant PROXY_SERVER_IP_ADDRESS ( -- u )    \ this is the address used by the Server part of the Proxy
+#4444  constant PROXY_SERVER_PORT                  ( -- u )    \ this is the port used by the Server part of the Proxy
+
+: ShowConnectionPC ( -- )   PROXY_CLIENT_IP_ADDRESS .ip  ." :"  PROXY_CLIENT_PORT zcount type ; 
+: ShowConnectionTC ( -- )   PROXY_SERVER_IP_ADDRESS .ip  ." :"  PROXY_SERVER_PORT zcount type ; 
+
+variable ClientProxyConnectionMade
+variable ClientProxySocketCreated
+
+variable LastClientProxyConnectionMade
+variable ServerProxyConnectionMade
+variable PCsocket_Yellow
+variable TCsocket_Blue
+
+\ *****************************************************************************
+\ Packet data list - a linked list of data packets
+\ *****************************************************************************
+
+20 2** constant |PacketDataBuffer|  \ must be a power of 2
+|PacketDataBuffer| buffer: PacketDataBuffer0
+|PacketDataBuffer| buffer: PacketDataBuffer1
+
+variable >PacketDataIn0
+variable >PacketDataOut0
+variable >PacketDataIn1
+variable >PacketDataOut1
+variable CurrentChannel
+
+
+variable #PacketsInPacketData
+variable PacketDataPutFacility \ allow only one task to put data in at a time
+
+: PacketDataInit ( -- )
+   0 >PacketDataIn0 !
+   0 >PacketDataOut0 !
+   0 >PacketDataIn1 !
+   0 >PacketDataOut1 !
+   PacketDataBuffer0 |PacketDataBuffer| erase
+   PacketDataBuffer1 |PacketDataBuffer| erase
+   0 #PacketsInPacketData !
+   0 PacketDataPutFacility ! 
+;
+
+: PacketDataKey0# ( -- n )   >PacketDataIn0 @ >PacketDataOut0 @ - |PacketDataBuffer| 1- and ; 
+: PacketDataKey1# ( -- n )   >PacketDataIn1 @ >PacketDataOut1 @ - |PacketDataBuffer| 1- and ; 
+
+: PacketDataPutKey0 ( c -- )
+   PacketDataKey0# |PacketDataBuffer| 65536 - > if  cr  RED. ." PacketDataBuffer full!!!" RESTORE.  #5000 throw  then
+   PacketDataBuffer0 >PacketDataIn0 @ + c!
+   >PacketDataIn0 @ 1+ |PacketDataBuffer| 1- and  >PacketDataIn0 ! 
+;
+
+: PacketDataPutKey1 ( c -- )
+   PacketDataKey1# |PacketDataBuffer| 65536 - > if  cr  RED. ." PacketDataBuffer full!!!" RESTORE.  #5000 throw  then
+   PacketDataBuffer1 >PacketDataIn1 @ + c!
+   >PacketDataIn1 @ 1+ |PacketDataBuffer| 1- and  >PacketDataIn1 ! 
+;
+
+: PacketDataGetKey0 ( -- c )
+   begin  PacketDataKey0# 0= while pause  repeat
+   PacketDataBuffer0 >PacketDataOut0 @ + c@
+   >PacketDataOut0 @ 1+ |PacketDataBuffer| 1- and  >PacketDataOut0 !
+;
+
+: PacketDataGetKey1 ( -- c )
+   begin  PacketDataKey1# 0= while pause  repeat
+   PacketDataBuffer1 >PacketDataOut1 @ + c@
+   >PacketDataOut1 @ 1+ |PacketDataBuffer| 1- and  >PacketDataOut1 !
+;
+
+: PacketDataPutPacket0 ( a n -- )
+   over + swap ?do  i c@ PacketDataPutKey0  loop    
+;
+
+: PacketDataPutPacket1 ( a n -- )
+   over + swap ?do  i c@ PacketDataPutKey1  loop    
+;
+
+: PacketDataSetColour ( c -- )  
+   case
+   0 of  BLUE.     endof
+   1 of  CYAN.     endof
+   2 of  GREEN.    endof
+   3 of  MAGENTA.  endof
+   NORMAL.
+   endcase
+;
+
+: ?NewLine ( -- )   
+   Get-XY drop 145 > if  cr  25 spaces  then 
+;
+
+: BE@ ( addr -- x )     \ BigEndian @ for LittleEndian processors
+   dup  3 + c@
+   over 2 + c@ $08 Lshift or
+   over 1 + c@ $10 Lshift or
+   swap     c@ $18 Lshift or
+;
+
+: Get# ( -- n )    CurrentChannel @ if  PacketDataKey1#  else  PacketDataKey0#  then ;
+: Get8  ( -- c )   CurrentChannel @ if  PacketDataGetKey1  else  PacketDataGetKey0  then ;
+: Get16 ( -- w )   0  2 0 do   8 lshift  Get8  or  loop ;
+: Get32 ( -- u )   0  4 0 do   8 lshift  Get8  or  loop ;
+
+defer ShowPacket
+
+: (ShowPacket) ( -- ) 
+\   Get# 0 ?do  ?NewLine  get8 emit  loop  
+   Get# 0 ?do  ?NewLine  get8 3 .hex  loop  
+;
+
+' (ShowPacket) is ShowPacket
+
+: .PacketData0 ( -- )   
+   0 CurrentChannel !  
+   Get# 0= if  exit  then
+   [c  NORMAL.  cr   ." Source-->Destination    "  
+   \ DumpL+  
+   ShowPacket
+   RESTORE.  c] 
+;
+
+: .PacketData1 ( -- )   
+   1 CurrentChannel !  
+   Get# 0= if  exit  then
+   [c  BLUE.  cr   ."    Destination-->Source "  
+   ShowPacket
+   RESTORE.  c] 
+;
+
+: .AllPacketData
+   .PacketData0
+   .PacketData1
+;
+
+: ttpdl
+   PacketDataInit
+   s" Hello channel 0 World!" PacketDataPutPacket0
+   s" Hello channel 1 World!" PacketDataPutPacket1
+   s" Hello again channel 0 World!" PacketDataPutPacket0
+   s" Hello again channel 1 World!" PacketDataPutPacket1
+   .AllPacketData
+;
+
+
+\ *****************************************************************************
+\ *****************************************************************************
+
+: (ProxyClient) ( -- ) 
+   
+   InitNemit   
+   
+    begin 
+
+      pause   
+      
+      ClientProxyConnectionMade @  NumberOfClients @ 0= not and if   
+
+         PCsocket_Yellow @ SocketReadyToRead if 
+            PCsocket_Yellow @ SocketReceiveData
+            RecvBuffer[] RecvBuffer# @  TCsocket_Blue @ SktWrite
+            RecvBuffer[] RecvBuffer# @ PacketDataPutPacket1            \ <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+         then
+
+         PCsocket_Yellow @ SocketException if 
+            PCsocket_Yellow @ GetSocketSpecificError ?dup if 
+               cr ." GetSocketSpecificError = "  8 .hex
+            then
+         then
+
+      then
+
+   again
+;
+
+: ConnectToRemoteSocket- ( socket -- )  
+\   cr ." ConnectToRemoteSocket"
+   ppResult @ o_ai_addr + @  ppResult @ o_ai_addrlen + @  As Ws2_32::connect WSAerror
+;
+
+: MainClientProxyLoop ( -- ) 
+
+   ClientProxySocketCreated @ not if 
+        PROXY_CLIENT_IP_ADDRESS  MakeIPstring  PROXY_CLIENT_PORT  CreateSocket_Active PCsocket_Yellow !
+   -1 ClientProxySocketCreated ! 
+   then
+
+   PCsocket_Yellow @ ['] ConnectToRemoteSocket- catch if  #2000 throw  then
+
+   -1 ClientProxyConnectionMade !
+
+   ['] (ProxyClient) catch ?dup if  #1000 = if  ( WSA error ) [c  cr  MAGENTA. ." The Destination server has dropped the connection"  RESTORE.  c]  then  then
+   0 ClientProxySocketCreated !  
+   0 ClientProxyConnectionMade !
+\ cr ." ShutDownSocket"
+   PCsocket_Yellow @ ShutDownSocket 
+   #2002 throw  
+;
+
+1024 Task ProxyClientTask
+
+: ProxyClientLoop ( -- )     \ try to connect to the Destination server
+   
+   PacketDataInit
+    
+   InitWheel
+
+   0 vDone !  
+   0 ClientProxySocketCreated ! 
+
+   ProxyClientTask activate
+
+   OPERATOR'S
+
+\   cr MAGENTA. ." Starting the Client Proxy Task " RESTORE. 
+
+   begin  
+      pause  
+      
+      ['] MainClientProxyLoop catch drop  \ creates an active socket
+
+   vDone @ until
+
+   stop
+
+   begin  pause stop again \ we should never get here
+; 
+
+: ShowProxyStatus 
+   -1234 LastNumberOfClients !
+   -1234 LastClientProxyConnectionMade !
+
+   begin 
+      pause
+      key? if  key #27 = if  -1 vDone !  exit  then  then
+
+      NumberOfClients @ LastNumberOfClients @ = not 
+      ClientProxyConnectionMade @ LastClientProxyConnectionMade @ = not 
+      or if
+         [c   cr 
+         ." Source "  NumberOfClients @ if  GREEN. ." connected"  RESTORE.  else  ." ---------"  then  
+         NumberOfClients @ LastNumberOfClients ! 
+         ."    Destination "  ClientProxyConnectionMade @ if  GREEN.  ." connected"  RESTORE.  else  ." ---------"  then  
+         ClientProxyConnectionMade @ LastClientProxyConnectionMade ! 
+         c]
+      then
+         
+      .AllPacketData 
+
+   again
+;
+
+: (ProxyServer) ( socket -- ) 
+   
+   >r
+
+   r@ TCsocket_Blue ! 
+ 
+   InitNemit   
+   
+    begin 
+
+      pause
+    
+      r@ SocketReadyToRead if
+         r@ SocketReceiveDataAlloc
+         NumberOfClients @ 0= not if
+            pAllocatedRecvBuffer @ count PCsocket_Yellow @ SktWrite
+         then
+         pAllocatedRecvBuffer @ count PacketDataPutPacket0            \ <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+      then
+
+      r@ SocketException if 
+         cr ." SocketException "  
+         r@ GetSocketSpecificError ?dup if 
+            ."  : GetSocketSpecificError = "  8 .hex
+         then
+      then
+
+   ChildDone @ until 
+
+   r> drop
+;
+
+: MainProxyServerLoop ( socket -- )  
+   OPERATOR'S  \ set the I/O to be the same as the OPERATOR task i.e. send output to the screen
+
+   |RecvBuffer| ALLOCATE if  RED.  cr ." Allocate failed - out of memory!!! "  RESTORE.  #1004 throw  then  dup pAllocatedRecvBuffer ! |RecvBuffer| erase 
+
+   >r
+
+   1 NumberOfClients +!
+   r@ ['] (ProxyServer) catch if  [c  cr  MAGENTA. ." The Source client has dropped the connection"  RESTORE.  c]  drop  then
+   NumberOfClients @ 1- 0 max NumberOfClients ! 
+   
+   r> ['] ShutDownSocket catch if  [c  cr  RED. ." ShutDownSocket caught"  c]  RESTORE.  drop  then 
+
+   pAllocatedRecvBuffer @ FREE if  [c  RED.  cr ." Free failed !!! "  c]  RESTORE.  #1005 throw  then
+   -1 LocalChildDone !
+;
+
+1024 Task ProxyListeningLoopTask
+
+: ProxyListeningLoop ( port -- )
+   ( port -- ) PassThePort !
+      
+   0 ChildDone ! 
+   0 LocalChildDone ! 
+   0 NumberOfClients !
+   0 LastNumberOfClients !
+   
+   ProxyListeningLoopTask activate 
+
+   0 MakeIPstring  PassThePort @ CreateSocket_Passive InternalSocket ! 
+   InternalSocket @ ['] BindTheSocket catch if  cr RED. ." Failed to BindTheSocket !!! " RESTORE.  
+      -123 ChildDone !  \ mark this task as finished 
+      stop  
+   then 
+   InternalSocket @ ListenForSocket 
+   
+   OPERATOR'S  \ set the I/O to be the same as the OPERATOR task i.e. send output to the screen
+
+   begin
+
+      pause
+
+      WaitToAcceptRemoteSocket ( -- socket )
+
+      dup INVALID_SOCKET = not if
+\         ['] MainProxyServerLoop ForkLike() drop
+         ['] MainProxyServerLoop catch if  drop  then 
+      else
+         drop
+      then
+
+   ChildDone @ until
+
+   InternalSocket @ Ws2_32::closesocket WSAerror 
+
+   -123 ChildDone !  \ mark this task as finished 
+
+   stop
+
+   begin  pause stop again \ we should never get here
+;
+
+
+\ Sets up a client and server to forward packets from/to one port to/from another
+:  Proxy ( -- ) 
+
+   [c  cr  INVERSE.  ."  --- Proxy --- "  RESTORE.  ."   Destination : "  MAGENTA.  ShowConnectionPC  RESTORE.  ."   Source : "  MAGENTA.  ShowConnectionTC  RESTORE.     cr  ."   Press Esc to exit..."  c]
+
+   -1 Silence !  \ do not show progress text 
+
+    InitialiseWSA
+   InitFD
+
+
+   [c  cr GREEN. ." Starting the Proxy Client " RESTORE.  c]
+   ProxyClientLoop   \ creates an active socket
+
+   [c  cr GREEN. ." Starting the Proxy Server " RESTORE.  c]
+   PROXY_SERVER_PORT ProxyListeningLoop   \ creates a passive socket
+
+   ShowProxyStatus
+
+   -1 ChildDone !
+   
+   [c  cr." Wait for ProxyListeningLoop to end... "   c]
+   begin  pause  ChildDone @ -123 = until 
+
+   [c  cr." Freeing adrinfo structure"   c]
+   ppResult @ Ws2_32::freeaddrinfo drop 
+
+   CloseWSA
+
+   [c  cr ." Done." cr   c]
+;
+
+
+\ *****************************************************************************
+\ *****************************************************************************
+\ HTTP
+\ The HyperText Transfer Protocol (HTTP) is an application protocol for 
+\ distributed, collaborative, hypermedia information systems.
+\ HTTP is the foundation of data communication for the World Wide Web
+\ *****************************************************************************
+\ *****************************************************************************
+
+#32 constant SAVED_DATA_LENGTH
+
+\ Information saved from the HTTP request and response 
+SAVED_DATA_LENGTH 1+ Buffer: SavedComments
+SAVED_DATA_LENGTH 1+ Buffer: SavedContentType \ the Content-Type: string saved in case we need it
+SAVED_DATA_LENGTH 1+ Buffer: SavedEtag  
+
+\ Information about the HTTP request and response :
+variable HeadOnly       \ true if we requested the HEAD only
+variable ResponseCode   \ the 200 or 404 response code, in case we need to use it
+variable HTTPversion    \ the version returned by the server, should be what we asked for
+variable ContentLength  \ the size of the content data, in non-chunked mode
+variable Chunked?       \ content data can be in chunked or ContentLength mode
+variable ConnectionClosed  \ by the server
+variable PostCmd
+
+\ *****************************************************************************
+\ Response header
+\ *****************************************************************************
+{ 
+\ a ';' character indicates a comment, so ignore to the end of the line
+: RemoveComments ( a n -- a n' ) 
+   2dup
+   0 do
+      dup c@ [char] ; = if
+         swap drop i swap  \ adjust the count
+         leave
+      then
+      1+
+   loop  drop
+;
+} 
+\ a ';' character indicates a comment, so ignore to the end of the line
+: RemoveComments ( a n -- a n' ) 
+   0 SavedComments c!
+   [char] ; SPLIT  2swap 0 max SAVED_DATA_LENGTH min SavedComments place
+;
+
+{ 
+: ttrc1  s" hello;world" RemoveComments cr type ; \ types 'hello'
+: ttrc2  s" hello;" RemoveComments cr type ; \ types 'hello'
+: ttrc3  s" hello  " RemoveComments cr type ; \ types 'hello'
+: ttrc4  s" hello;world- this is some longer text" RemoveComments cr type ; \ types 'hello'
+} 
+
+\ display the HTTP header from the server, stop when an empty line is received
+: HTTP-Header
+   begin
+      SktLine
+      RemoveComments
+      -Trailing
+   dup while  \ an empty line may have had an extra space added from the CR
+      \ take any necessary action
+      ['] evaluate catch if  
+         cr INVERSE. ." evaluate threw : " RESTORE. swap 8.hex space 4.hex 
+         2drop exit
+      then 
+      60 ToColumn space CYAN. SavedComments count type  RESTORE.
+   repeat
+   2drop
+;
+
+\ *****************************************************************************
+\ HTTP responses
+\ These commands are EVALUATEd
+\ If we want to process a given field we define its name here, if it has
+\ a value that we want we parse it, otherwise just display it using RestOfLine
+\ *****************************************************************************
+
+
+: InitVariables
+   0 HeadOnly !         \ head only not specifed yet
+   0 PostCmd !          \ not a POST command, yet
+   0 ResponseCode !     \ start off with no response code
+   0 HTTPversion !      \ no HTTP version received yet
+   -1 ContentLength !    \ reset the count, in case we don't receive one
+   0 Chunked? !         \ start off not in Chunked mode
+   0 ConnectionClosed ! \ connection is not yet closed by the server
+   0 SavedComments c!
+   0 SavedContentType c!     \ no content type received yet
+   0 SavedEtag c!            \ no Etag received yet
+;
+
+
+\ Test words :
+: .SktData ( n)   0 ?do  SktKey 3 .hex  loop ;
+
+{ 
+: SkipRestOfLine   \ ignore until the end of the evaluate buffer - like  \
+   POSTPONE \ 
+   \ #TIB @ >IN !
+;
+}
+
+: GetRestOfLine ( -- $ )
+   SOURCE  >IN @ /STRING  0 MAX
+   #TIB @ >IN !
+;
+
+: RestOfLine   \ just display the rest of the line
+   GetRestOfLine  
+   -Leading 
+   dup if  CYAN.  type  RESTORE.  else  2drop  then
+;
+
+0 [if]
+\ Note : this is not required - the hex chunk count is picked up from the
+\ socket stream, not from the evaluated line
+: GetHexNumber
+   base @ >r  hex
+   bl word count number
+   r> base !
+;
+[then]
+
+\ *****************************************************************************
+\ HTTP fields defined as Forth words
+\ *****************************************************************************
+
+#21 constant cDataColumn   \ so all the data fields line up...
+
+: DefaultGreen ( -- )   \ the usual action - parse the green text, if required - see Content-Length:
+   bl word count GREEN.  type RESTORE.  space RestOfLine
+;
+
+\ Convert CR , LF amd TABs to spaces so that number does not throw
+: MakeSafeForNumber ( a n - a n)
+   2dup  over + swap do  i c@ 32 max  i c!  loop
+;
+
+: GetDecNumber
+   base @ >r  decimal
+   bl word count
+   MakeSafeForNumber  -trailing
+   ['] number catch if  cr ." Number!!!"  #1003 throw  then
+   r> base !
+;
+
+: HTTP/x.x ( -- )   GetDecNumber ResponseCode !  cDataColumn ToColumn
+   GREEN.  ResponseCode @ 3 u.r  space  RESTORE.
+   RestOfLine
+;
+: HTTP/1.1   cr ." HTTP/1.1" HTTP/x.x  11 HTTPversion ! ;
+: HTTP/1.0   cr ." HTTP/1.0" HTTP/1.1  10 HTTPversion ! ;
+
+create MMMnames[] ," JanFebMarAprMayJunJulAugSepOctNovDec" 
+
+: MMM>n ( $month -- n | 0 )   \ 0 means not found else n = month with January = 1
+   0  -rot 
+   #12 0 do 
+      i 3 * MMMnames[] count drop + over 2over compare(NC) 0= if
+         rot 1+ i + -rot
+         leave
+      then
+   loop
+   2drop
+;
+
+: ttmmm>n ( -- )
+   cr s" Jan" 2dup type MMM>n space .
+   cr s" Sep" 2dup type MMM>n space .
+   cr s" Nov" 2dup type MMM>n space .
+   cr s" Dec" 2dup type MMM>n space .
+;
+
+variable DateTimeStamp
+
+: ParseDateAndTime ( -- )
+   [char] , word drop \ skip the day of the week and ',' 
+   \ Date: Fri, 04 Sep 2016 11:29:20 GMT   
+   bl word count Dnumber drop  \ dup 2 u.r space
+   bl word count MMM>n         \ dup 2 u.r space
+   bl word count Dnumber drop  \ dup 4 u.r space
+   D-M-Y                       \ dup (date_)+ type space
+   Unix0DAY -
+   SECONDS_PER_DAY * DateTimeStamp !
+ 
+   [char] : word count -Leading Dnumber drop  \ dup 2 u.r space
+   #60 *
+   [char] : word count -Leading Dnumber drop  \ dup 2 u.r space
+   + #60 *
+   bl word count Dnumber drop                 \ dup 2 u.r space
+   +
+\   cr ." >>>> " 10 u.r
+   DateTimeStamp +!
+  
+   GREEN. 
+   DateTimeStamp @ Unix@NOW (date_)+ type space  .Time
+   space DateTimeStamp @ 10 u.r
+   RESTORE.
+   space
+\   RED. GetRestOfLine -Leading 2dup type  RESTORE.
+;
+
+: Date: ( -- )  
+   cr ." Date: " cDataColumn ToColumn 
+   ['] ParseDateAndTime catch drop
+   RestOfLine 
+;
+
+: Server: cr ." Server:" cDataColumn ToColumn
+   >IN @ >r
+   [char] / word
+   r> >IN !
+   RestOfLine
+   count s" Apache" compare 0= if
+       GREEN.
+      ."  Open Source"
+      RESTORE.
+   then
+;
+
+: Vary:    
+   cr ." Vary: " cDataColumn ToColumn  DefaultGreen 
+;
+
+: Last-Modified:   cr ." Last-Modified:" cDataColumn ToColumn 
+   ['] ParseDateAndTime catch drop
+   RestOfLine 
+;
+
+: ETag:   cr ." ETag:" cDataColumn ToColumn
+   [char] "
+   word count 0 max  SAVED_DATA_LENGTH min  SavedEtag place
+   GREEN.  SavedEtag count type  RESTORE.
+   RestOfLine
+;
+
+: Accept-Ranges:   cr ." Accept-Ranges:" cDataColumn ToColumn DefaultGreen ;
+: Allow:   cr ." Allow:"  cDataColumn ToColumn DefaultGreen ;
+
+: Connection:  cr ." Connection:" cDataColumn ToColumn DefaultGreen ;
+
+: close   GREEN.  ."  close"  -1 ConnectionClosed !  RESTORE. 
+      NORMAL. ."   <--- Connection closed by remote server"  RESTORE.
+;
+
+: Keep-Alive   GREEN.  ."  Keep-Alive" cDataColumn ToColumn RESTORE. ;
+
+: X-Powered-By:  cr ." X-Powered-By:" cDataColumn ToColumn DefaultGreen ;
+
+: Cache-Control:  cr ." Cache-Control:" cDataColumn ToColumn DefaultGreen ;
+
+: Expires:  cr ." Expires:"  cDataColumn ToColumn DefaultGreen ;
+
+: Transfer-Encoding:   cr ." Transfer-Encoding:" cDataColumn ToColumn 0 Chunked? ! ;
+\ Note : the data following is the chunked data...
+
+: chunked  GREEN.  ." chunked"   -1 Chunked? !  RESTORE. ;
+
+\ HTTP version 1.0 just specified a number of bytes of data
+: Content-Length:   cr ." Content-Length:" cDataColumn ToColumn
+   GetDecNumber ContentLength !  
+   GREEN.  ContentLength @ 1 u.r  RESTORE. space   
+   RestOfLine
+;
+
+: Content-Type:   cr ." Content-Type:" cDataColumn ToColumn
+   bl word count  0 max  SAVED_DATA_LENGTH min SavedContentType place
+   GREEN.  SavedContentType count type  RESTORE. space
+;
+
+: X-Content-Type-Options: ( -- )   
+   cr ." X-Content-Type-Options: " cDataColumn ToColumn
+   DefaultGreen
+;
+
+: X-XSS-Protection: ( -- )   
+   cr ." X-XSS-Protection: " cDataColumn ToColumn
+   DefaultGreen
+;
+
+: Alternate-Protocol: ( -- )   
+   cr ." Alternate-Protocol: " cDataColumn ToColumn
+   DefaultGreen
+;
+
+: Set-Cookie:
+   cr ." Set-Cookie: " cDataColumn ToColumn
+   bl word count 2dup GREEN.  type  RESTORE.  RestOfLine
+
+   \ parse a Unix Timestamp from the cookie data RECEIVED FROM www.timeanddate.com
+   -Leading  over  s" TIMEANDDATE_SESSION=T_" rot over  compare 0=
+   if
+      s" TIMEANDDATE_SESSION=T_" swap drop /string    \ remove the name
+      [char] % split 
+\      cr 2dup type  
+      Dnumber drop UnixTimeStamp !      
+\      cr 2dup type  
+      2drop 
+      ."   Timestamp = " MAGENTA.  UnixTimeStamp @ 0 10 d.r RESTORE.
+      MAGENTA. 2 spaces 
+      UnixTimeStamp @ Unix@NOW (date_)+ type space .Time  
+      RESTORE.
+   else
+      2drop
+   then
+;
+
+: Strict-Transport-Security:
+   cr ." Strict-Transport-Security: " cDataColumn ToColumn
+   DefaultGreen
+;
+
+: Upgrade:
+   cr ." Upgrade: " cDataColumn ToColumn
+   DefaultGreen
+;
+
+: Location:
+   cr ." Location: " cDataColumn ToColumn
+   DefaultGreen
+;
+
+: Content-Location:
+   cr ." Content-Location: " cDataColumn ToColumn
+   DefaultGreen
+;
+
+: Keep-Alive:
+   cr ." Keep-Alive: " cDataColumn ToColumn
+   DefaultGreen
+;
+
+: X-Content-Options:
+   cr ." X-Content-Options: " cDataColumn ToColumn
+   DefaultGreen
+;
+
+: Pragma:
+   cr ." Pragma: " cDataColumn ToColumn
+   DefaultGreen
+;
+
+: Via:
+   cr ." Via: " cDataColumn ToColumn
+   DefaultGreen
+;
+
+: Age:
+   cr ." Age: " cDataColumn ToColumn
+   DefaultGreen
+;
+
+: X-Served-By:
+   cr ." X-Served-By: " cDataColumn ToColumn
+   DefaultGreen
+;
+
+: X-Cache:
+   cr ." X-Cache: " cDataColumn ToColumn
+   DefaultGreen
+;
+
+: X-Cache-Hits:
+   cr ." X-Cache-Hits: " cDataColumn ToColumn
+   DefaultGreen
+;
+
+: X-Timer:
+   cr ." X-Timer: " cDataColumn ToColumn
+   DefaultGreen
+;
+
+: P3P:
+   cr ." P3P: " cDataColumn ToColumn
+   GetRestOfLine GREEN.  type RESTORE.  space RestOfLine
+;
+
+: X-Frame-Options:
+   cr ." X-Frame-Options: " cDataColumn ToColumn
+   DefaultGreen
+;
+
+: Proxy-Connection:
+   cr ." Proxy-Connection: " cDataColumn ToColumn
+   DefaultGreen
+;
+
+: X-Varnish:
+   cr ." X-Varnish: " cDataColumn ToColumn
+   DefaultGreen
+;
+
+: X-Instart-Request-ID:
+   cr ." X-Instart-Request-ID: " cDataColumn ToColumn
+   DefaultGreen
+;
+
+\ *****************************************************************************
+\ Chunked data
+\ *****************************************************************************
+
+\ convert a single digit 0 to 9 and A to F ( or a to f ) to its hexadecimal value
+: ASCII->hex ( c - c')   dup [char] 9 > if  7 -  then  [char] 0 - $0F and ;
+
+\ HTTP version 1.1 added "chunked data mode" where pairs of number of bytes followed by
+\ the data are sent, terminated by a number of bytes of 0
+: GetChunkLength ( -- u )
+   NORMAL. cr  ."  GetChunkLength = "  RESTORE. 
+   0
+   begin
+      pause
+      SktKey 
+\      dup 3 .hex
+      Upper
+      dup [char] 0 [char] 9 1+ within over [char] A [char] F 1+ within or
+   while
+      swap  4 lshift   swap  ASCII->hex  or
+   repeat
+   drop
+   SktKeyRepeat   \ put the non hex digit character back inthe buffer
+   SkipToEndOfLine \ discard the terminating CRLF or LF
+   NORMAL.  dup dup 4 .hex  0= if  ."   ( length 0 means end of chunk data ) "  then  RESTORE. 
+;
+
+: +emit_no_cr ( c)   dup 10 =  over 13 = or  if  10 = if  4  emit ( cr )  else  5  emit  then  else  emit  then ;
+
+: GetChunkData ( u -- )
+\   NORMAL. cr  ."  GetChunkData # = " dup 5 u.r  RESTORE.
+   ( u -- ) 0 ?do  
+      i $7F and 0= if  cr NORMAL.  i 4 .hex  2 spaces  RESTORE.  then
+      SktKey +emit_no_cr  
+   loop   \ <<<--- you can do something with this data here
+   SkipToEndOfLine   \ discard the terminating CRLF or LF
+;
+
+: GetChunks
+   begin
+      pause
+      GetChunkLength
+   dup while
+      GetChunkData
+   repeat
+   drop
+   SkipToEndOfLine \ discard the terminating CRLF or LF
+   0 Chunked? !  \ no longer in Chunked mode
+;
+
+\ *****************************************************************************
+\ Response content
+\ *****************************************************************************
+
+: GetContent  \ display the content of the response
+   MAGENTA.             \ show content data in pink
+   Chunked? @ if        \ chunked data mode
+      GetChunks
+   else                 \ ContentLength mode
+      ContentLength @ -1 = if  \ ContentLength: not set!!!
+         NORMAL. cr ." Content-Length: not set - waiting for data for 100 ms ..."  RESTORE. 
+         cr 100 ms-ShowRemaining 
+      else
+         ContentLength @ if  cr  then
+         ContentLength @ 0 ?do  SktKey +emit  loop    \ <<<--- you can do something with this data here
+      then
+   then
+   RESTORE. 
+;
+
+\ display the HTTP content from the server
+\ This can be either ContentLength bytes or chunked data,
+\ or if the socket is closed by the server, an unknown length
+: HTTP-Content
+   HeadOnly @ 0= if  \ if we requested HEAD only, there is no content
+      GetContent
+      NORMAL. \ not sure why we need this...
+   then
+;
+
+\ *****************************************************************************
+\ HTTP requests
+\ *****************************************************************************
+
+256 constant |MyHostName|
+|MyHostName| buffer: MyHostName
+1024 buffer: MyHTTPstring
+
+: SetupHost ( a n - IP ) \ specify the host name that we want to connect to
+   MyHostName |MyHostName| erase \ for null-terminated string
+   ( a n) MyHostName place
+;
+
+0 value BreakMe         \ set to true to break the HTTP header that we send
+
+create $space ( -- a )   $01 c, BL c, 
+
+: AddStringCR ( $ -- )   MyHTTPstring append  CRLF$ count MyHTTPstring append ;
+
+\ send an HTTP request
+\ Note that the host name is used to open a socket and also as part of the HTTP/1.1 request
+: (HTTP) ( $file $host $cmd -- )   \ s" filename"  s" www.host.com"  s" GET" (HTTP)
+
+   MyHostName |MyHostName| erase \ for null-terminated string
+   2swap ( $host -- ) MyHostName place
+
+   MyHostName count drop  HTTP_PORT  CreateSocket_Active TheExternalSocket !
+
+\   TheExternalSocket @ ['] NonBlocking catch drop 
+
+   TheExternalSocket @ ConnectToRemoteSocket
+
+   ( $cmd -- ) 2dup s" HEAD" compare 0= HeadOnly ! \ no content data will be returned
+   ( $cmd -- ) 2dup s" POST" compare 0= PostCmd !  \ detect if this is a POST command (see below)
+
+   ( $cmd -- ) MyHTTPstring place
+
+   s"  /" MyHTTPstring append
+   ( $file -- ) MyHTTPstring append
+
+\   $space count MyHTTPstring append \ CRLF$ count MyHTTPstring append
+\   s" home=Cosby&favorite+flavor=flies" MyHTTPstring append CRLF$ count MyHTTPstring append
+
+   BreakMe if
+      s"  HTTP/1.x" AddStringCR
+   else
+      s"  HTTP/1.1" AddStringCR
+   then
+
+   s" Host: " MyHTTPstring append  MyHostName count AddStringCR 
+
+   PostCmd @ if   \ extra fields for a POST command
+      s" From: howerd@inventio.co.uk" AddStringCR
+      s" User-Agent: HTTPTool/1.0" AddStringCR
+\      s" Content-Type: application/x-www-form-urlencoded" AddStringCR
+      s" Content-type:text/html;charset=utf-8" AddStringCR
+      s" Content-Length: 20" AddStringCR     \ the length of the string below
+      CRLF$ count MyHTTPstring append        \ extra CRLF
+      \ Note : the characters in the POST data should not include :/?#[]@!$&'()*+,;=%
+      \ unless they are used as delimiters - they should be % encoded, @ --> %40 etc.
+\     s" home=Rita1&favorite+flavour=choc" AddStringCR   \ the POST data
+\      s" POST could be better" AddStringCR   \ the POST data
+      s" This is from WSA-f---" AddStringCR   \ the POST data
+
+\      s" <html><br>Hello HTTP<br></html>" AddStringCR   \ the POST data
+   then
+
+   CRLF$ count MyHTTPstring append  \ the second blank line marks end of request
+
+   s" Start of request" ShowTitleLine=
+   MyHTTPstring count
+   cr  2dup ++type  \ display what we send to the socket
+   TheExternalSocket @ SktWrite   \ write the HTTP request to the socket
+
+   s" Start of response header" ShowTitleLine-
+   HTTP-Header                 \ display the header
+
+   s" Start of response content" ShowTitleLine-
+   HTTP-Content                  \ display the content
+;
+
+: HTTP ( $file $host $cmd -- )    \ s" filename"  s" www.host.com"  s" GET" HTTP
+
+   NORMAL. 
+
+   INVALID_SOCKET TheExternalSocket !  
+   NULL ppResult !
+    
+   InitialiseWSA
+   InitFD
+   InitVariables           \ make sure we start in a known state
+
+   ['] (HTTP) catch
+   ?dup if
+      case
+         #1002 of  cr ." Could not read from socket"  endof
+         #1003 of  cr ." Could not evaluate a number "  endof
+         cr ." Caught throw # " dup . 
+      endcase
+      2drop 2drop  2drop
+   then   \ catch any errors
+
+   s" End of request and response" ShowTitleLine=
+
+   ConnectionClosed @ if
+      NORMAL. cr ." Connection closed by remote server" 
+      100 ms-ShowRemaining   \ dump out anything left from the socket
+      RESTORE.
+   else
+      RED.
+      50 ms-ShowRemaining    \ dump out anything left from the socket
+      RESTORE.
+   then
+
+   TheExternalSocket @ ShutDownSocket  \ close down the socket  
+   CloseWSA                            \ clean up the WSA system  
+
+   cr ." Done." cr 
+
+   RESTORE.
+;
+
+\ The GET request returns an HTTP header and then the file
+: HTTP-GET ( $file $host -- )   s" GET" HTTP ; \ filename
+
+\ The HEAD request only returns the HTTP header
+: HTTP-HEAD ( $file $host -- )  s" HEAD" HTTP ; \ filename
+
+\ The OPTIONS request returns the requests available on this HTTP server
+: HTTP-OPTIONS ( -- )   0 0 2swap s" OPTIONS" HTTP ;
+
+\ The TRACE request returns the data just sent to the HTTP server
+: HTTP-TRACE ( $file $host -- )   s" TRACE" HTTP ;
+
+\ The POST request returns an HTTP header 
+: HTTP-POST ( $file $host -- )   s" POST" HTTP ; \ filename
+
+: .TitleLine  INVERSE.  cr cr type  RESTORE. ;
+
+: tt1x   s" tt1x  200 OK - normal working GET of http://www.howerd.webspace.virginmedia.com/mytest.htm" .TitleLine
+   s" mytest.htm" s" www.howerd.webspace.virginmedia.com" HTTP-GET ;
+
+: tt1   s" tt1  200 OK - normal working GET of http://www.inventio.co.uk/mytest.htm" .TitleLine
+   s" mytest.htm" s" www.inventio.co.uk" HTTP-GET ;
+
+: tt1w  s" tt1w  200 OK - normal working GET of http://registration.subud.org/" .TitleLine
+   s" index.php" s" www.registration.subud.org" HTTP-GET ;
+
+: tt1w2  s" tt1w2  200 OK - normal working GET of http://www.isos.com/" .TitleLine
+   s" index.php" s" www.isos.com" HTTP-GET ;
+
+: tt1w3  s" tt1w2  200 OK - normal working GET of http://www.isos.com/" .TitleLine
+   s" index.php" s" https://www.isos.com/" HTTP-GET ;
+
+: tt1Get   s" tt1Get  200 OK - normal working GET of http://www.inventio.co.uk/Mlog8/user1234.php" .TitleLine
+   s" Mlog8/user1234.php" s" www.inventio.co.uk" HTTP-GET ;
+
+: tt1Post   s" tt1Post  200 OK - normal working POST to http://www.inventio.co.uk/Mlog8/user1234/c.php" .TitleLine
+   s" Mlog8/user1234/c.php" s" www.inventio.co.uk" HTTP-POST ;
+
+: tt1Get3   s" tt1Get3  200 OK - normal working GET to http://www.inventio.co.uk/Mlog8/user1234/c.php" .TitleLine
+   s" Mlog8/user1234/c.php" s" www.inventio.co.uk" HTTP-GET ;
+
+: tt1000Post   s" tt1000Post  200 OK - normal working POST to http://www.inventio.co.uk/Mlog8/user1000/c.php" .TitleLine
+   s" Mlog8/user1000/c.php" s" www.inventio.co.uk" HTTP-POST ;
+
+: tt1Post2   s" tt1Post2  200 OK - normal working POST to http://www.inventio.co.uk/Mlog8/LocalStorage.html" .TitleLine
+   s" Mlog8/user1000/index.php" s" www.inventio.co.uk" HTTP-POST ;
+
+: tt1Get2   s" tt1Get2  200 OK - normal working GET from http://www.inventio.co.uk/Mlog8/user1000/index.php" .TitleLine
+   s" Mlog8/LocalStorage.html" s" www.inventio.co.uk" HTTP-GET ;
+
+
+: tt1c   s" tt1c  200 OK - attempted normal working GET of non-existant site" .TitleLine
+   s" mytest.htm" s" www.blahdeblahnotaworkingsiteinventio.co.uk" HTTP-GET ;
+
+: tt1d   s" tt1d  200 OK - normal working GET of http://www.inventio.co.uk/HowerdOakfordCV.rtf" .TitleLine
+   s" HowerdOakfordCV.rtf" s" www.inventio.co.uk" HTTP-GET ;
+
+: tt2   s" tt2  404 Not Found - the famous 404" .TitleLine
+   s" NotAfile.htm" s" www.inventio.co.uk" HTTP-GET ;
+
+: tt2b   s" tt2  404 Not Found - the famous 404, from Google" .TitleLine
+   s" NotAfile.htmx" s" www.google.co.uk" HTTP-GET ;
+
+: tt2c   s" tt2b  403 Website not found" .TitleLine
+   s" NotAfile.htm" s" www.not-inventio.co.uk" HTTP-GET ;
+
+: tt2d   s" tt2c  404 Not Found - the famous 404, in chunked mode, head only" .TitleLine
+   s" NotAfile.htm" s" www.inventio.co.uk" HTTP-HEAD ;
+
+: tt3   s" tt3  200 OK - just the HEAD" .TitleLine
+   s" mytest.htm" s" www.inventio.co.uk" HTTP-HEAD ;
+
+: ttHead1   s" ttHead1  200 OK - just the HEAD" .TitleLine
+   s" /Mlog8/user1234/PostData.txt" s" www.inventio.co.uk" HTTP-HEAD ;
+
+: ttGetStatus  s" ttGetStatus  200 OK - MySQL database status" .TitleLine
+   s" /Mlog8/user1234/status.php" s" www.inventio.co.uk" HTTP-GET ;
+
+: tt3b   s" tt3  200 OK - just the HEAD" .TitleLine
+   s" mytest.htm" s" howerd.dyndns-server.com" HTTP-HEAD ;
+
+: tt4   s" tt4  200 OK - another file, this time a jpg" .TitleLine
+   s" IMAGE001.JPG" s" www.inventio.co.uk" HTTP-GET ;
+
+: tt5   s" tt5  200 OK - the time and date http://www.timeanddate.com/" .TitleLine
+   s" index.html" s" www.timeanddate.com" HTTP-GET ;
+
+: tt5b   s" tt5  200 OK - the time and date http://www.timeanddate.com/" .TitleLine
+   s" index.html" s" www.timeanddate.com" HTTP-HEAD ;
+
+: tt6   s" tt6  200 OK - TRACE" .TitleLine
+   s" mytest.htm" s" www.inventio.co.uk" HTTP-TRACE ;
+
+: tt6b   s" tt6  200 OK - TRACE" .TitleLine
+   s" mytest.htm" s" howerd.dyndns-server.com" HTTP-TRACE ;
+
+
+: tt7   s" tt7  400 Bad Request - send an invalid HTTP version" .TitleLine
+   -1 to BreakMe
+   s" mytest.htm" s" www.inventio.co.uk" HTTP-GET
+   0 to BreakMe
+;
+
+: tt8   s" tt8  400 Bad Request - send an invalid HTTP version #2 " .TitleLine
+   -1 to BreakMe
+   s" mytest.htm" s" www.google.co.uk" HTTP-GET
+   0 to BreakMe
+;
+
+: tt9   s" tt9  200 OK - normal working GET of http://smlnj.org/icfp08-contest/simulator.html" .TitleLine
+   s" /icfp08-contest/simulator.html" s" smlnj.org" HTTP-GET ;
+
+: tt10   s" tt10  400 Bad Request - send an invalid HTTP version #3 " .TitleLine
+   -1 to BreakMe
+   s" /icfp08-contest/simulator.html" s" smlnj.org" HTTP-TRACE
+   0 to BreakMe
+;
+
+: ttChunks   s" ttChunks test the Google website which sends chunked data" .TitleLine  
+   s" index.html" s" www.google.co.uk" HTTP-GET 
+;
+
+: HTTPhelp
+   0 attribute  cr  HostVersion ShowTitle  
+   cr ." HTTP Help text "
+   INVERSE. cr ." Inverse - Title of test"                                      RESTORE.
+   NORMAL.  cr ." Black - text we display, for information only"                RESTORE.
+   RED.     cr ." Red - errors"                                                 RESTORE.
+   BLUE.    cr ." Blue - the characters we send to the socket"                  RESTORE.
+   CYAN.    cr ." Cyan - part of the line that we don't evaluate, just display" RESTORE.
+   MAGENTA. cr ." Magenta - the data content we get from the socket"            RESTORE.
+   GREEN.   cr ." Green - data parsed from the evaluated input line"            RESTORE.
+   NORMAL.  cr ." An ASCII linefeed character ( decimal 10 ) is shown as a " 4 emit   
+          cr ." An ASCII carriage return character ( decimal 13 ) is shown as a " 5 emit
+          cr ."   on output, and is ignored when received from the socket in a header line"
+          cr ." Type  " BLUE. ." locate ttall g" RESTORE.  ."  to see the code"
+          cr ." Type  " BLUE. ." tt1" RESTORE.  ."   to run HTTP test #1, "
+          cr ." Type  " BLUE. ." ttall" RESTORE.  ."   to run all of the HTTP tests "
+          cr ." Type  " BLUE. ." HTTPhelp"  RESTORE.  ."   to see this help text"
+   RESTORE.
+;
+
+: PressAnyKey ( -- )   NORMAL. cr ." Press any key to continue :"  RESTORE. key 27 = if  r> drop exit  then ;
+
+: ttall
+   page
+   HTTPhelp  PressAnyKey
+   tt1  PressAnyKey
+   tt2  PressAnyKey
+   tt3  PressAnyKey
+   tt4  PressAnyKey
+   tt5b PressAnyKey
+   tt6  PressAnyKey
+   tt7  PressAnyKey
+   tt8  PressAnyKey
+   tt9  PressAnyKey
+   tt10  PressAnyKey
+   ttChunks  
+;
+
+HTTPhelp
+cr
+cr .( Type : )
+cr .( Server )
+cr .( in one SwiftForth, and )
+cr .( Client )
+cr .( in as many other SwiftForth windows as you like, up to around 1500 if you have the patience... )
+cr
+
+
+\ *****************************************************************************
+\ *****************************************************************************
+\ FTP 
+\ *****************************************************************************
+\ *****************************************************************************
+{ 
+   FTP the File transfer Protocol uses two sockets, one for control the other for data.
+   The client ( us ) opens a socket to the FTP server's IP address at the well-known FTP port number = #21 .
+   When using the PASV ( PASsiVe ) mode, we send the PASV command and the server responds with the
+   IP address and port that we should connect to to allow the server to send us data, or receive data from us.
+   PASV mode means that the server is passive in waiting for us to connect the data socket to it.
+   So the client opens  two active sockets - first the control socket, then the data socket.
+   When we create a new socket for either control or data Windows selects a port for us in some pseudo random way,
+   and when we request a PASV connection, the server sends us a pseudo random port to.
+}
+
+\ *****************************************************************************
+\ FTP configuration
+\ *****************************************************************************
+
+\ #21 constant FTP_PORT
+ 
+: z$FTPiPaddress ( -- z$ ) z" ftp.inventio.co.uk";
+: $FTPusername ( -- $ )   s" inventio.co.uk" ;
+: $FTPpassword ( -- $ )   s" ********";   \ Not my real password ;-) 
+: $FTPdirectory    ( -- $ )   s" test" ; 
+
+
+\ *****************************************************************************
+\ *****************************************************************************
+
+
+variable LineReceived
+
+variable TagValueReply
+
+variable 550_FileNotFound
+
+2variable ResultValue
+
+variable PassivePort 
+variable PassiveIPaddress
+
+{ 
+   The response to a PASV Tag looks like this :
+   227 Entering Passive Mode (20,0,0,10,193,79)
+   First we remove characters up to and including the '('
+   The six numbers are then parsed to give the IP address and Port
+   Note : the numbers are in Big Endian order, so they are stored backwards in a PC's Little Endian variable
+}
+
+: FTPparsePassivePort ( $ -- )
+
+   cr NORMAL.  ." FTPparsePassivePort : " RESTORE.  
+   \ GREEN. 2dup type+  RESTORE.
+   cr 
+
+   0 PassiveIPaddress ! 
+   0 PassivePort !
+
+   [char] ( split  2drop ( ) 
+   1 /string   \ remove the '('
+   [char] ) split 2swap 2drop    \ remove the ')' and any characters following it
+   
+   ( $ -- ) 
+   4 0 do  
+      [char] , split  
+      -Leading -Trailing Dnumber drop  PassiveIPaddress i + c!  
+      1 /string   \ remove the ','
+   loop
+
+   [char] , split  
+   -Leading -Trailing Dnumber drop  PassivePort 1 + c!  
+   1 /string   \ remove the ','
+   -Leading -Trailing Dnumber drop  PassivePort c!
+;
+
+\ 227 Entering Passive Mode (212,159,9,151,200,217)
+: ttppp ( -- )   s" 227 Entering Passive Mode (20,0,0,10,193,79)" ['] FTPparsePassivePort  catch drop
+   cr ." IP address = "  PassiveIPaddress @ dup .ip    s" 10.0.0.20" >ip = if  GREEN.  ."  OK   "  RESTORE.  then
+   ."    Port = " PassivePort @ dup . #49487  = if  GREEN.  ."  OK   "  RESTORE.  then 
+;
+
+\ Note : the connection is Passive for the server, but Active for us
+: FTPopenDataConnection ( -- )
+   NORMAL. ." FTPopenDataConnection to " RESTORE.  BLUE. PassiveIPaddress @ .ip ." :" PassivePort @ . space     RESTORE.
+   
+   PassiveIPaddress @ MakeIPstring PassivePort @  CreateFTPdataSocket_Active TheExternalFTPdataSocket ! 
+   ConnectToFTPdataSocket \ catch if  #2001 throw  then
+;
+
+
+2variable vFTPfileSize        \ the size of the file extracted from SIZE
+2variable vFTPfileReceived    \ number of bytes received so far
+
+: 4u.rBlue ( u -- )   BLUE.  4 u.r  RESTORE. ;
+: 6ud.rBlue ( u -- )   BLUE.  6 d.r  RESTORE. ;
+
+: ShowReceivedStatus ( -- )
+   cr+ ." #bytes = " RecvBuffer2# @ 4u.rBlue  
+   #23 ToColumn  ." vFTPfileReceived = " vFTPfileReceived 2@ 6ud.rBlue  
+   #51 ToColumn ." left to go = " vFTPfileSize 2@ 2dup -1. D= 
+   if  2drop  BLUE. ." not known"  RESTORE.  else  vFTPfileReceived 2@ d- 6ud.rBlue  then 
+;
+
+\ *****************************************************************************
+\ A temporary buffer to hold a file, so that we can send it back to the FTP server with a different filename
+\ *****************************************************************************
+#20 2** constant |TempFileBuffer| 
+|TempFileBuffer| Buffer: TempFileBuffer[]
+variable TempFileBuffer#
+
+: Put8TempFileBuffer ( c -- )
+   TempFileBuffer[] TempFileBuffer# @ |TempFileBuffer| 1- and + c!
+   1 TempFileBuffer# +!
+;
+
+: CopyToTempFileBuffer ( $ -- )
+   over + swap ?do  i c@ Put8TempFileBuffer  loop              
+;
+
+: ShowTempFileBuffer ( $ -- )
+   TempFileBuffer[] TempFileBuffer# @  typeCR              
+;
+
+\ *****************************************************************************
+\ FTP response buffer to hold data, so that we can remove it one line at a time
+\ *****************************************************************************
+
+#08 2** constant |FTPresponseLineBuffer| 
+|FTPresponseLineBuffer| Buffer: FTPresponseLineBuffer[]
+variable vFTPresponseLineBufferPut#
+
+
+#12 2** constant |FTPresponseBuffer| 
+|FTPresponseBuffer| Buffer: FTPresponseBuffer[]
+variable vFTPresponseBufferPut#
+variable vFTPresponseBufferGet#
+
+: InitFTPresponseBuffers ( -- )
+   0 vFTPresponseLineBufferPut# !
+   0 vFTPresponseBufferPut# !
+   0 vFTPresponseBufferGet# !   
+;
+
+\ *****************************************************************************
+
+: >FTPresponseLineBuffer ( n -- a )
+   |FTPresponseLineBuffer| 1- and FTPresponseLineBuffer[] +
+;
+
+: Put8FTPresponseLineBuffer ( c -- )
+   vFTPresponseLineBufferPut# @ >FTPresponseLineBuffer c!
+   1 vFTPresponseLineBufferPut# +!
+;
+
+: ShowFTPresponseLineBuffer ( -- )
+   FTPresponseLineBuffer[] vFTPresponseLineBufferPut# @ over + swap ?do  i c@ emit+  loop 
+   0 vFTPresponseLineBufferPut# !
+;
+
+\ *****************************************************************************
+
+: >FTPresponseBuffer ( n -- a )
+   |FTPresponseBuffer| 1- and FTPresponseBuffer[] +
+;
+
+: Put8FTPresponseBuffer ( c -- )
+   vFTPresponseBufferPut# @ >FTPresponseBuffer c!
+   1 vFTPresponseBufferPut# +!
+;
+
+: Get8FTPresponseBuffer ( -- c )
+   vFTPresponseBufferGet# @ >FTPresponseBuffer c@
+   1 vFTPresponseBufferGet# +!
+;
+
+: FTPresponseBuffer# ( -- n ) 
+   vFTPresponseBufferPut# @ vFTPresponseBufferGet# @ - |FTPresponseBuffer| 1- and
+;
+
+: CopyToFTPresponseBuffer ( $ -- )
+   over + swap ?do  i c@ Put8FTPresponseBuffer  loop              
+;
+
+\ *****************************************************************************
+
+: ShowFTPresponseBufferOneLine ( -- )
+
+   FTPresponseBuffer# 0 ?do  
+      Get8FTPresponseBuffer dup $20 < not if  Put8FTPresponseLineBuffer  else  $0A = if  leave  then  then
+   loop 
+   cr ShowFTPresponseLineBuffer
+;
+
+: ShowFTPresponseBuffer ( -- )
+   begin
+      ShowFTPresponseBufferOneLine   
+   FTPresponseBuffer# 0= until
+;
+
+
+\ *****************************************************************************
+
+
+
+\ *****************************************************************************
+\ *****************************************************************************
+
+variable vType_X
+
+: ShowType_X ( c -- )
+   dup 0= if  drop exit  then 
+   CYAN. 
+   case
+   [char] A of  ."  ASCII text          "  endof
+   [char] E of  ."  EBCDIC text         "  endof
+   [char] I of  ."  Image (binary data) "  endof
+   [char] L of  ."  Local format        "  endof
+      RED. ."  Unknown Type_X = " 3 .hex  RESTORE.
+   endcase
+   RESTORE.  
+;
+
+: CheckType_X ( $ -- )
+   0 vType_X !
+   over s" 200 Type set to " rot over compare 0= if 
+      s" 200 Type set to " swap drop /string drop c@ vType_X c!
+   then
+;
+
+: ParseResultValue ( $ -- )
+   4 /string    
+   2dup over + swap ?do  i c@ $20 < if  $20 i c!  then  loop   \ convert control characters ( <CR> , <LF> etc ) to spaces
+   -Trailing   
+\   INVERSE. 2dup cr type  RESTORE.
+   ['] Dnumber catch if  2drop 0.  then  ResultValue 2!  
+;
+
+{ 
+FTP reply code number xyz :
+x -->
+2     Success reply
+4 or 5   Failure reply
+1 or 3   Error or Incomplete reply
+The second digit defines the kind of error:
+
+x0z   Syntax. These replies refer to syntax errors.
+x1z   Information. Replies to requests for information.
+x2z   Connections. Replies referring to the control and data connections.
+x3z   Authentication and accounting. Replies for the login process and accounting procedures.
+x4z   Not defined.
+x5z   File system. These replies relay status codes from the server file system.
+The third digit of the reply code, z ,  is used to provide additional detail for each of the categories defined by the second digit, y .
+}
+
+: FTPparseErrorString ( $ -- f )    \ 
+   s" Login" Search >r 2drop r> if  #9125 throw  then
+;
+
+
+variable TransferComplete
+
+: (FTPparseLine) ( $ -- )  \ take an action depending on the returned string
+   dup 4 < if  2drop  exit  then 
+   
+\   cr  inverse. 2dup dump restore.
+   
+   -1 TagValueReply !  
+   0 550_FileNotFound !
+
+\   MakeSafeForNumber -Leading  -Trailing
+
+   cr MAGENTA.  2dup type  RESTORE. 
+
+\   2dup drop c@ $20 < if  2dup drop $20 swap c!  then            \ remove a leading CR or LF
+\   -Leading 
+\   2dup 1- 0 max + c@ $20 < if  2dup 1- 0 max + $20 swap c!  then    \ remove a trailing <CR>, if present
+\   -Trailing
+
+   over 3 
+
+\   cr ." Dnumber = "  2dup type space 
+   
+   Dnumber drop \ space . 
+   case
+      #150 of  2drop  endof
+      #200 of  CheckType_X  vType_X @ ShowType_X  endof        \ 200 UTF8 set to on
+      #202 of  2drop  endof
+      #211 of  2drop  endof
+      #213 of  ParseResultValue  endof
+      #214 of  2drop  endof
+      #220 of  2drop  endof                                    \ 220 ProFTPD Server [freenetname.co.uk]
+      #221 of  2drop  endof                                    \ 226 Transfer complete
+      #226 of  2drop  -1 TransferComplete !  endof
+      #227 of  FTPparsePassivePort FTPopenDataConnection endof \ 227 Entering Passive Mode (212,159,9,151,200,217)
+      #230 of  2drop  endof
+      #250 of  2drop  endof
+      #331 of  2drop  endof                                    \ 331 Password required for spred
+      #421 of  2drop  endof                                    \ 421 Server is going offline
+      #426 of  2drop  endof                                    \ 426 Connection closed; aborted transfer of "/vehicle/0000/TestFile1.txt"
+      #450 of  2drop  endof                                    \ 450 PASV: data tranfer in progress
+      #500 of  2drop  endof                                    \ 500 Invalid command: try being more creative
+      #530 of  FTPparseErrorString   0 TagValueReply !  endof
+      #550 of  2drop  -1 550_FileNotFound !  endof                     \ 550 /vehicle/0000/: No such file or directory
+         0 TagValueReply !
+         RED. cr ." Unknown response number = "  BLUE. dup . RESTORE.  RESTORE.
+   endcase
+\   cr ." FTPparseLine : " .s
+;
+
+: FTPparseLine ( $ -- )  \ take an action depending on the returned string
+   ['] (FTPparseLine) catch if  2drop then
+;
+
+
+\ *****************************************************************************
+
+
+: ParseFTPresponseLineBuffer ( -- )
+   FTPresponseLineBuffer[] vFTPresponseLineBufferPut# @ FTPparseLine
+   0 vFTPresponseLineBufferPut# !
+   -1 LineReceived !
+;
+
+: ParseFTPresponseBufferOneLine ( -- )
+
+   FTPresponseBuffer# 0 ?do  
+      Get8FTPresponseBuffer dup $20 < not if  Put8FTPresponseLineBuffer  else  $0A = if  leave  then  then
+   loop 
+   ParseFTPresponseLineBuffer
+;
+
+: ParseFTPresponseBuffer ( -- )
+   begin
+      ParseFTPresponseBufferOneLine   
+   FTPresponseBuffer# 0= until
+;
+
+\ *****************************************************************************
+\ *****************************************************************************
+
+variable DataReceived
+
+: ShowFTPcontrolSocketData ( -- )
+   0 DataReceived !
+
+   TheExternalFTPcontrolSocket @ SocketReadyToRead if
+      -1 DataReceived !
+      TheExternalFTPcontrolSocket @ SocketReceiveData
+      RecvBuffer[] RecvBuffer# @ CopyToFTPresponseBuffer
+      cr  MAGENTA.  ShowFTPresponseBuffer  RESTORE. 
+   then
+
+   TheExternalFTPcontrolSocket @ SocketException if
+      TheExternalFTPcontrolSocket @ GetSocketSpecificError ?dup if 
+         RED.  cr ." GetSocketSpecificError = "  RESTORE.  BLUE. 8 .hex RESTORE.
+      then
+   then
+;
+
+: ParseFTPcontrolSocketData ( -- )
+   0 DataReceived !
+
+   TheExternalFTPcontrolSocket @ SocketReadyToRead if
+      -1 DataReceived !
+      TheExternalFTPcontrolSocket @ SocketReceiveData
+      RecvBuffer[] RecvBuffer# @ CopyToFTPresponseBuffer
+      ParseFTPresponseBuffer
+   then
+
+   TheExternalFTPcontrolSocket @ SocketException if
+      TheExternalFTPcontrolSocket @ GetSocketSpecificError ?dup if 
+         RED.  cr ." GetSocketSpecificError = "  RESTORE.  BLUE. 8 .hex RESTORE.
+      then
+   then
+;
+
+{ 
+: WaitForControlReply ( -- )
+   0 DataReceived !
+   begin
+   
+      100 ms  ." 1"
+
+      ParseFTPcontrolSocketData  
+      0 RecvBuffer# !
+
+   DataReceived @ ekey? or until
+;
+}
+
+: PollTransferComplete ( -- f )
+   0 TransferComplete !
+
+   ParseFTPcontrolSocketData
+
+   TransferComplete @ 
+;
+
+\ *****************************************************************************
+\ *****************************************************************************
+
+: WaitForResponse ( -- )
+   -1 LineReceived !
+   50 ms
+   begin
+      20 ms    \ empirically determined time delay to prevent Windows Sockets API from giving a "WSAENOTSOCK : Not a socket" error  
+      ParseFTPcontrolSocketData
+   LineReceived @ until
+   0 LineReceived !
+;
+
+
+variable vNumberTried
+variable vNumberFailed
+
+: ShowFTPdataSocket ( -- )
+   
+   WaitForResponse
+   
+   1 Indent !
+   cr+ ." ShowFTPdataSocket " 
+   0 RecvBuffer2# c!
+   0. vFTPfileReceived 2!
+   0 TempFileBuffer# !
+
+
+   vFTPfileSize 2@ d0= not if
+
+      begin 
+         
+         10 ms \ 10 ms  \ ." 2" 
+
+      ['] FTPreadDataSocket catch if  0  then  
+ \     dup 0= if  PollTransferComplete 0= or  then 
+      
+      while
+
+         ShowReceivedStatus
+      
+         RecvBuffer2[] RecvBuffer2# @ CopyToTempFilebuffer
+         
+         RecvBuffer2# @ $200 <= if 
+            cr+  GREEN.  RecvBuffer2[] RecvBuffer2# @ typeCR  RESTORE. 
+         then
+         vFTPfileReceived 2@ RecvBuffer2# @ M+ vFTPfileReceived 2!
+
+         ParseFTPcontrolSocketData
+
+      repeat
+
+   then
+
+   cr+ ." vFTPfileReceived = " vFTPfileReceived 2@ 6ud.rBlue  
+   #38 ToColumn
+   ." vFTPfileSize = "     vFTPfileSize 2@ -1. D= if  
+      BLUE. ." not set"  RESTORE.  exit  
+   else  
+      vFTPfileSize 2@ 6ud.rBlue
+   then
+   vFTPfileReceived 2@  vFTPfileSize 2@ d- d0= 
+   if  GREEN. ."   OK "  else  RED. ."   Missing or extra bytes!!! "  1 vNumberFailed +!  then RESTORE.
+
+   1 vNumberTried +!
+
+   -1. vFTPfileSize 2!  \ restore the initial value of "not set"
+
+   -1 Indent +!
+
+;
+
+
+: ShowFTPcontrolSocket ( -- )
+   cr ." ShowFTPcontrolSocket : "
+   0 RecvBuffer# !
+   begin
+      100 ms 
+      ParseFTPcontrolSocketData
+   DataReceived @ ekey? if ekey $1B =  else  0  then or until
+;
+
+: FTPsendLine ( $ -- )   \ send a line of control data to the FTP control socket
+   TheExternalFTPcontrolSocket @ SktWrite
+;
+
+
+$100 Buffer: FTPpacketBuffer[]
+
+create <CRLF>  $02 c, $0D c, $0A c, 
+
+: FTPsendTagValue ( $Tag $Value -- )   \ send a Tag , space and Value, with a <CR> <LF> pair at the end  
+   0. ResultValue 2!  \ clear the result value - it will be set by parsing the response
+   2swap 
+   FTPpacketBuffer[] place
+   dup 0= if  \ do not append an emtpy string
+      2drop
+   else
+      s"  " FTPpacketBuffer[] append   \ there must be a space between Tag and Value
+      FTPpacketBuffer[] append 
+   then
+   <CRLF> count FTPpacketBuffer[] append
+   s" PASS" FTPpacketBuffer[] count drop over compare 0= if 
+      BLUE. cr cr FTPpacketBuffer[] count drop 5 type ." *******" RESTORE.  \ hide the plaintext password (!) 
+   else
+      BLUE. cr cr FTPpacketBuffer[] count type  RESTORE. 
+   then
+   
+   FTPpacketBuffer[] count FTPsendLine
+;
+
+: FTPsendTag  ( $Tag -- )  \ send a Tag with no Value, just a <CR> <LF> pair at the end  
+   0 0 FTPsendTagValue 
+;
+
+
+: FTPsendTagValue+ 
+   FTPsendTagValue
+   WaitForResponse
+;
+
+: FTPsendTag+
+   FTPsendTag
+   WaitForResponse
+;
+
+$8000 constant CHUNK_SIZE
+variable NumberOfChunks
+variable RemainingChunk
+
+: FTPwriteDataSocket ( $ -- )   \ write data to the data socket
+   cr ." FTPwriteDataSocket = " dup BLUE. . RESTORE.  ." bytes" 
+   1 Indent +!
+   CHUNK_SIZE /mod  NumberOfChunks !  RemainingChunk !
+   NumberOfChunks @ 0 ?do
+      cr+ ." Chunk " i .  ."   = " CHUNK_SIZE BLUE. . RESTORE. 
+      dup CHUNK_SIZE TheExternalFTPdataSocket @ SktWrite
+      NumberOfBytesSent @ CHUNK_SIZE = not if  RED.  cr ." NumberOfBytesSent wrong!!!"  RESTORE.  then
+
+      CHUNK_SIZE +
+   loop
+   cr+ ." Remaining Chunk = "  RemainingChunk @ BLUE. . RESTORE.
+   RemainingChunk @ if
+      RemainingChunk @ TheExternalFTPdataSocket @ SktWrite 
+      NumberOfBytesSent @ RemainingChunk @ = not if  RED.  cr ." NumberOfBytesSent wrong2!!!"  RESTORE.  then
+   then
+
+   100 ms   \ allow time for the last chunk to finish being sent 
+
+   -1 Indent +!
+;
+
+\ *****************************************************************************
+\ Grouped commands
+\ The FTP server requires that things are done in a certain way...
+\ *****************************************************************************
+
+: WaitForTransferComplete ( -- )
+   0 TransferComplete !
+   begin
+      100 ms  \ ." Q" 
+      ParseFTPcontrolSocketData
+   TransferComplete @ 
+   ekey? if  ekey $1B = if  -1 or  then  then 
+   until
+;
+
+variable Direction
+
+: FTPsendTagValueWithData ( $Tag $Value -- )  \ send a Tag and Value that requires a PASiVe data socket, read the data socket 
+   s" TYPE" s" I" FTPsendTagValue+     \ always use binary (Image) mode
+   s" PASV" FTPsendTag+                 \ request a port from the server, so that we can transfer data
+   ( $Tag  $Value -- ) FTPsendTagValue \ send the Tag ( LIST , MLSD etc ) and value
+     
+   Direction @ 0= if 
+      WaitForTransferComplete
+   else
+      ['] ShowFTPdataSocket catch drop                  \ read and display data from the data socket
+   then
+
+   ShutDownFTPdataSocket \ we have to close the data socket at our end, as the server has already closed it 
+;
+
+: FTPsendTagWithData ( $Tag direction -- )  \ send a Tag that requires a PASiVe data socket, read the data socket
+   Direction !
+   0 0 FTPsendTagValueWithData
+;
+
+
+: FTPretrFile ( $ -- )  \ RETRieve a file from the server
+   -1 Direction !
+   2>r
+   \ First find the file size
+   s" TYPE" s" I" FTPsendTagValue+
+
+   s" SIZE" 2r@ FTPsendTagValue+  ResultValue 2@ vFTPfileSize 2! 
+   cr ." FTPretrFile SIZE = " vFTPfileSize 2@ BLUE. D.  RESTORE.
+   550_FileNotFound @ if 
+      cr RED. ." 550 File not found on RETR!"  RESTORE. 
+   else
+   \   |TempFileBuffer| 0  vFTPfileSize 2@  D<  if  RED. cr ." File too big for our buffer !!!"  RESTORE.  #9124 throw  then    
+      \ second retrieve the file
+      s" RETR" 2r@ FTPsendTagValueWithData
+      
+      NORMAL. cr ." RETR file : " RESTORE.  BLUE. 2r@ type  RESTORE.
+   \   GREEN. cr ShowTempFileBuffer RESTORE.
+   then
+   2r> 2drop
+   0 Direction !
+;
+
+: FTPstorFile ( $ $filename -- )    \ STORe a file to the server
+   0 Direction !
+   2>r 
+   s" TYPE" s" I" FTPsendTagValue+
+   s" PASV" FTPsendTag+   
+   s" STOR" ( $filename -- ) 2r> FTPsendTagValue+    
+   
+   ( $ -- ) FTPwriteDataSocket
+   
+   ParseFTPcontrolSocketData  \ just in case the FTP server sends us a message
+
+\   WaitForTransferComplete   \ do NOT do this - there is no "226" response from a STOR command
+                              \ in fact, there cannot be a response, as the server does not know how big the file is that it is receiving
+
+   ShutDownFTPdataSocket \ we have to close the data socket at our end, as the server has already closed it from its end 
+
+   WaitForResponse
+;
+
+: FTPchangeDirectory ( $ -- f )
+   s" CWD"  2swap  FTPsendTagValue+ TagValueReply @
+\   dup if ." ******** "  else ."  --------------- "  then
+;
+
+\ *****************************************************************************
+\ *****************************************************************************
+\ *****************************************************************************
+
+: DemoFTPclient ( z$IPaddress -- ) 
+
+   cr dup zcount type FTP_PORT CreateSocket_Active TheExternalFTPcontrolSocket !
+
+   TheExternalFTPcontrolSocket @ ConnectToRemoteSocket 
+
+   ShowFTPcontrolSocket         \ pick up the initial connection string
+
+   cr NORMAL. ." Username = " RESTORE. BLUE. $FTPusername type  RESTORE.
+   3 spaces NORMAL. ." Password = " RESTORE. BLUE. $FTPpassword type  RESTORE.
+   3 spaces NORMAL. ." FTP directory = " RESTORE. BLUE. $FTPdirectory type  RESTORE.
+   cr
+   
+   s" USER" $FTPusername  FTPsendTagValue+
+   s" PASS" $FTPpassword  FTPsendTagValue+
+   s" OPTS" s" UTF8 ON" FTPsendTagValue+
+   s" CWD" $FTPdirectory FTPsendTagValue+
+
+   s" HELP" FTPsendTag+  
+   s" FEAT" FTPsendTag+  
+     
+   s" MLSD" -1 FTPsendTagWithData               \ Note : MLSD uses the data port to send the listing
+
+   s" MLST" s" TestFile1.txt" FTPsendTagValue+  \ Note : MLST uses the _control_ port to send the listing
+   s" MLST" s" NotFound.txt" FTPsendTagValue+
+
+   s" MDTM" s" TestFile1.txt" FTPsendTagValue+  \ MoDification TiMe Note : MDTM uses the _control_ port to send the listing 
+   
+   s" LIST" -1 FTPsendTagWithData               \ Note : LIST uses the data port to send the listing
+
+   s" TestFile1.txt"   FTPretrFile              \ also sets 550_FileNotFound
+
+   550_FileNotFound @ 0= if
+      TempFileBuffer[] TempFileBuffer# @ s" TestFile2.txt" FTPstorFile  
+   then
+
+   s" QUIT" FTPsendTag+
+
+   cr." Freeing adrinfo structure for FTPdataSocket"   
+   ppResult2 @ Ws2_32::freeaddrinfo drop 
+
+   ShutDownFTPcontrolSocket  
+
+   cr." Freeing adrinfo structure for FTPcontrolSocket"  
+   ppResult @ Ws2_32::freeaddrinfo drop 
+;
+
+\ Makes a connection to an FTP server
+: FTPclient
+   0 Indent !
+
+   NORMAL.
+
+   cr  INVERSE.  ."  --- FTP Client --- "  RESTORE.
+   InitialiseWSA 
+   InitFD
+
+   -1. vFTPfileSize 2!  \ initial value is "not set" 
+   -1 TransferComplete !
+   
+\   FTP_IP_ADDRESS MakeIPstring DemoFTPclient 
+   z$FTPiPaddress DemoFTPclient 
+
+
+   CloseWSA
+   cr." Done." cr 
+; 
+
+
+: ttFTPclient ( -- )
+   0 vNumberTried !
+   0 vNumberFailed !
+   
+   begin
+   
+   FTPclient
+
+   cr ." vNumberTried = "  BLUE.  vNumberTried @ .  RESTORE.   ."    vNumberFailed = "  BLUE.  
+   vNumberFailed @ .  RESTORE. 
+
+
+   ekey? if  ekey $1B = if  exit  then  then
+   again
+;
+
+
+\\
+{ 
+
+From https://en.wikipedia.org/wiki/List_of_FTP_commands :
+
+Command RFC         Description
+========================================================================
+ABOR                Abort an active file transfer.
+ACCT                Account information.
+ADAT    RFC 2228    Authentication/Security Data
+ALLO                Allocate sufficient disk space to receive a file.
+APPE                Append.
+AUTH    RFC 2228    Authentication/Security Mechanism
+CCC     RFC 2228    Clear Command Channel.
+CDUP                Change to Parent Directory.
+CONF    RFC 2228    Confidentiality Protection Command
+CWD                 Change working directory.
+DELE                Delete file.
+ENC     RFC 2228    Privacy Protected Channel
+EPRT    RFC 2428    Specifies an extended address and port to which the server should connect.
+EPSV    RFC 2428    Enter extended passive mode.
+FEAT    RFC 2389    Get the feature list implemented by the server.
+HELP                Returns usage documentation on a command if specified, else a general help document is returned.
+LANG    RFC 2640    Language Negotiation
+LIST                Returns information of a file or directory if specified, else information of the current working directory is returned. If the server supports the '-R' command (e.g. 'LIST -R') then a recursive directory listing will be returned.
+LPRT    RFC 1639    Specifies a long address and port to which the server should connect.
+LPSV    RFC 1639    Enter long passive mode.
+MDTM    RFC 3659    Return the last-modified time of a specified file.
+MIC     RFC 2228    Integrity Protected Command
+MKD                 Make directory.
+MLSD    RFC 3659    Lists the contents of a directory if a directory is named.
+MLST    RFC 3659    Provides data about exactly the object named on its command line and no others.
+MODE                Sets the transfer mode (Stream, Block, or Compressed).
+NLST                Returns a list of file names in a specified directory.
+NOOP                No operation (dummy packet; used mostly as keepalives).
+OPTS    RFC 2389    Select options for a feature.
+PASS                Authentication password.
+PASV                Enter passive mode.
+PBSZ    RFC 2228    Protection Buffer Size
+PORT                Specifies an address and port to which the server should connect.
+PROT    RFC 2228    Data Channel Protection Level
+PWD                 Print working directory. Returns the current directory of the host.
+QUIT                Disconnect.
+REIN                Re-initialize the connection.
+REST                Restart transfer from the specified point.
+RETR                Retrieve a copy of the file.
+RMD                 Remove a directory.
+RNFR                Rename from.
+RNTO                Rename to.
+SITE                Sends site specific commands to remote server.
+SIZE    RFC 3659    Return the size of a file.
+SMNT                Mount file structure.
+STAT                Returns the current status.
+STOR                Accept data and store data as a file at the server site.
+STOU                Store file uniquely.
+STRU                Set file transfer structure.
+SYST                Return system type.
+TYPE                Sets the transfer mode (ASCII/binary).
+USER                Authentication username.
+XCUP    RFC 775     Change to the parent of the current working directory.
+XMKD    RFC 775     Make directory.
+XPWD    RFC 775     Print current working directory.
+XRCP    RFC 743 
+XRMD    RFC 775     Remove directory.
+XRSQ    RFC 743 
+XSEM    RFC 737     Send, mail if cannot.
+XSEN    RFC 737     Send to terminal.
+}

@@ -1,0 +1,364 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:w="urn:schemas-microsoft-com:office:word"
+xmlns="http://www.w3.org/TR/REC-html40">
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+<meta name=ProgId content=Word.Document>
+<meta name=Generator content="Microsoft Word 9">
+<meta name=Originator content="Microsoft Word 9">
+<link rel=File-List href="https://www.inventio.co.uk/EuroForth03_files/filelist.xml">
+<title>The colorForth Magenta Variable</title>
+<!--[if gte mso 9]><xml>
+ <o:DocumentProperties>
+  <o:Author>Howerd Oakford</o:Author>
+  <o:LastAuthor>Howerd Oakford</o:LastAuthor>
+  <o:Revision>2</o:Revision>
+  <o:TotalTime>69</o:TotalTime>
+  <o:Created>2003-10-15T22:33:00Z</o:Created>
+  <o:LastSaved>2003-10-15T22:33:00Z</o:LastSaved>
+  <o:Pages>2</o:Pages>
+  <o:Words>683</o:Words>
+  <o:Characters>3896</o:Characters>
+  <o:Company>Inventio Software Ltd</o:Company>
+  <o:Lines>32</o:Lines>
+  <o:Paragraphs>7</o:Paragraphs>
+  <o:CharactersWithSpaces>4784</o:CharactersWithSpaces>
+  <o:Version>9.2720</o:Version>
+ </o:DocumentProperties>
+</xml><![endif]-->
+<style>
+<!--
+ /* Font Definitions */
+@font-face
+	{font-family:Wingdings;
+	panose-1:5 0 0 0 0 0 0 0 0 0;
+	mso-font-charset:2;
+	mso-generic-font-family:auto;
+	mso-font-pitch:variable;
+	mso-font-signature:0 268435456 0 0 -2147483648 0;}
+ /* Style Definitions */
+p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{mso-style-parent:"";
+	margin:0cm;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:12.0pt;
+	font-family:"Times New Roman";
+	mso-fareast-font-family:"Times New Roman";}
+h1
+	{mso-style-next:Normal;
+	margin-top:12.0pt;
+	margin-right:0cm;
+	margin-bottom:3.0pt;
+	margin-left:0cm;
+	mso-pagination:widow-orphan;
+	page-break-after:avoid;
+	mso-outline-level:1;
+	font-size:16.0pt;
+	font-family:Arial;
+	mso-font-kerning:16.0pt;}
+p.MsoFooter, li.MsoFooter, div.MsoFooter
+	{margin:0cm;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	tab-stops:center 207.65pt right 415.3pt;
+	font-size:12.0pt;
+	font-family:"Times New Roman";
+	mso-fareast-font-family:"Times New Roman";}
+p.MsoBodyText, li.MsoBodyText, div.MsoBodyText
+	{margin:0cm;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:16.0pt;
+	mso-bidi-font-size:12.0pt;
+	font-family:Arial;
+	mso-fareast-font-family:"Times New Roman";
+	mso-bidi-font-family:"Times New Roman";}
+a:link, span.MsoHyperlink
+	{color:blue;
+	text-decoration:underline;
+	text-underline:single;}
+a:visited, span.MsoHyperlinkFollowed
+	{color:purple;
+	text-decoration:underline;
+	text-underline:single;}
+@page Section1
+	{size:595.3pt 841.9pt;
+	margin:72.0pt 90.0pt 72.0pt 90.0pt;
+	mso-header-margin:35.4pt;
+	mso-footer-margin:35.4pt;
+	mso-even-footer:url("https://www.inventio.co.uk/EuroForth03_files/header.htm") ef1;
+	mso-footer:url("https://www.inventio.co.uk/EuroForth03_files/header.htm") f1;
+	mso-paper-source:0;}
+div.Section1
+	{page:Section1;}
+ /* List Definitions */
+@list l0
+	{mso-list-id:323359429;
+	mso-list-type:hybrid;
+	mso-list-template-ids:1775384544 67698689 67698691 67698693 67698689 67698691 67698693 67698689 67698691 67698693;}
+@list l0:level1
+	{mso-level-number-format:bullet;
+	mso-level-text:\F0B7;
+	mso-level-tab-stop:36.0pt;
+	mso-level-number-position:left;
+	text-indent:-18.0pt;
+	font-family:Symbol;}
+@list l1
+	{mso-list-id:1116094616;
+	mso-list-type:hybrid;
+	mso-list-template-ids:-1449767840 67698689 67698691 67698693 67698689 67698691 67698693 67698689 67698691 67698693;}
+@list l1:level1
+	{mso-level-number-format:bullet;
+	mso-level-text:\F0B7;
+	mso-level-tab-stop:40.5pt;
+	mso-level-number-position:left;
+	margin-left:40.5pt;
+	text-indent:-18.0pt;
+	font-family:Symbol;}
+@list l2
+	{mso-list-id:1156804342;
+	mso-list-type:hybrid;
+	mso-list-template-ids:865349036 67698689 67698691 67698693 67698689 67698691 67698693 67698689 67698691 67698693;}
+@list l2:level1
+	{mso-level-number-format:bullet;
+	mso-level-text:\F0B7;
+	mso-level-tab-stop:36.0pt;
+	mso-level-number-position:left;
+	text-indent:-18.0pt;
+	font-family:Symbol;}
+ol
+	{margin-bottom:0cm;}
+ul
+	{margin-bottom:0cm;}
+-->
+</style>
+</head>
+
+<body lang=EN-GB link=blue vlink=purple style='tab-interval:36.0pt'>
+
+<div class=Section1>
+
+<p class=MsoBodyText align=center style='text-align:center'><span
+style='font-size:18.0pt;mso-bidi-font-size:12.0pt'>The <span style='color:red'>color</span><span
+style='color:lime'>Forth</span> <span style='color:fuchsia'>Magenta</span>
+Variable<o:p></o:p></span></p>
+
+<p class=MsoBodyText align=center style='text-align:center'><span
+style='font-size:14.0pt;mso-bidi-font-size:12.0pt'>2003 Sep 05<o:p></o:p></span></p>
+
+<p class=MsoBodyText align=center style='text-align:center'><span
+style='font-size:14.0pt;mso-bidi-font-size:12.0pt'>Howerd Oakford <a
+href="index.html">www.inventio.co.uk</a><o:p></o:p></span></p>
+
+<h1>Abstract</h1>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt'>The
+<span style='color:red'>color</span><span style='color:lime'>Forth</span> <span
+style='color:fuchsia'>magenta</span> variable returns the address of a cell in
+pre-parsed source. Changing the value of a <span style='color:fuchsia'>magenta</span>
+variable at run time automatically changes the value assigned to that variable
+in the source code, opening the way for closer integration of program and data.<o:p></o:p></span></p>
+
+<h1>Simplicity</h1>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt'>Chuck
+Moore’s latest Forth development, <span style='color:red'>color</span><span
+style='color:lime'>Forth</span>, is simpler than other Forths because it uses a
+design which eliminates many features that were previously thought to be
+essential :<o:p></o:p></span></p>
+
+<p class=MsoBodyText style='margin-left:40.5pt;text-align:justify;text-indent:
+-18.0pt;mso-list:l1 level1 lfo1;tab-stops:list 40.5pt'><![if !supportLists]><span
+style='font-size:12.0pt;font-family:Symbol'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]><span style='font-size:12.0pt'>The Text Input Buffer,
+ACCEPT ( or EXPECT ) and QUIT were used to accumulate and interpret characters
+typed in at a terminal. <o:p></o:p></span></p>
+
+<p class=MsoBodyText style='margin-left:40.5pt;text-align:justify;text-indent:
+-18.0pt;mso-list:l1 level1 lfo1;tab-stops:list 40.5pt'><![if !supportLists]><span
+style='font-size:12.0pt;font-family:Symbol'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]><span style='font-size:12.0pt'>The linked-list
+dictionary allowed variable length name, code and parameter fields to be
+compiled into a single array – the dictionary.<o:p></o:p></span></p>
+
+<p class=MsoBodyText style='margin-left:40.5pt;text-align:justify;text-indent:
+-18.0pt;mso-list:l1 level1 lfo1;tab-stops:list 40.5pt'><![if !supportLists]><span
+style='font-size:12.0pt;font-family:Symbol'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]><span style='font-size:12.0pt'>Words such as .S and
+DUMP allowed the stack and memory to be displayed.<o:p></o:p></span></p>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt'>I
+find it surprising that Chuck has been able to simplify or remove these
+standard Forth structures, and yet still provide an environment that can be
+used to develop complex applications :<o:p></o:p></span></p>
+
+<p class=MsoBodyText style='margin-left:36.0pt;text-align:justify;text-indent:
+-18.0pt;mso-list:l2 level1 lfo2;tab-stops:list 36.0pt'><![if !supportLists]><span
+style='font-size:12.0pt;font-family:Symbol'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]><span style='font-size:12.0pt'>The contents of the
+stack are displayed at the bottom of the editor screen. The top stack item is
+also displayed as a Huffman decoded string. “Typing in” the name of a Forth
+word accumulates the Huffman encoded bit pattern into the top stack item. As
+each key is pressed, the top of stack changes and its string is displayed. <o:p></o:p></span></p>
+
+<p class=MsoBodyText style='margin-left:36.0pt;text-align:justify;text-indent:
+-18.0pt;mso-list:l2 level1 lfo2;tab-stops:list 36.0pt'><![if !supportLists]><span
+style='font-size:12.0pt;font-family:Symbol'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]><span style='font-size:12.0pt'>Because both the name
+and the “tokenised code field” ( colour ) of the word is packed into its token
+the dictionary can be reduced to two linear arrays, the tokens and the
+addresses of their parameter fields. Dictionary searches, and hence
+compilation, are extremely fast. <o:p></o:p></span></p>
+
+<p class=MsoBodyText style='margin-left:36.0pt;text-align:justify;text-indent:
+-18.0pt;mso-list:l2 level1 lfo2;tab-stops:list 36.0pt'><![if !supportLists]><span
+style='font-size:12.0pt;font-family:Symbol'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]><span style='font-size:12.0pt'>The pre-parsed source is
+held in 1K octet blocks. These are kept in volatile memory, and are copied from
+disk at power up, and to disk by “save”.<o:p></o:p></span></p>
+
+<p class=MsoBodyText style='margin-left:36.0pt;text-align:justify;text-indent:
+-18.0pt;mso-list:l2 level1 lfo2;tab-stops:list 36.0pt'><![if !supportLists]><span
+style='font-size:12.0pt;font-family:Symbol'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]><span style='font-size:12.0pt'>.S is not required, as
+the stack is displayed in the editor. <o:p></o:p></span></p>
+
+<p class=MsoBodyText style='margin-left:36.0pt;text-align:justify;text-indent:
+-18.0pt;mso-list:l2 level1 lfo2;tab-stops:list 36.0pt'><![if !supportLists]><span
+style='font-size:12.0pt;font-family:Symbol'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]><span style='font-size:12.0pt'>The Text Input Buffer (
+say one line of 80 characters ) has been replaced by a two-dimensional edit
+screen. This may look like a conventional block-based Forth editor, but is in
+fact very different.<o:p></o:p></span></p>
+
+<h1>Old and New</h1>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt'>It
+is interesting to note that there is no simple mapping of conventional Forth
+constructs to <span style='color:red'>color</span><span style='color:lime'>Forth</span>
+. <o:p></o:p></span></p>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt'>For
+example, the functionality of QUIT has been replaced by a combination of
+Huffman encoding into the top stack item, continuous background task updating
+of the display and a more complex editor. <o:p></o:p></span></p>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt'>Similarly
+the <span style='color:red'>color</span><span style='color:lime'>Forth</span> <span
+style='color:fuchsia'>magenta</span> variable cannot be described in terms of
+just one conventional Forth construct. The closest analogy is VARIABLE, and
+indeed executing either type of variable leaves the address of its data on the
+stack. The difference lies in where the data is stored.<span
+style="mso-spacerun: yes">  </span>A conventional variable returns an address
+that points to the parameter field in the compiled code. A <span
+style='color:fuchsia'>magenta</span> variable returns the address of the next
+32 bit cell in the pre-parsed source. <o:p></o:p></span></p>
+
+<h1>A Neat Trick</h1>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt'>Consider
+the initialisation of the two types of variable :<o:p></o:p></span></p>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt'>VARIABLE
+x<span style='mso-tab-count:1'>            </span>123 x !<span
+style='mso-tab-count:1'>            </span><span style='mso-tab-count:1'>            </span>\
+conventional<o:p></o:p></span></p>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt'>The
+value specified in the source code is stored in the variable’s parameter field.<o:p></o:p></span></p>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt'>[<span
+style='color:fuchsia'>magenta</span>] <span style='color:fuchsia'>x</span> <span
+style='color:lime'>0</span><span style='mso-tab-count:1'> </span><span
+style='mso-tab-count:1'>            </span><span style='mso-tab-count:1'>            </span>\
+<span style='color:red'>color</span><span style='color:lime'>Forth<o:p></o:p></span></span></p>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt'>When
+the <span style='color:fuchsia'>magenta</span> variable is defined it is given
+a default value of 0. When a new value is stored into it the source changes.<span
+style='color:lime'><o:p></o:p></span></span></p>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt'>[<span
+style='color:#FFCC00'>yellow</span>] <span style='color:#FFCC00'>123 x !</span><span
+style='color:yellow'><span style='mso-tab-count:2'>                       </span><span
+style='mso-tab-count:1'>            </span></span>\ <span style='color:#FFCC00'>yellow</span>
+“interpreted” commands<span style='color:yellow'><o:p></o:p></span></span></p>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt'>[<span
+style='color:fuchsia'>magenta</span>] <span style='color:fuchsia'>x</span> <span
+style='color:lime'>123</span><span style='mso-tab-count:2'>                 </span><span
+style='mso-tab-count:1'>            </span>\ <span style='color:red'>color</span><span
+style='color:lime'>Forth </span><o:p></o:p></span></p>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt;
+color:lime'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt'>Because
+the value is stored in the source code itself, <b><i>storing a new value
+changes the source.<o:p></o:p></i></b></span></p>
+
+<h1>Transient Compilation and Source Sharing</h1>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt'>Compilation
+converts human-readable source code into machine-executable instructions. Since
+humans and computers are very different, this is a non-trivial operation.
+Because the <span style='color:fuchsia'>magenta</span> variable’s data is
+stored in the source, <b><i>the compiled code can be discarded without losing
+information</i></b>.<o:p></o:p></span></p>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt'>This
+has three effects :<o:p></o:p></span></p>
+
+<p class=MsoBodyText style='margin-left:36.0pt;text-align:justify;text-indent:
+-18.0pt;mso-list:l0 level1 lfo3;tab-stops:list 36.0pt'><![if !supportLists]><span
+style='font-size:12.0pt;font-family:Symbol'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]><span style='font-size:12.0pt'>The possibility of “just
+in time” or transient compilation. For example, “north” is defined as “46
+load”, which loads code to display the “North Bridge” PCI registers – debug
+state is retained, even after an “empty”.<o:p></o:p></span></p>
+
+<p class=MsoBodyText style='margin-left:36.0pt;text-align:justify;text-indent:
+-18.0pt;mso-list:l0 level1 lfo3;tab-stops:list 36.0pt'><![if !supportLists]><span
+style='font-size:12.0pt;font-family:Symbol'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]><span style='font-size:12.0pt'>Source code can be
+distributed with the current values of its variables. For example, the current
+distribution of cfdos.blk contains a program to display the Mandelbrot set in
+blocks 64 and 66, together with the x, y, scale and iterations required to
+produce a particular pattern.<o:p></o:p></span></p>
+
+<p class=MsoBodyText style='margin-left:36.0pt;text-align:justify;text-indent:
+-18.0pt;mso-list:l0 level1 lfo3;tab-stops:list 36.0pt'><![if !supportLists]><span
+style='font-size:12.0pt;font-family:Symbol'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span><![endif]><span style='font-size:12.0pt'>Programs can be executed
+remotely by transferring only source code. The current state information is
+contained in the source.<o:p></o:p></span></p>
+
+<h1>Summary</h1>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt'>The
+<span style='color:red'>color</span><span style='color:lime'>Forth </span>environment
+allows a new construct, the <span style='color:fuchsia'>magenta</span>
+variable, whose data is stored in the source code.<span style="mso-spacerun:
+yes">  </span>This makes it possible to compile and discard applications
+without losing their state information, which in turn allows a different,
+simpler, style of programming. <o:p></o:p></span></p>
+
+<p class=MsoBodyText style='text-align:justify'><span style='font-size:12.0pt'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+</div>
+
+</body>
+
+</html>

@@ -1,0 +1,386 @@
+\ *****************************************************************************
+\ crc16modbus.f  2012 Apr 11
+\ CRC-16 for ModBus using a table 
+\ *****************************************************************************
+
+\ The CCITT standard crc-polynomial for XMODEM : x^16+x^15+x^2+x^0)
+\ ( X*16 is implicit )
+\ $1021 CONSTANT CRCpolynomial 
+\ $8005 CONSTANT CRCpolynomial  \ CRC-16-IBM
+
+\ For HDLC ref RFC1331, hex 8408 = bits 16, 12, 5 and 0
+\ ( read bits backwards, bit 16 is implied )
+\ For ModBus bits 16, 15, 2, 0 -->  $8005 ( reversed )
+$A001 CONSTANT CRCpolynomial
+
+: w, ( w -- )   dup c, >< c, ;
+
+create CRC16table    \ created using the code at the end of the file
+ $0000 w, $C0C1 w, $C181 w, $0140 w, $C301 w, $03C0 w, $0280 w, $C241 w,
+ $C601 w, $06C0 w, $0780 w, $C741 w, $0500 w, $C5C1 w, $C481 w, $0440 w,
+ $CC01 w, $0CC0 w, $0D80 w, $CD41 w, $0F00 w, $CFC1 w, $CE81 w, $0E40 w,
+ $0A00 w, $CAC1 w, $CB81 w, $0B40 w, $C901 w, $09C0 w, $0880 w, $C841 w,
+ $D801 w, $18C0 w, $1980 w, $D941 w, $1B00 w, $DBC1 w, $DA81 w, $1A40 w,
+ $1E00 w, $DEC1 w, $DF81 w, $1F40 w, $DD01 w, $1DC0 w, $1C80 w, $DC41 w,
+ $1400 w, $D4C1 w, $D581 w, $1540 w, $D701 w, $17C0 w, $1680 w, $D641 w,
+ $D201 w, $12C0 w, $1380 w, $D341 w, $1100 w, $D1C1 w, $D081 w, $1040 w,
+ $F001 w, $30C0 w, $3180 w, $F141 w, $3300 w, $F3C1 w, $F281 w, $3240 w,
+ $3600 w, $F6C1 w, $F781 w, $3740 w, $F501 w, $35C0 w, $3480 w, $F441 w,
+ $3C00 w, $FCC1 w, $FD81 w, $3D40 w, $FF01 w, $3FC0 w, $3E80 w, $FE41 w,
+ $FA01 w, $3AC0 w, $3B80 w, $FB41 w, $3900 w, $F9C1 w, $F881 w, $3840 w,
+ $2800 w, $E8C1 w, $E981 w, $2940 w, $EB01 w, $2BC0 w, $2A80 w, $EA41 w,
+ $EE01 w, $2EC0 w, $2F80 w, $EF41 w, $2D00 w, $EDC1 w, $EC81 w, $2C40 w,
+ $E401 w, $24C0 w, $2580 w, $E541 w, $2700 w, $E7C1 w, $E681 w, $2640 w,
+ $2200 w, $E2C1 w, $E381 w, $2340 w, $E101 w, $21C0 w, $2080 w, $E041 w,
+ $A001 w, $60C0 w, $6180 w, $A141 w, $6300 w, $A3C1 w, $A281 w, $6240 w,
+ $6600 w, $A6C1 w, $A781 w, $6740 w, $A501 w, $65C0 w, $6480 w, $A441 w,
+ $6C00 w, $ACC1 w, $AD81 w, $6D40 w, $AF01 w, $6FC0 w, $6E80 w, $AE41 w,
+ $AA01 w, $6AC0 w, $6B80 w, $AB41 w, $6900 w, $A9C1 w, $A881 w, $6840 w,
+ $7800 w, $B8C1 w, $B981 w, $7940 w, $BB01 w, $7BC0 w, $7A80 w, $BA41 w,
+ $BE01 w, $7EC0 w, $7F80 w, $BF41 w, $7D00 w, $BDC1 w, $BC81 w, $7C40 w,
+ $B401 w, $74C0 w, $7580 w, $B541 w, $7700 w, $B7C1 w, $B681 w, $7640 w,
+ $7200 w, $B2C1 w, $B381 w, $7340 w, $B101 w, $71C0 w, $7080 w, $B041 w,
+ $5000 w, $90C1 w, $9181 w, $5140 w, $9301 w, $53C0 w, $5280 w, $9241 w,
+ $9601 w, $56C0 w, $5780 w, $9741 w, $5500 w, $95C1 w, $9481 w, $5440 w,
+ $9C01 w, $5CC0 w, $5D80 w, $9D41 w, $5F00 w, $9FC1 w, $9E81 w, $5E40 w,
+ $5A00 w, $9AC1 w, $9B81 w, $5B40 w, $9901 w, $59C0 w, $5880 w, $9841 w,
+ $8801 w, $48C0 w, $4980 w, $8941 w, $4B00 w, $8BC1 w, $8A81 w, $4A40 w,
+ $4E00 w, $8EC1 w, $8F81 w, $4F40 w, $8D01 w, $4DC0 w, $4C80 w, $8C41 w,
+ $4400 w, $84C1 w, $8581 w, $4540 w, $8701 w, $47C0 w, $4680 w, $8641 w,
+ $8201 w, $42C0 w, $4380 w, $8341 w, $4100 w, $81C1 w, $8081 w, $4040 w,
+
+\ accumulates the CRC for character c into address a
+: CRC16accumulate ( c a -- )   
+   >r  
+   r@ w@ xor  $FF and  
+   2* CRC16table + w@
+   r@ w@ 8 rshift $ff and  xor  
+   r> w! 
+;
+
+variable incomingCRC    \ contains the input CRC value
+variable outgoingCRC    \ contains the output CRC value
+
+\ initialises the input CRC value in the required way
+: initIncomingCRC   -1 incomingCRC w! ; 
+                                        
+\ initialises the output CRC value in the required way
+: initOutgoingCRC   -1 outgoingCRC w! ; 
+
+\ calculates the CRC-16 for the given string.
+: CRC16 ( a n -- u )
+   initOutgoingCRC  
+   over + swap ?do
+      i c@ outgoingCRC CRC16accumulate
+   loop
+   outgoingCRC w@ 
+;
+
+pad 0 CRC16 pad w!  pad 2 CRC16 constant CRC_VALID
+
+\ *****************************************************************************
+\ Tests
+\ http://www.lammertbies.nl/comm/info/crc-calculation.html - thanks!
+\ *****************************************************************************
+variable #failed 
+
+\ tests the CRC16 of a string given its correct result u
+: CRCtest ( a n u )   base @ >r  hex 
+   >r
+   cr  2 spaces  2dup type  $30 over - 0 max spaces
+   CRC16  dup base @ >r  hex  0 <#  # # # #  #> type  r> base !
+   r>    2dup = if  
+      2drop ."  ok"  
+   else  
+      ."  <-- should be " 4 u.r ."  failed!"  drop  1 #failed +!  
+   then 
+   r> base ! 
+;
+
+\ ttcrc16  tests a selection of strings against known answers.
+: ttCRC16
+   0 #failed !
+
+   cr ." CRC-16 ModBus tests : " 
+
+   s" A" $707F CRCtest
+   s" An Arbitrary String" $BC57 CRCtest
+   s" ZYXWVUTSRQPONMLKJIHGFEDBCA" $4712 CRCtest
+   s" Hello, World!" $114E CRCtest
+   s" 123456789" $4B37 CRCtest 
+   s" abc" $5749 CRCtest  
+   s" ABC" $8550 CRCtest 
+   s" This is a string"  $BCFA CRCtest
+   s" \uFFFE\u0000\u0001\u0002" $A4EF CRCtest 
+   s" 0" $54BF CRCtest
+   s" 01" $64D4 CRCtest
+   s" 012" $8AE5 CRCtest
+   s" 0123" $9E0B CRCtest
+   s" 01234" $10DE CRCtest
+   s" www.inventio.co.uk/crc16.f" $79F5 CRCtest
+   s" ABCDEFGHIJKLMNOPQRSTUVWXYZ" $FE85 CRCtest
+   s" ZYXWVUTSRQPONMLKJIHGFEDBCA" $4712 CRCtest
+   s" abcdefghijklmnopqrstuvwxyz" $7A7F CRCtest
+   s" zyxwvutsrqponmlkjihgfedbca" $C3E8 CRCtest  
+   s" THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG" $2614 CRCtest
+   s"  "  drop 0 $FFFF CRCtest      ."  ( null string )" 
+   pad #26 $00 fill pad #26 $E662 CRCtest  ."  ( 26 bytes of 0 )"
+   pad #26 $11 fill pad #26 $3C39 CRCtest  ."  ( 26 bytes of hex 11 )"
+
+   cr  #failed @ if  
+      ." Failed with "  #failed @ . ." error" #failed @ 1 = not if  ." s"  then ." !"  
+   else  
+      ." All tests passed"  
+   then
+;
+
+\\ 
+
+\ *************************************************************************** 
+\ Create the table used above
+\ *************************************************************************** 
+
+\ getCRC  calculates the CRC value for table element n , slow method
+: (CRC16calc) ( n - n)   8 0 DO  dup 1 AND
+      if  U2/  CRCpolynomial xor  else  U2/  then  LOOP ;
+
+: ShowCRCtable   
+   hex cr  
+   $100 0 do  
+      0 incomingCRC !  i (CRC16calc)    
+
+      \ SwiftForth format
+      0 <# [char] , hold  [char] w hold  bl hold  # # # #  [char] $ hold  bl hold #> type
+      \ C format - please remove the final ,
+\      0 <# [char] , hold # # # #  [char] x hold  [char] 0 hold  bl hold #> type
+
+      i 7 and 7 = if  cr  then 
+   loop
+;
+
+\\
+
+(x^16+x^15+x^2+x^0)
+
+;********************************************************************
+;
+; CRC-16  (x^16+x^15+x^2+x^0)
+; No tables, No loops, No temporary registers used.
+;
+; Input:  W = Data byte for CRC calculation
+;         crc_hi:crc_lo 16 bit CRC register
+;
+; Output: crc_hi:crc_lo updated.
+;
+; Notes:  CARRY is trashed.
+;         DIGIT CARRY is trashed.
+;         ZERO is trashed.
+;         W is zero on exit.
+;
+; 30 instructions, 32 machine cycles per byte.
+;
+; Copyright (C) February 8, 2000. All Right Reserved.
+; Charles Ader, PO Box 940 Pleasanton, California, USA.
+;
+; This code started out as an example program found in
+; Dallas Semiconductor Application Note 27:
+;
+;   Understanding and Using Cyclic Redundancy Checks
+;   with Dallas Semiconductor iButton(TM) Products.
+;
+; The application note shows an 8051 assembly language
+; routine that calculates the same CRC as the hardware
+; in the DS5001/2 secure micro.
+;
+;********************************************************************
+
+CRC16	xor	W, crc_lo	;W = input XOR old crc_lo
+
+	xor	W, crc_hi	;Swap old crc_hi with W
+	xor	crc_hi, W	;
+	xor	W, crc_hi	;new crc_hi = input XOR old crc_lo
+	mov	crc_lo, W	;new crc_lo = old crc_hi
+;
+; Calculate parity of crc_hi, (input XOR old crc_lo),
+; an place the result in carry.
+;
+; Save crc_hi in W and use crc_hi as a temp
+; location so we can test bits.
+;
+; Note: We use INC STATUS to compliment
+;       carry. This is safe because the XOR
+;       will clear the zero flag if any of the
+;	inc	instructions are going to execute.
+;
+;       The	inc	can be executed a maximum of
+;       four times after the XOR before the
+;       bits to the left of zero in status will
+;       be affected.
+;
+;       We use INC at most three time here.
+;
+
+; Note by NG: INC instruction doesn't work this way
+;	on SX chip. But INCSZ does! Since Z flag is
+;	set to zero if any INCSZ are going to execute,
+;	then STATUS will never reach zero after three
+;	INCSZ. Therefore skip is never executed.
+
+	mov	W, crc_hi	;Save crc_hi in W
+	swap	crc_hi		;Trade nibbles
+	xor	crc_hi, W	;XOR high half byte with low
+	rr	crc_hi		;Initialize Carry
+	snb	crc_hi.0
+	incsz	STATUS		;Complement carry
+	snb	crc_hi.1
+	incsz	STATUS		;Complement carry
+	snb	crc_hi.2
+	incsz	STATUS		;Complement carry
+	mov	crc_hi, W	;Restore crc_hi from W
+;
+; Use the parity of crc_hi, (input XOR crc_lo),
+; to complete the CRC calculation.
+;
+	mov	W, #001H
+	snb	C		; If carry
+	xor	crc_lo, W	; flip bit 0 of crc_lo
+	mov	W, #040H
+	rr	crc_hi		; shift parity into crc_hi
+	snb	C		; if shift out is one
+	xor	crc_lo, W	; flip bit 6 of crc_lo
+	mov	W, <<crc&hi	; unshift crc_hi into W
+	xor	crc_hi, W	; combine them
+	rr	crc_hi		; shift parity back into crc_hi
+	mov	W, #080H
+	snb	C		; if shift out is one
+	xor	crc_lo, W	; flip bit 7 of crc_lo
+
+	retw	0
+
+-------------End CRC16_SX.ASM------------------
+
+----------CRC16.A51 for 8051 start---------------------
+;
+; From Dallas Application note 27
+;
+; CRC-16  (x^16+x^15+x^2+x^0)
+; No tables, No loops, No temporary registers used.
+;
+; This code is from Dallas Semiconductor Application Note 27:
+;
+;   Understanding and Using Cyclic Redundancy Checks
+;   with Dallas Semiconductor iButton(TM) Products.
+;
+; This routine that calculates the same CRC as the hardware
+; in the DS5001/2 secure micro.
+;-----------------------------------------------------------------------
+        NAME    CRC_test
+
+?DT?CRC_test SEGMENT DATA
+        rseg    ?DT?CRC_test
+CRCH:   ds      1
+CRCL:   ds      1
+
+
+?CO?CRC_test    SEGMENT CODE
+        RSEG    ?CO?CRC_test
+
+        public  CRC_test
+
+CRC_test:
+
+        mov     CRCH,#0
+        mov     CRCL,#0
+
+        mov     A,#080H
+        call    CRC16
+
+        mov     A,#075H
+        call    CRC16
+
+        mov     A,#08AH
+        call    CRC16
+
+        mov     A,#00BH
+        call    CRC16
+
+        mov     A,#075H
+        call    CRC16
+
+        mov     A,#0C7H
+        call    CRC16
+
+        mov     A,#0AAH
+        call    CRC16
+
+        mov     A,#075H
+        call    CRC16
+
+        mov     A,#0C7H
+        call    CRC16
+
+        mov     A,#055H
+        call    CRC16
+
+        mov     A,#043H
+        call    CRC16
+
+        ljmp    CRC_test
+
+
+;CALCULATE CRC16 IN PARALLEL TO THE GREATEST EXTENT PRACTICAL
+;       INPUT:  BYTE TO BE INCUDED IN CRC CALCULATION IS IN ACC
+;       OUTPUT: CRCH:CRCL UPDATED TO INCLUDE THE NEW BYTE
+;
+CRC16:
+        PUSH    ACC                     ;save this in case the caller needs
+it
+        XRL     A,CRCL
+        MOV     CRCL,CRCH               ;put the high byte of the crc in its
+dest..
+        MOV     CRCH,A                  ;save data xor low(crc) for later
+        MOV     C,P
+        JNC     CRC0
+        XRL     CRCL,#001H
+
+CRC0:
+        RRC     A                       ;get the low bit in c
+        JNC     CRC1
+        XRL     CRCL,#040H
+
+CRC1:
+        MOV     C,ACC.7
+        XRL     A,CRCH                  ;compute the results for bits P...U
+        RRC     A                       ;shift them into place
+        MOV     CRCH,A                  ;and save them
+        JNC     CRC2
+        XRL     CRCL,#080H
+
+CRC2:
+        POP     ACC                     ;and restore everything and return
+        RET
+
+        end
+
+----------CRC16.A51 for 8051 end  ---------------------
+
+function crc16string(msg:string):string;
+var crc: word;
+n,i: integer;
+b:byte;
+
+begin
+crc := $FFFF;
+
+for i:=1 to length (msg) do begin
+   b:=ord(msg[i]);
+   crc := crc xor b;
+   for n:=1 to 8 do begin
+      if (crc and 1)<>0
+      then crc:=(crc shr 1) xor $A001
+      else crc:=crc shr 1;
+   end;
+end;
+result:=chr(crc and $ff)+chr(crc shr 8);
+
+end;

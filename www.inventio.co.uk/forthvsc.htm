@@ -1,0 +1,438 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:w="urn:schemas-microsoft-com:office:word"
+xmlns="http://www.w3.org/TR/REC-html40">
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+<meta name=ProgId content=Word.Document>
+<meta name=Generator content="Microsoft Word 9">
+<meta name=Originator content="Microsoft Word 9">
+<link rel=File-List href="https://www.inventio.co.uk/forthvsc_files/filelist.xml">
+<title>Forth Versus C</title>
+<!--[if gte mso 9]><xml>
+ <o:DocumentProperties>
+  <o:Author>Howerd Oakford</o:Author>
+  <o:LastAuthor>Howerd Oakford</o:LastAuthor>
+  <o:Revision>3</o:Revision>
+  <o:TotalTime>1</o:TotalTime>
+  <o:Created>2004-04-04T15:09:00Z</o:Created>
+  <o:LastSaved>2004-04-06T22:07:00Z</o:LastSaved>
+  <o:Pages>3</o:Pages>
+  <o:Words>1405</o:Words>
+  <o:Characters>8013</o:Characters>
+  <o:Company>Inventio Software Ltd</o:Company>
+  <o:Lines>66</o:Lines>
+  <o:Paragraphs>16</o:Paragraphs>
+  <o:CharactersWithSpaces>9840</o:CharactersWithSpaces>
+  <o:Version>9.2720</o:Version>
+ </o:DocumentProperties>
+</xml><![endif]-->
+<style>
+<!--
+ /* Style Definitions */
+p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{mso-style-parent:"";
+	margin:0cm;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:12.0pt;
+	font-family:"Times New Roman";
+	mso-fareast-font-family:"Times New Roman";}
+p.MsoTitle, li.MsoTitle, div.MsoTitle
+	{margin-top:12.0pt;
+	margin-right:0cm;
+	margin-bottom:3.0pt;
+	margin-left:0cm;
+	text-align:center;
+	mso-pagination:widow-orphan;
+	mso-outline-level:1;
+	font-size:16.0pt;
+	font-family:Arial;
+	mso-fareast-font-family:"Times New Roman";
+	mso-font-kerning:14.0pt;
+	font-weight:bold;}
+@page Section1
+	{size:595.3pt 841.9pt;
+	margin:72.0pt 90.0pt 72.0pt 90.0pt;
+	mso-header-margin:35.4pt;
+	mso-footer-margin:35.4pt;
+	mso-paper-source:0;}
+div.Section1
+	{page:Section1;}
+-->
+</style>
+</head>
+
+<body lang=EN-GB style='tab-interval:36.0pt'>
+
+<div class=Section1>
+
+<p class=MsoTitle><span style='font-size:24.0pt;mso-bidi-font-size:16.0pt;
+color:blue'>Forth</span><span style='font-size:24.0pt;mso-bidi-font-size:16.0pt'>
+Versus <span style='color:red'>C</span><o:p></o:p></span></p>
+
+<p class=MsoTitle>2004 Apr 04</p>
+
+<p class=MsoNormal style='text-align:justify'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></p>
+
+<p class=MsoNormal style='text-align:justify'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-size:14.0pt;
+mso-bidi-font-size:12.0pt;font-family:Arial'>Some IAQs ( Infrequently Asked
+Questions ) about Forth and C.<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:red'>Q.</span><span style='font-family:Arial'> What is Forth?<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A. </span><span style='font-family:Arial'>Forth is a computer
+programming language which has a return stack, an explicit parameter stack and a
+dictionary. It features an incremental compiler, an interpreter and a very fast
+edit-compile-test cycle. Forth is extensible.<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:red'>Q. </span><span style='font-family:Arial'>What is C?<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A. </span><span style='font-family:Arial'>C is a computer language
+which has a single, implicit stack. It features a “tool set” that includes a
+batch-mode pre-processor, compiler, linker and makefile program. It also
+features a binary ( pre-compiled ) distribution system using libraries and
+header files. C is not extensible.<span style="mso-spacerun: yes">  </span><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:red'>Q. </span><span style='font-family:Arial'>Why is Forth not as widely
+used as C?<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A. </span><span style='font-family:Arial'>C is much better suited
+to most business environments. <o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:red'>Q. </span><span style='font-family:Arial'>So why use Forth?<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A. </span><span style='font-family:Arial'>Because it is possible to
+write better programs in Forth than in C.<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:red'>Q. </span><span style='font-family:Arial'>Could you define “better”
+in this context?<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A. </span><span style='font-family:Arial'>Easier to read and
+maintain, fewer bugs, smaller, faster development.<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:red'>Q. </span><span style='font-family:Arial'>So why<span
+style="mso-spacerun: yes">  </span>doesn’t everyone use Forth?<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A. </span><span style='font-family:Arial'>Because it is also
+possible to write worse programs in Forth than in C.<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:red'>Q. </span><span style='font-family:Arial'>Perhaps you should also
+define “worse” …<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A. </span><span style='font-family:Arial'>Impossible to read and
+maintain, more bugs, bigger, longer development.<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:red'>Q. </span><span style='font-family:Arial'>Why is this?<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A. </span><span style='font-family:Arial'>Because Forth does not
+impose any restrictions on what you do or how you do it. However large your C
+program gets the source for it will still be C. Since Forth is extensible, you
+can extend the language so that part of your program can be written in a
+superset of Forth, specifically tailored to the application. <o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:red'>Q. </span><span style='font-family:Arial'>Doesn’t this mean that you
+have to learn what is essentially a new language for every application?<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A. </span><span style='font-family:Arial'>Yes.<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:red'>Q. </span><span style='font-family:Arial'><span style="mso-spacerun:
+yes"> </span>And this doesn’t worry you?<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A. </span><span style='font-family:Arial'>If the “new language” maps
+exactly onto the problem domain, what you are learning about is the problem,
+and then describing the solution becomes trivial. <o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:red'>Q. </span><span style='font-family:Arial'><span style="mso-spacerun:
+yes"> </span>What about if the “new language” does not map to the problem
+domain?<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A. </span><span style='font-family:Arial'>You are in big trouble!
+The worst programs are those where an entirely new language is created
+independently of the problem, and then the problem is solved using this new
+language. You then really do have to learn a new language <u>and­</u> the
+problem domain. This is actually much worse than programming in C, where at
+least you already know the language.<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:red'>Q. </span><span style='font-family:Arial'>How do you make sure that
+your Forth programs map to the problem domain?<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A. </span><span style='font-family:Arial'>Feedback. Ask the people
+who understand the problem domain if the program is right. Non-programmers can
+spot deviations from reality better than programmers, who usually immerse
+themselves in too much detail.<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:red'>Q. </span><span style='font-family:Arial'>But how can a
+non-programmer even read a program, let alone tell whether it is right?<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A. </span><span style='font-family:Arial'>Forth syntax can be
+learnt in an hour or two. If the top level of the program cannot be read and
+understood by someone who understands the problem domain, it is wrong and you
+should change it. <o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:red'>Q. </span><span style='font-family:Arial'>How much faster can you
+develop programs in Forth compared to C?<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A. </span><span style='font-family:Arial'>This depends on the type
+of application and what is already available. Almost all programs are not so
+much written as “ported” from similar programs. It is very unusual to see the
+same application written in both Forth and C, so comparison of development
+times must be anecdotal. For embedded, non-multitasking applications I would
+put the ratio of Forth:C development times at around 1:2 to 1:3. For embedded
+multitasking applications at between 1:4 to 1:6, and for PC based Windows
+applications about 1:4. Others have suggested figures of 1:10 or even higher. I
+think 1:pi is about right.<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:red'>Q. </span><span style='font-family:Arial'>You are claiming that you
+can finish a program three times more quickly in Forth than C. How can this be
+true?<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A. </span><span style='font-family:Arial'>The difference is not
+only in the language syntax - you can convert Forth code into C and back
+relatively easily. It is possible to develop code in a C-like way in Forth, but
+it is <u>not</u> possible to develop code in a Forth-like way using the C tool
+set. <o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:red'>Q. </span><span style='font-family:Arial'>What is it about the C
+tool set that stops you programming in a Forth-like way?<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A1. </span><span style='font-family:Arial'>The C language and tool
+set operate in a batch mode. The time taken to edit source, build and download
+is not usually less than a number of seconds. Because Forth compiles
+incrementally and has an interpreter and explicit stack,<span
+style="mso-spacerun: yes">  </span>changes can be tested immediately. The
+turn-round speed is actually more important than most people realise.<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A2. </span><span style='font-family:Arial'>The lack of an
+interpreter in C means that code must be tested using “printf”, a source level
+ICE/debugger or a special test harness or Command Line Interpreter. All of
+these techniques add to the complexity of the system. Forth has an interpreter,
+and this combined with the explicit stack means that you can enter arguments
+and test any function at any time.<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A3. </span><span style='font-family:Arial'>Forth is extensible, so
+you can create a superset of Forth which describes your problem domain exactly.
+<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:red'>Q. </span><span style='font-family:Arial'>I have seen versions of
+Forth written in C. Doesn’t this mean that you can get all of the advantages of
+Forth, but written in C?<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A. </span><span style='font-family:Arial'>No. The real power of
+Forth lies in the synergy of the entire system.<span style="mso-spacerun:
+yes">  </span>You can certainly gain an interpreter, but at the expense of a
+duplicate set of tools, two file formats, and two languages to learn before you
+even start on the application. <o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:red'>Q. </span><span style='font-family:Arial'>Does Forth have any known
+weaknesses?<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A. </span><span style='font-family:Arial'>Yes. There is no support within
+the Forth language for version control. C provides pre-compiled libraries and
+header files which allow vendors to supply their code in a form that cannot be
+modified by the customer. This is a simple but effective version control
+system. Many Forths are supplied with a similar binary module system but this
+is an extension to the language.<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:red'>Q. </span><span style='font-family:Arial'>Does Forth have any
+perceived weaknesses?<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A1. </span><span style='font-family:Arial'>Yes. Because Forth is so
+simple, many people have written their own. <o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'>In
+fact it is almost mandatory that computer science students spend an afternoon
+writing a Forth, just to see how easy it is. Not surprisingly, not all Forths
+are created equal. The finely honed products available from Forth, Inc., MPE
+Ltd and other commercial vendors are vastly better than most of the free Forths
+available on the WWW. Specifically, with advances in native compiler
+technology, Forth is no longer slow. <o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A2. </span><span style='font-family:Arial'>Forth is sometimes
+accused of being cryptic or “read only” code. This is because there is a lot of
+cryptic, “read only” code written in Forth. If you are going to use Forth, you
+must control its use, and ensure that your code is easy to read. This is a
+project management issue. <o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A3. </span><span style='font-family:Arial'>Forth uses “Reverse
+Polish” notation. This is because the problem domain that the Forth system is
+addressing is “how to tell the computer what to do”. The simplest way to solve
+this problem is to give the computer its instructions in the order that it
+needs them.<span style="mso-spacerun: yes">  </span>The code “1 2 +“ tells the
+computer to put a 1 on the stack, put a 2 on the stack and add them. The fact
+that the rest of the world ( HP calculators excepted ) write “1 + 2” is because
+this shows the operator and its arguments in a graphical way, as written on a
+chalkboard. It is easy to write a Forth parser that converts “1 + 2” into “1 2
++”, but this would put a boundary onto the Forth system that would make further
+extensions to the language much more difficult. Reverse Polish is seen as
+antiquated, and the fact that the computer has not even been taught to
+understand common usage is interpreted as a major weakness. In fact, it is just
+that Forth is not attempting to solve an entirely different problem.<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A4. </span><span style='font-family:Arial'>Forth is perceived as a
+“dead” language. This is because it is not being championed by big companies,
+nor is it taught as the de facto standard in most computer science courses. In
+fact Forth is alive and well in many low-profile niche markets, usually where
+resources are limited, software must be reliable or there is a need for an
+interpreted “scripting language”. <o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'>One
+limited resource is often money - short development times mean reduced costs.
+Smart cards and space environments are examples of restricted hardware where
+Forth flourishes.<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:red'>Q. </span><span style='font-family:Arial'>Why has Forth been
+described as “a polarising language”?<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A1. </span><span style='font-family:Arial'>People either love Forth
+or hate it. It is easy not to like Forth. Programmers don’t like Forth because
+it is not fashionable ( at the time of writing ) and does not look good on a
+CV. Project managers don’t like Forth because they can’t get Forth programmers
+easily, and the quality of code depends critically on the programmer.
+University lecturers don’t like it because there is not enough that can be
+taught about Forth that can be examined. Software vendors don’t like Forth
+because it removes the complexity they need to survive. Users don’t like Forth
+because they have never heard of it.<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A2. </span><span style='font-family:Arial'><span
+style="mso-spacerun: yes"> </span>People either love Forth or hate it. It is
+easy to like Forth. Programmers like Forth because its fun – you remove the
+tedious 66% of the job. Project managers like Forth because they can get the
+project finished on time, with fewer, easier-to-find bugs. University lecturers
+like Forth because they can teach their students about the art of programming
+and be involved in the cutting edge of computer science. Software vendors like
+Forth because they get involved with their customers to help them solve their
+problems and refine their products at the same time. Users like Forth because
+it makes programs that work.<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:red'>Q. </span><span style='font-family:Arial'>So you like Forth then?<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A. </span><span style='font-family:Arial'>Yes.<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:red'>Q. </span><span style='font-family:Arial'>What about C?<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A. </span><span style='font-family:Arial'>I have nothing against C
+– it is a language specifically tailored to the problem domain of “writing C
+based operating systems”.<span style="mso-spacerun: yes">  </span>Unix/Linux
+and DOS/Windows are written in C and are immensely successful. <o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'>“If
+your only tool is a hammer, all problems become nails”. For those applications
+that are not operating systems, Forth is probably a better language to use than
+C. <o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:red'>Q. </span><span style='font-family:Arial'>Is that it?<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial;
+color:blue'>A. </span><span style='font-family:Arial'>Yes!<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'>Howerd
+Oakford<span style='mso-tab-count:6'>                                                                    </span><span
+style="mso-spacerun: yes">                 </span>2004 Apr 04<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-align:justify'><span style='font-family:Arial'><![if !supportEmptyParas]>&nbsp;<![endif]><o:p></o:p></span></p>
+
+</div>
+
+</body>
+
+</html>

@@ -1,0 +1,86 @@
+<html>
+<head>
+<meta http-equiv="Content-Type"
+content="text/html; charset=iso-8859-1">
+<meta name="GENERATOR" content="Microsoft FrontPage Express 2.0">
+<title></title>
+</head>
+
+<body bgcolor="#FFFFFF">
+
+<p align="center"><font size="5" face="Arial">Token-based
+Programming for Compact Code </font></p>
+
+<p align="center"><font size="4" face="Arial">10 Nov 98</font></p>
+
+<p align="center"><font size="4" face="Arial">Using a token-based
+programming language can produce smaller code and reduce hardware
+cost. </font></p>
+
+<p><font face="Arial">This is an advertisement for the
+programming language Forth and my services as a Forth programmer.
+Small embedded microcontrollers are usually programmed in either
+C or assembler, but there is an alternative - Forth. </font></p>
+
+<p><font face="Arial">Each language has its own good and bad
+points : Assembler gives byte by byte control of the hardware, C
+gives industry standard high level source code, and Forth gives
+flexibility. It is this flexibility which allows Forth to produce
+compact code. It does this in two ways : </font></p>
+
+<p><font face="Arial">1. The interactive, high-level aspect of
+Forth allows the program to be well factored. While this is by no
+means unique to Forth, the &quot;trial and error&quot; approach
+where each Forth &quot;word&quot; (subroutine) can be tested
+simply by typing its name, makes is possible to explore different
+structures for the program, and evolve towards the ideal.<br>
+2. The token-based aspect of Forth means that subroutine calls
+occupy one token - in conventional 16 bit Forths this is two
+bytes - for highly optimised programs it can be one byte. In 8051
+assembler or C there will be the ACALL and RET instructions - at
+least three bytes. A well factored program will have lots of
+subroutine calls, so that as much code is reused as possible.
+There is, of course, the overhead of the token interpreter -
+usually a few tens of bytes. </font></p>
+
+<p><font face="Arial">The price to be paid for token-based
+programs is speed. Each subroutine is represented by its token,
+usually its address, and the token interpreter must fetch the
+next token, save the return address on the return stack and
+execute the code for the subroutine, all of which takes more
+instructions and hence more time, than a simple subroutine call.
+All embedded Forths come with an assembler, so that time-critical
+parts of the program can be hand-coded for speed. A working
+high-level Forth program can be speeded up in this way, but with
+the increase in speed comes an increase in program size. You
+choose the trade-off which is right for your specific
+application. </font></p>
+
+<p><font face="Arial">The Atmel 89C2051 is ideal for Forth. The
+serial port can be used with a &quot;talker program&quot; (around
+300 bytes) to debug the target hardware and software
+interactively using a PC. The 2K bytes of FLASH is enough to make
+a token-based program perform quite complex functions, and the
+24MHz clock means that most of the program can be written in
+high-level Forth, thus minimising the development time. </font></p>
+
+<p><font face="Arial">Two examples : A two axis stepper motor
+controller plus printer emulator software - the stepper motors
+are software stepped, with ramp-up and ramp-down, mostly written
+in assembler for speed. The printer escape sequence processor and
+user interface are written in high-level Forth.<br>
+A temperature controller and timer - four 7-segment LEDs are used
+for low cost, the display scanning interrupt routine is written
+in assembler, the user interface in high-level Forth. </font></p>
+
+<p><font face="Arial">For more information please 'phone </font><a
+href="http://www.inventio.co.uk/hpo.htm"><font
+face="Arial">Howerd Oakford</font></a><font face="Arial"> on
+01344 457057 <br>
+<br>
+</font><a
+href="http://www.inventio.co.uk/index.htm"><font
+face="Arial">Back to the Inventio Software Homepage<br>
+</font></a><font face="Arial"></font></p>
+</body>
+</html>

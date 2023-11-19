@@ -1,0 +1,1108 @@
+<html xmlns:v="urn:schemas-microsoft-com:vml"
+xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:w="urn:schemas-microsoft-com:office:word"
+xmlns:m="http://schemas.microsoft.com/office/2004/12/omml"
+xmlns="http://www.w3.org/TR/REC-html40">
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+<meta name=ProgId content=Word.Document>
+<meta name=Generator content="Microsoft Word 14">
+<meta name=Originator content="Microsoft Word 14">
+<link rel=File-List href="http://www.inventio.co.uk/software_files/filelist.xml">
+<link rel=Edit-Time-Data href="http://www.inventio.co.uk/software_files/editdata.mso">
+<!--[if !mso]>
+<style>
+v\:* {behavior:url(#default#VML);}
+o\:* {behavior:url(#default#VML);}
+w\:* {behavior:url(#default#VML);}
+.shape {behavior:url(#default#VML);}
+</style>
+<![endif]-->
+<title>Software Algorithms - ANS Forth for 32 bit PC Forths</title>
+<!--[if gte mso 9]><xml>
+ <o:DocumentProperties>
+  <o:Author>Howerd Oakford</o:Author>
+  <o:LastAuthor>Howerd Oakford</o:LastAuthor>
+  <o:Revision>44</o:Revision>
+  <o:TotalTime>8</o:TotalTime>
+  <o:Created>2006-01-07T23:42:00Z</o:Created>
+  <o:LastSaved>2016-12-22T13:57:00Z</o:LastSaved>
+  <o:Pages>2</o:Pages>
+  <o:Words>1160</o:Words>
+  <o:Characters>6613</o:Characters>
+  <o:Company>Inventio Software</o:Company>
+  <o:Lines>55</o:Lines>
+  <o:Paragraphs>15</o:Paragraphs>
+  <o:CharactersWithSpaces>7758</o:CharactersWithSpaces>
+  <o:Version>14.00</o:Version>
+ </o:DocumentProperties>
+</xml><![endif]-->
+<link rel=themeData href="http://www.inventio.co.uk/software_files/themedata.thmx">
+<link rel=colorSchemeMapping href="http://www.inventio.co.uk/software_files/colorschememapping.xml">
+<!--[if gte mso 9]><xml>
+ <w:WordDocument>
+  <w:Zoom>120</w:Zoom>
+  <w:SpellingState>Clean</w:SpellingState>
+  <w:GrammarState>Clean</w:GrammarState>
+  <w:TrackMoves>false</w:TrackMoves>
+  <w:TrackFormatting/>
+  <w:ValidateAgainstSchemas/>
+  <w:SaveIfXMLInvalid>false</w:SaveIfXMLInvalid>
+  <w:IgnoreMixedContent>false</w:IgnoreMixedContent>
+  <w:AlwaysShowPlaceholderText>false</w:AlwaysShowPlaceholderText>
+  <w:DoNotPromoteQF/>
+  <w:LidThemeOther>EN-GB</w:LidThemeOther>
+  <w:LidThemeAsian>X-NONE</w:LidThemeAsian>
+  <w:LidThemeComplexScript>X-NONE</w:LidThemeComplexScript>
+  <w:Compatibility>
+   <w:BreakWrappedTables/>
+   <w:SplitPgBreakAndParaMark/>
+  </w:Compatibility>
+  <w:BrowserLevel>MicrosoftInternetExplorer4</w:BrowserLevel>
+  <m:mathPr>
+   <m:mathFont m:val="Cambria Math"/>
+   <m:brkBin m:val="before"/>
+   <m:brkBinSub m:val="&#45;-"/>
+   <m:smallFrac m:val="off"/>
+   <m:dispDef/>
+   <m:lMargin m:val="0"/>
+   <m:rMargin m:val="0"/>
+   <m:defJc m:val="centerGroup"/>
+   <m:wrapIndent m:val="1440"/>
+   <m:intLim m:val="subSup"/>
+   <m:naryLim m:val="undOvr"/>
+  </m:mathPr></w:WordDocument>
+</xml><![endif]--><!--[if gte mso 9]><xml>
+ <w:LatentStyles DefLockedState="false" DefUnhideWhenUsed="true"
+  DefSemiHidden="true" DefQFormat="false" DefPriority="99"
+  LatentStyleCount="267">
+  <w:LsdException Locked="false" Priority="0" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Normal"/>
+  <w:LsdException Locked="false" Priority="9" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="heading 1"/>
+  <w:LsdException Locked="false" Priority="9" QFormat="true" Name="heading 2"/>
+  <w:LsdException Locked="false" Priority="9" QFormat="true" Name="heading 3"/>
+  <w:LsdException Locked="false" Priority="9" QFormat="true" Name="heading 4"/>
+  <w:LsdException Locked="false" Priority="9" QFormat="true" Name="heading 5"/>
+  <w:LsdException Locked="false" Priority="9" QFormat="true" Name="heading 6"/>
+  <w:LsdException Locked="false" Priority="9" QFormat="true" Name="heading 7"/>
+  <w:LsdException Locked="false" Priority="9" QFormat="true" Name="heading 8"/>
+  <w:LsdException Locked="false" Priority="9" QFormat="true" Name="heading 9"/>
+  <w:LsdException Locked="false" Priority="39" Name="toc 1"/>
+  <w:LsdException Locked="false" Priority="39" Name="toc 2"/>
+  <w:LsdException Locked="false" Priority="39" Name="toc 3"/>
+  <w:LsdException Locked="false" Priority="39" Name="toc 4"/>
+  <w:LsdException Locked="false" Priority="39" Name="toc 5"/>
+  <w:LsdException Locked="false" Priority="39" Name="toc 6"/>
+  <w:LsdException Locked="false" Priority="39" Name="toc 7"/>
+  <w:LsdException Locked="false" Priority="39" Name="toc 8"/>
+  <w:LsdException Locked="false" Priority="39" Name="toc 9"/>
+  <w:LsdException Locked="false" Priority="35" QFormat="true" Name="caption"/>
+  <w:LsdException Locked="false" Priority="10" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Title"/>
+  <w:LsdException Locked="false" Priority="1" Name="Default Paragraph Font"/>
+  <w:LsdException Locked="false" Priority="11" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Subtitle"/>
+  <w:LsdException Locked="false" Priority="22" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Strong"/>
+  <w:LsdException Locked="false" Priority="20" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Emphasis"/>
+  <w:LsdException Locked="false" Priority="59" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Table Grid"/>
+  <w:LsdException Locked="false" UnhideWhenUsed="false" Name="Placeholder Text"/>
+  <w:LsdException Locked="false" Priority="1" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="No Spacing"/>
+  <w:LsdException Locked="false" Priority="60" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Shading"/>
+  <w:LsdException Locked="false" Priority="61" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light List"/>
+  <w:LsdException Locked="false" Priority="62" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Grid"/>
+  <w:LsdException Locked="false" Priority="63" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 1"/>
+  <w:LsdException Locked="false" Priority="64" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 2"/>
+  <w:LsdException Locked="false" Priority="65" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 1"/>
+  <w:LsdException Locked="false" Priority="66" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 2"/>
+  <w:LsdException Locked="false" Priority="67" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 1"/>
+  <w:LsdException Locked="false" Priority="68" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 2"/>
+  <w:LsdException Locked="false" Priority="69" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 3"/>
+  <w:LsdException Locked="false" Priority="70" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Dark List"/>
+  <w:LsdException Locked="false" Priority="71" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Shading"/>
+  <w:LsdException Locked="false" Priority="72" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful List"/>
+  <w:LsdException Locked="false" Priority="73" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Grid"/>
+  <w:LsdException Locked="false" Priority="60" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Shading Accent 1"/>
+  <w:LsdException Locked="false" Priority="61" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light List Accent 1"/>
+  <w:LsdException Locked="false" Priority="62" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Grid Accent 1"/>
+  <w:LsdException Locked="false" Priority="63" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 1 Accent 1"/>
+  <w:LsdException Locked="false" Priority="64" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 2 Accent 1"/>
+  <w:LsdException Locked="false" Priority="65" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 1 Accent 1"/>
+  <w:LsdException Locked="false" UnhideWhenUsed="false" Name="Revision"/>
+  <w:LsdException Locked="false" Priority="34" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="List Paragraph"/>
+  <w:LsdException Locked="false" Priority="29" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Quote"/>
+  <w:LsdException Locked="false" Priority="30" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Intense Quote"/>
+  <w:LsdException Locked="false" Priority="66" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 2 Accent 1"/>
+  <w:LsdException Locked="false" Priority="67" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 1 Accent 1"/>
+  <w:LsdException Locked="false" Priority="68" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 2 Accent 1"/>
+  <w:LsdException Locked="false" Priority="69" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 3 Accent 1"/>
+  <w:LsdException Locked="false" Priority="70" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Dark List Accent 1"/>
+  <w:LsdException Locked="false" Priority="71" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Shading Accent 1"/>
+  <w:LsdException Locked="false" Priority="72" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful List Accent 1"/>
+  <w:LsdException Locked="false" Priority="73" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Grid Accent 1"/>
+  <w:LsdException Locked="false" Priority="60" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Shading Accent 2"/>
+  <w:LsdException Locked="false" Priority="61" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light List Accent 2"/>
+  <w:LsdException Locked="false" Priority="62" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Grid Accent 2"/>
+  <w:LsdException Locked="false" Priority="63" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 1 Accent 2"/>
+  <w:LsdException Locked="false" Priority="64" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 2 Accent 2"/>
+  <w:LsdException Locked="false" Priority="65" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 1 Accent 2"/>
+  <w:LsdException Locked="false" Priority="66" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 2 Accent 2"/>
+  <w:LsdException Locked="false" Priority="67" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 1 Accent 2"/>
+  <w:LsdException Locked="false" Priority="68" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 2 Accent 2"/>
+  <w:LsdException Locked="false" Priority="69" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 3 Accent 2"/>
+  <w:LsdException Locked="false" Priority="70" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Dark List Accent 2"/>
+  <w:LsdException Locked="false" Priority="71" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Shading Accent 2"/>
+  <w:LsdException Locked="false" Priority="72" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful List Accent 2"/>
+  <w:LsdException Locked="false" Priority="73" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Grid Accent 2"/>
+  <w:LsdException Locked="false" Priority="60" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Shading Accent 3"/>
+  <w:LsdException Locked="false" Priority="61" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light List Accent 3"/>
+  <w:LsdException Locked="false" Priority="62" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Grid Accent 3"/>
+  <w:LsdException Locked="false" Priority="63" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 1 Accent 3"/>
+  <w:LsdException Locked="false" Priority="64" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 2 Accent 3"/>
+  <w:LsdException Locked="false" Priority="65" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 1 Accent 3"/>
+  <w:LsdException Locked="false" Priority="66" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 2 Accent 3"/>
+  <w:LsdException Locked="false" Priority="67" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 1 Accent 3"/>
+  <w:LsdException Locked="false" Priority="68" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 2 Accent 3"/>
+  <w:LsdException Locked="false" Priority="69" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 3 Accent 3"/>
+  <w:LsdException Locked="false" Priority="70" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Dark List Accent 3"/>
+  <w:LsdException Locked="false" Priority="71" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Shading Accent 3"/>
+  <w:LsdException Locked="false" Priority="72" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful List Accent 3"/>
+  <w:LsdException Locked="false" Priority="73" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Grid Accent 3"/>
+  <w:LsdException Locked="false" Priority="60" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Shading Accent 4"/>
+  <w:LsdException Locked="false" Priority="61" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light List Accent 4"/>
+  <w:LsdException Locked="false" Priority="62" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Grid Accent 4"/>
+  <w:LsdException Locked="false" Priority="63" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 1 Accent 4"/>
+  <w:LsdException Locked="false" Priority="64" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 2 Accent 4"/>
+  <w:LsdException Locked="false" Priority="65" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 1 Accent 4"/>
+  <w:LsdException Locked="false" Priority="66" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 2 Accent 4"/>
+  <w:LsdException Locked="false" Priority="67" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 1 Accent 4"/>
+  <w:LsdException Locked="false" Priority="68" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 2 Accent 4"/>
+  <w:LsdException Locked="false" Priority="69" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 3 Accent 4"/>
+  <w:LsdException Locked="false" Priority="70" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Dark List Accent 4"/>
+  <w:LsdException Locked="false" Priority="71" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Shading Accent 4"/>
+  <w:LsdException Locked="false" Priority="72" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful List Accent 4"/>
+  <w:LsdException Locked="false" Priority="73" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Grid Accent 4"/>
+  <w:LsdException Locked="false" Priority="60" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Shading Accent 5"/>
+  <w:LsdException Locked="false" Priority="61" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light List Accent 5"/>
+  <w:LsdException Locked="false" Priority="62" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Grid Accent 5"/>
+  <w:LsdException Locked="false" Priority="63" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 1 Accent 5"/>
+  <w:LsdException Locked="false" Priority="64" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 2 Accent 5"/>
+  <w:LsdException Locked="false" Priority="65" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 1 Accent 5"/>
+  <w:LsdException Locked="false" Priority="66" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 2 Accent 5"/>
+  <w:LsdException Locked="false" Priority="67" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 1 Accent 5"/>
+  <w:LsdException Locked="false" Priority="68" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 2 Accent 5"/>
+  <w:LsdException Locked="false" Priority="69" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 3 Accent 5"/>
+  <w:LsdException Locked="false" Priority="70" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Dark List Accent 5"/>
+  <w:LsdException Locked="false" Priority="71" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Shading Accent 5"/>
+  <w:LsdException Locked="false" Priority="72" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful List Accent 5"/>
+  <w:LsdException Locked="false" Priority="73" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Grid Accent 5"/>
+  <w:LsdException Locked="false" Priority="60" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Shading Accent 6"/>
+  <w:LsdException Locked="false" Priority="61" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light List Accent 6"/>
+  <w:LsdException Locked="false" Priority="62" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Light Grid Accent 6"/>
+  <w:LsdException Locked="false" Priority="63" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 1 Accent 6"/>
+  <w:LsdException Locked="false" Priority="64" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Shading 2 Accent 6"/>
+  <w:LsdException Locked="false" Priority="65" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 1 Accent 6"/>
+  <w:LsdException Locked="false" Priority="66" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium List 2 Accent 6"/>
+  <w:LsdException Locked="false" Priority="67" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 1 Accent 6"/>
+  <w:LsdException Locked="false" Priority="68" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 2 Accent 6"/>
+  <w:LsdException Locked="false" Priority="69" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Medium Grid 3 Accent 6"/>
+  <w:LsdException Locked="false" Priority="70" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Dark List Accent 6"/>
+  <w:LsdException Locked="false" Priority="71" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Shading Accent 6"/>
+  <w:LsdException Locked="false" Priority="72" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful List Accent 6"/>
+  <w:LsdException Locked="false" Priority="73" SemiHidden="false"
+   UnhideWhenUsed="false" Name="Colorful Grid Accent 6"/>
+  <w:LsdException Locked="false" Priority="19" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Subtle Emphasis"/>
+  <w:LsdException Locked="false" Priority="21" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Intense Emphasis"/>
+  <w:LsdException Locked="false" Priority="31" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Subtle Reference"/>
+  <w:LsdException Locked="false" Priority="32" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Intense Reference"/>
+  <w:LsdException Locked="false" Priority="33" SemiHidden="false"
+   UnhideWhenUsed="false" QFormat="true" Name="Book Title"/>
+  <w:LsdException Locked="false" Priority="37" Name="Bibliography"/>
+  <w:LsdException Locked="false" Priority="39" QFormat="true" Name="TOC Heading"/>
+ </w:LatentStyles>
+</xml><![endif]-->
+<style>
+<!--
+ /* Font Definitions */
+ @font-face
+	{font-family:Consolas;
+	panose-1:2 11 6 9 2 2 4 3 2 4;
+	mso-font-charset:0;
+	mso-generic-font-family:modern;
+	mso-font-pitch:fixed;
+	mso-font-signature:-520092929 1073806591 9 0 415 0;}
+ /* Style Definitions */
+ p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{mso-style-unhide:no;
+	mso-style-qformat:yes;
+	mso-style-parent:"";
+	margin:0cm;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:12.0pt;
+	font-family:"Times New Roman","serif";
+	mso-fareast-font-family:"Times New Roman";}
+h1
+	{mso-style-priority:9;
+	mso-style-unhide:no;
+	mso-style-qformat:yes;
+	mso-style-link:"Heading 1 Char";
+	mso-style-next:Normal;
+	margin:0cm;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	page-break-after:avoid;
+	mso-outline-level:1;
+	font-size:16.0pt;
+	mso-bidi-font-size:12.0pt;
+	font-family:"Arial","sans-serif";
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-font-kerning:0pt;
+	font-weight:normal;}
+h2
+	{mso-style-noshow:yes;
+	mso-style-priority:9;
+	mso-style-qformat:yes;
+	mso-style-link:"Heading 2 Char";
+	mso-style-next:Normal;
+	margin-top:10.0pt;
+	margin-right:0cm;
+	margin-bottom:0cm;
+	margin-left:0cm;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan lines-together;
+	page-break-after:avoid;
+	mso-outline-level:2;
+	font-size:13.0pt;
+	font-family:"Cambria","serif";
+	mso-ascii-font-family:Cambria;
+	mso-ascii-theme-font:major-latin;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:major-fareast;
+	mso-hansi-font-family:Cambria;
+	mso-hansi-theme-font:major-latin;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:major-bidi;
+	color:#4F81BD;
+	mso-themecolor:accent1;}
+p.MsoBodyText, li.MsoBodyText, div.MsoBodyText
+	{mso-style-noshow:yes;
+	mso-style-priority:99;
+	mso-style-link:"Body Text Char";
+	margin:0cm;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:14.0pt;
+	mso-bidi-font-size:12.0pt;
+	font-family:"Arial","sans-serif";
+	mso-fareast-font-family:"Times New Roman";}
+a:link, span.MsoHyperlink
+	{mso-style-priority:99;
+	color:blue;
+	text-decoration:underline;
+	text-underline:single;}
+a:visited, span.MsoHyperlinkFollowed
+	{mso-style-noshow:yes;
+	mso-style-priority:99;
+	color:purple;
+	text-decoration:underline;
+	text-underline:single;}
+pre
+	{mso-style-noshow:yes;
+	mso-style-priority:99;
+	mso-style-link:"HTML Preformatted Char";
+	margin:0cm;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:10.0pt;
+	font-family:"Courier New";
+	mso-fareast-font-family:"Courier New";}
+span.Heading1Char
+	{mso-style-name:"Heading 1 Char";
+	mso-style-priority:9;
+	mso-style-unhide:no;
+	mso-style-locked:yes;
+	mso-style-link:"Heading 1";
+	mso-ansi-font-size:14.0pt;
+	mso-bidi-font-size:14.0pt;
+	font-family:"Cambria","serif";
+	mso-ascii-font-family:Cambria;
+	mso-ascii-theme-font:major-latin;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:major-fareast;
+	mso-hansi-font-family:Cambria;
+	mso-hansi-theme-font:major-latin;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:major-bidi;
+	color:#365F91;
+	mso-themecolor:accent1;
+	mso-themeshade:191;
+	font-weight:bold;}
+span.Heading2Char
+	{mso-style-name:"Heading 2 Char";
+	mso-style-noshow:yes;
+	mso-style-priority:9;
+	mso-style-unhide:no;
+	mso-style-locked:yes;
+	mso-style-link:"Heading 2";
+	mso-ansi-font-size:13.0pt;
+	mso-bidi-font-size:13.0pt;
+	font-family:"Cambria","serif";
+	mso-ascii-font-family:Cambria;
+	mso-ascii-theme-font:major-latin;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:major-fareast;
+	mso-hansi-font-family:Cambria;
+	mso-hansi-theme-font:major-latin;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:major-bidi;
+	color:#4F81BD;
+	mso-themecolor:accent1;
+	font-weight:bold;}
+span.HTMLPreformattedChar
+	{mso-style-name:"HTML Preformatted Char";
+	mso-style-noshow:yes;
+	mso-style-priority:99;
+	mso-style-unhide:no;
+	mso-style-locked:yes;
+	mso-style-link:"HTML Preformatted";
+	font-family:Consolas;
+	mso-ascii-font-family:Consolas;
+	mso-hansi-font-family:Consolas;
+	mso-bidi-font-family:Consolas;}
+span.BodyTextChar
+	{mso-style-name:"Body Text Char";
+	mso-style-noshow:yes;
+	mso-style-priority:99;
+	mso-style-unhide:no;
+	mso-style-locked:yes;
+	mso-style-link:"Body Text";
+	mso-ansi-font-size:12.0pt;
+	mso-bidi-font-size:12.0pt;}
+span.berschrift1Zchn
+	{mso-style-name:"Überschrift 1 Zchn";
+	mso-style-priority:9;
+	mso-style-unhide:no;
+	mso-style-locked:yes;
+	mso-style-link:"Überschrift 1";
+	mso-ansi-font-size:14.0pt;
+	mso-bidi-font-size:14.0pt;
+	font-family:"Cambria","serif";
+	mso-ascii-font-family:Cambria;
+	mso-ascii-theme-font:major-latin;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:major-fareast;
+	mso-hansi-font-family:Cambria;
+	mso-hansi-theme-font:major-latin;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:major-bidi;
+	color:#365F91;
+	mso-themecolor:accent1;
+	mso-themeshade:191;
+	font-weight:bold;}
+p.berschrift1, li.berschrift1, div.berschrift1
+	{mso-style-name:"Überschrift 1";
+	mso-style-unhide:no;
+	mso-style-link:"Überschrift 1 Zchn";
+	margin:0cm;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:12.0pt;
+	font-family:"Times New Roman","serif";
+	mso-fareast-font-family:"Times New Roman";}
+span.HTMLVorformatiertZchn
+	{mso-style-name:"HTML Vorformatiert Zchn";
+	mso-style-noshow:yes;
+	mso-style-priority:99;
+	mso-style-unhide:no;
+	mso-style-locked:yes;
+	mso-style-link:"HTML Vorformatiert";
+	font-family:Consolas;
+	mso-ascii-font-family:Consolas;
+	mso-hansi-font-family:Consolas;
+	mso-bidi-font-family:Consolas;}
+p.HTMLVorformatiert, li.HTMLVorformatiert, div.HTMLVorformatiert
+	{mso-style-name:"HTML Vorformatiert";
+	mso-style-unhide:no;
+	mso-style-link:"HTML Vorformatiert Zchn";
+	margin:0cm;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:12.0pt;
+	font-family:"Times New Roman","serif";
+	mso-fareast-font-family:"Times New Roman";}
+span.TextkrperZchn
+	{mso-style-name:"Textkörper Zchn";
+	mso-style-noshow:yes;
+	mso-style-priority:99;
+	mso-style-unhide:no;
+	mso-style-locked:yes;
+	mso-style-link:Textkörper;
+	mso-ansi-font-size:12.0pt;
+	mso-bidi-font-size:12.0pt;}
+p.Textkrper, li.Textkrper, div.Textkrper
+	{mso-style-name:Textkörper;
+	mso-style-unhide:no;
+	mso-style-link:"Textkörper Zchn";
+	margin:0cm;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:12.0pt;
+	font-family:"Times New Roman","serif";
+	mso-fareast-font-family:"Times New Roman";}
+span.SpellE
+	{mso-style-name:"";
+	mso-spl-e:yes;}
+span.GramE
+	{mso-style-name:"";
+	mso-gram-e:yes;}
+.MsoChpDefault
+	{mso-style-type:export-only;
+	mso-default-props:yes;
+	font-size:10.0pt;
+	mso-ansi-font-size:10.0pt;
+	mso-bidi-font-size:10.0pt;}
+@page WordSection1
+	{size:595.3pt 841.9pt;
+	margin:72.0pt 90.0pt 72.0pt 90.0pt;
+	mso-header-margin:35.4pt;
+	mso-footer-margin:35.4pt;
+	mso-paper-source:0;}
+div.WordSection1
+	{page:WordSection1;}
+-->
+</style>
+<!--[if gte mso 10]>
+<style>
+ /* Style Definitions */
+ table.MsoNormalTable
+	{mso-style-name:"Table Normal";
+	mso-tstyle-rowband-size:0;
+	mso-tstyle-colband-size:0;
+	mso-style-noshow:yes;
+	mso-style-priority:99;
+	mso-style-parent:"";
+	mso-padding-alt:0cm 5.4pt 0cm 5.4pt;
+	mso-para-margin:0cm;
+	mso-para-margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:10.0pt;
+	font-family:"Times New Roman","serif";}
+table.NormaleTabelle
+	{mso-style-name:"Normale Tabelle";
+	mso-tstyle-rowband-size:0;
+	mso-tstyle-colband-size:0;
+	mso-style-noshow:yes;
+	mso-style-priority:99;
+	mso-style-unhide:no;
+	mso-style-parent:"";
+	mso-padding-alt:0cm 5.4pt 0cm 5.4pt;
+	mso-para-margin:0cm;
+	mso-para-margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:10.0pt;
+	font-family:"Times New Roman","serif";}
+</style>
+<![endif]--><!--[if gte mso 9]><xml>
+ <o:shapedefaults v:ext="edit" spidmax="1026">
+  <o:colormru v:ext="edit" colors="#6f9,#cfc"/>
+ </o:shapedefaults></xml><![endif]--><!--[if gte mso 9]><xml>
+ <o:shapelayout v:ext="edit">
+  <o:idmap v:ext="edit" data="1"/>
+ </o:shapelayout></xml><![endif]-->
+</head>
+
+<body bgcolor="#CCFFCC" lang=EN-GB link=blue vlink=purple style='tab-interval:
+36.0pt'>
+
+<div class=WordSection1>
+
+<h1><span style='font-size:18.0pt;color:#0070C0'>Software Algorithms and
+Programs - ANS Forth for 32 bit PC <span class=SpellE>Forths</span><o:p></o:p></span></h1>
+
+<p class=MsoBodyText><span style='color:#002060'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoBodyText><span style='color:#FF9900'>I hope you find them useful –
+Howerd 2016 Dec 21 <o:p></o:p></span></p>
+
+<p class=MsoBodyText><span style='color:#FF9900'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:12.0pt'>Feedback or bug reports to <a
+href="mailto:howerd@inventio.co.uk">howerd@inventio.co.uk</a><o:p></o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:12.0pt'><o:p>&nbsp;</o:p></span></p>
+
+<div class=MsoNormal align=center style='text-align:center'>
+
+<hr size=1 width="100%" align=center>
+
+</div>
+
+<h2><i><span style='font-family:"Arial","sans-serif";mso-fareast-font-family:
+"Times New Roman";color:fuchsia'>Latest News! <o:p></o:p></span></i></h2>
+
+<h2><span style='font-family:"Arial","sans-serif";mso-fareast-font-family:"Times New Roman";
+color:blue;font-weight:normal;mso-bidi-font-weight:bold;mso-bidi-font-style:
+italic'>Windows Sockets SwiftForth <span class=GramE>code :</span> wsa.f
+updated with HTTP POST test code and FTP, 2016 Dec 21<o:p></o:p></span></h2>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoNormal><span style='font-family:"Arial","sans-serif";mso-fareast-font-family:
+"Courier New";color:#7030A0'>Copy the text of wsa.f and paste it into the <a
+href="https://www.forth.com/swiftforth/">SwiftForth</a> console Window, then
+type <span class=SpellE>ttall</span> &lt;<span class=SpellE>cr</span>&gt;<o:p></o:p></span></p>
+
+<p class=MsoNormal><o:p>&nbsp;</o:p></p>
+
+<p class=MsoBodyText><a href="wsa.f.html">wsa.f</a><span
+style='mso-spacerun:yes'>    </span><a href="wsa.zip">wsa.zip</a></p>
+
+<p class=MsoBodyText><span style='font-size:10.0pt;mso-fareast-font-family:
+"Courier New"'>\ <span class=GramE>wsa.f<span style='mso-spacerun:yes'> 
+</span>Howerd</span> Oakford<span style='mso-spacerun:yes'>  </span><a
+href="index.html">www.inventio.co.uk</a> 2016 Dec 21<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;font-family:"Arial","sans-serif";
+mso-fareast-font-family:"Courier New"'>\ WinSock - Windows Sockets API <span
+class=GramE>( Berkeley</span>-like interface ) for SwiftForth ANS Forth.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;font-family:"Arial","sans-serif";
+mso-fareast-font-family:"Courier New"'>\ <span class=GramE>A</span> simple
+TCP/IP server and client, an HTTP client and FTP client interfaces.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;font-family:"Arial","sans-serif";
+mso-fareast-font-family:"Courier New"'>\ The Server simply echoes back what you
+send it, seen in blue on the Client.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;font-family:"Arial","sans-serif";
+mso-fareast-font-family:"Courier New"'>\ Add your own code to process commands
+for HTTP or another service at this point...<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;font-family:"Arial","sans-serif";
+mso-fareast-font-family:"Courier New"'>\<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;font-family:"Arial","sans-serif";
+mso-fareast-font-family:"Courier New"'>\ <span class=GramE>New :</span> added
+HTTP POST tests in (HTTP), FTP partially working - <span class=SpellE>FTPclient</span></span></p>
+
+<div class=MsoNormal align=center style='text-align:center'>
+
+<hr size=1 width="100%" align=center>
+
+</div>
+
+<p class=MsoBodyText><span style='font-size:12.0pt'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:12.0pt'><a
+href="average.f.html">average.f</a><span
+style='mso-spacerun:yes'>    </span><a
+href="average.zip">average.zip</a><o:p></o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt'>\
+<span class=GramE>Average.f<span style='mso-spacerun:yes'>  </span>2014</span>
+Nov 07<span style='mso-spacerun:yes'>  </span>Running averaging of n data
+readings.<span style='mso-spacerun:yes'>   </span>Howerd <span class=GramE>Oakford<span
+style='mso-spacerun:yes'>  </span>www.inventio.co.uk</span><o:p></o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt'>\
+<span class=GramE>Uses</span> a buffer size that is a power of 2 for efficiency<o:p></o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt'>\
+Calculates a running total by adding the current reading and subtracting the <o:p></o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt'>\
+<span class=SpellE><span class=GramE>n'th</span></span> reading, so looping
+over many values is not required - see <span class=SpellE>UpdatePulses</span><o:p></o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt'>\
+<span class=GramE>You</span> can extract averages over a different period of
+time from the same average buffer.<o:p></o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt'>\
+For SwiftForth - www.forth.com - a 32 bit ANS Forth for the PC <o:p></o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt'>\
+include <span class=SpellE><span class=GramE>Average.f</span></span><span
+class=GramE><span style='mso-spacerun:yes'>  </span><span class=SpellE>ttAv</span></span><span
+style='mso-spacerun:yes'>    </span>\ will show a demo using the <span
+class=SpellE>MiniScope</span> ASCII display<o:p></o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:12.0pt'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:12.0pt'><a
+href="aes.f.html"><span class=SpellE>aes.f</span></a><span
+style='mso-spacerun:yes'>    </span><a href="aes.zip">aes.zip</a><o:p></o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:12.0pt'>\ <span class=SpellE><span
+class=GramE>aes.f</span></span><span class=GramE><span
+style='mso-spacerun:yes'>  </span>by</span> Jabari <span class=SpellE>Zakiya</span>
+- thanks! With new API added by Howerd Oakford<o:p></o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:12.0pt'>\ Use of this code is free
+subject to acknowledgment of copyright.<o:p></o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:12.0pt'>\ Copyright (c) 2001 Jabari
+<span class=SpellE>Zakiya</span>, -- <span class=SpellE>jzakiya</span> at <span
+class=SpellE>gmail</span> dot com, 2001/5/26<o:p></o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:12.0pt'>\ Revised: 2014/10/13 <o:p></o:p></span></p>
+
+<p class=MsoBodyText><span class=GramE><span style='font-size:12.0pt'>\ ANS
+FORTH code to implement the Advanced Encryption Standard (AES).</span></span><span
+style='font-size:12.0pt'><o:p></o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:12.0pt'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:12.0pt'><a
+href="SHA-256.f.html">SHA-256.f</a><span
+style='mso-spacerun:yes'>    </span><a
+href="SHA-256.zip">SHA-256.zip</a><o:p></o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt'>\
+SHA-256.f Secure Hash Algorithm SHA-256 Howerd Oakford 2012 Nov 21<o:p></o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt'>\
+For SwiftForth 32 bit Little Endian ANS Forth, with Round functions coded in
+SwiftForth <span class=GramE>x86 assembler</span> <o:p></o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:12.0pt'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoBodyText><a href="wsa.f.html">wsa.f</a><span
+style='mso-spacerun:yes'>    </span><a href="wsa.zip">wsa.zip</a></p>
+
+<p class=MsoBodyText><span style='font-size:10.0pt;mso-fareast-font-family:
+"Courier New"'>\ <span class=GramE>wsa.f<span style='mso-spacerun:yes'> 
+</span>Howerd</span> Oakford<span style='mso-spacerun:yes'>  </span>2016 Dec 21<o:p></o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:10.0pt;mso-fareast-font-family:
+"Courier New"'>\ WinSock - Windows Sockets API <span class=GramE>( Berkeley</span>-like
+interface ) for SwiftForth ANS Forth.<o:p></o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:10.0pt;mso-fareast-font-family:
+"Courier New"'>\ <span class=GramE>A</span> simple TCP/IP server and client and
+an HTTP client interface.<o:p></o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:10.0pt;mso-fareast-font-family:
+"Courier New"'>\ The Server simply echoes back what you send it, seen in blue
+on the Client.<o:p></o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:10.0pt;mso-fareast-font-family:
+"Courier New"'>\ Add your own code to process commands for HTTP or another
+service at this point...<o:p></o:p></span></p>
+
+<p class=MsoBodyText><span style='font-size:12.0pt'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoBodyText><a href="isqrt.f.html"><span
+class=SpellE>isqrt.f</span></a><span style='mso-spacerun:yes'>    </span><a
+href="isqrt.zip">isqrt.zip</a></p>
+
+<pre><span style='font-family:"Arial","sans-serif"'>\ <span class=SpellE><span
+class=GramE>isqrt.f</span></span><span class=GramE><span style='mso-spacerun:yes'>  </span>Howerd</span> Oakford<span style='mso-spacerun:yes'>  </span>2008 Jun 04<o:p></o:p></span></pre><pre><span
+style='font-family:"Arial","sans-serif"'>\ Square Root of unsigned 32 bit integer <o:p></o:p></span></pre><pre><span
+style='font-family:"Arial","sans-serif"'>\ from James <span class=SpellE>Ulery's</span> Computing Integer Square Roots<o:p></o:p></span></pre><pre><span
+style='font-family:"Arial","sans-serif"'>\ http://www.azillionmonkeys.com/qed/ulerysqroot.pdf</span></pre>
+
+<p class=MsoBodyText><span style='font-size:12.0pt'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoBodyText><a href="tiff.f.html"><span
+class=SpellE>tiff.f</span></a><span style='mso-spacerun:yes'>   </span><a
+href="http://www.inventio.co.uk/tiff.zip">tiff.zip</a></p>
+
+<pre><span style='font-family:"Arial","sans-serif"'>\ So far this just <span
+class=GramE>displays</span> the TIFF and <span class=SpellE>BigTIFF</span> headers – there is no display of the image yet.<o:p></o:p></span></pre><pre><span
+style='font-family:"Arial","sans-serif"'>\ I include it here in case anyone else has time to work on it.<o:p></o:p></span></pre><pre><span
+style='font-family:"Arial","sans-serif"'>\ <span class=SpellE>tiff.f</span> 2008 Apr 29 TIFF and <span
+class=SpellE>BigTIFF</span> file reader<o:p></o:p></span></pre><pre><span
+style='font-family:"Arial","sans-serif"'>\ Howerd Oakford www.inventio.co.uk<o:p></o:p></span></pre><pre><span
+style='font-family:"Arial","sans-serif"'>\ Tag Image File Format (TIFF) Rev 6.0<o:p></o:p></span></pre><pre><span
+style='font-family:"Arial","sans-serif"'>\ TIFF is an extensible image file format<o:p></o:p></span></pre><pre><span
+style='font-family:"Arial","sans-serif"'>\ <span class=SpellE>BigTIFF</span> is TIFF expanded to 64 bits<o:p></o:p></span></pre><pre><span
+style='font-family:"Arial","sans-serif"'>\ To <span class=GramE>do :</span> find out where the image data is, add decompression and display code... <o:p></o:p></span></pre><pre><span
+style='font-family:"Arial","sans-serif"'>\ To <span class=GramE>do :</span> find out why <span
+class=SpellE>BigTIFF</span> requires Big Endian changes compared to TIFF, and why <o:p></o:p></span></pre><pre><span
+style='font-family:"Arial","sans-serif"'>\ <span class=GramE>the</span> STRIPOFFSETS and STRIPBYTECOUNTS in the <span
+class=SpellE>btf</span> file are longs, but look like they are shorts...<o:p></o:p></span></pre>
+
+<p class=MsoNormal><span style='font-size:14.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:14.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'><a href="md5.f.html">md5.f</a><span
+style='mso-spacerun:yes'>   </span><a href="http://www.inventio.co.uk/md5.zip">md5.zip</a><o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ md5.f <span class=GramE>V1.0<span
+style='mso-spacerun:yes'>  </span>Howerd</span> Oakford 2006 Jul 01 <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ The MD5 secure hash algorithm<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ 32 bit little endian ANS Forth version for
+the PC <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ Tested on SwiftForth, Win32Forth and <span
+class=SpellE>VFXForth</span><o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\
+*************************************************************<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ Bug notice 2006 Jul <span class=GramE>01 :</span><o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ All my previous versions of md5.f and
+md5.fth have a <span class=GramE>bug :</span><o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ The &quot;55 &gt;&quot; was <span
+class=GramE>incorrectly &quot;</span> 1+ $38 &lt; 0=&quot; and gave an <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ <span class=GramE>incorrect</span> hash for
+strings of length 55 ( modulo 64 ). <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\
+*************************************************************<o:p></o:p></span></p>
+
+<p class=MsoNormal><span class=MsoHyperlink><o:p><span style='text-decoration:
+ none'>&nbsp;</span></o:p></span></p>
+
+<p class=MsoNormal><a href="crc16hdlc.f.html"><span
+style='font-size:14.0pt;mso-bidi-font-size:12.0pt;font-family:"Arial","sans-serif"'>crc16hdlc.f</span></a><span
+style='font-size:14.0pt;mso-bidi-font-size:12.0pt;font-family:"Arial","sans-serif"'><span
+style='mso-spacerun:yes'>   </span><a
+href="crc16hdlc.zip">crc16hdlc.zip</a></span><span
+style='font-size:14.0pt;mso-bidi-font-size:12.0pt'><o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ *****************************************************************************<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ <span class=GramE>CRC16HDLC.f<span
+style='mso-spacerun:yes'>  </span>2012</span> Apr 11 <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ CRC-16 for HDLC calculation using a table <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ 16 bit FCS lookup table per RFC1331 <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ Thanks <span class=GramE>to :</span><o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\
+http://www.mavi1.org/web_security/cryptography/hashes/crc/crc-16-hdlc.c<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ Note that this code defines &quot;#define
+FCSGOOD 0xF0B8&quot;<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ <span class=GramE>whereas</span> I define
+&quot;$0F47 constant CRC_VALID&quot;<span style='mso-spacerun:yes'> 
+</span>which is bitwise inverted.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ <span class=GramE>This</span> is because
+CRC16 returns the actual value to be sent in an HDLC packet<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ Also note that at least one online CRC
+calculator does not include this CRC.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\
+*****************************************************************************<o:p></o:p></span></p>
+
+<p class=MsoNormal><span class=MsoHyperlink><o:p><span style='text-decoration:
+ none'>&nbsp;</span></o:p></span></p>
+
+<p class=MsoNormal><a href="crc16modbus.f.html"><span
+class=GramE><span style='font-size:14.0pt;mso-bidi-font-size:12.0pt;font-family:
+"Arial","sans-serif"'>crc16modbus.f</span></span></a><span style='font-size:
+14.0pt;mso-bidi-font-size:12.0pt;font-family:"Arial","sans-serif"'><span
+style='mso-spacerun:yes'>   </span>as above for <span class=SpellE>ModBus</span><o:p></o:p></span></p>
+
+<p class=MsoNormal><a href="crc16-a.f.html"><span
+class=GramE><span style='font-size:14.0pt;mso-bidi-font-size:12.0pt;font-family:
+"Arial","sans-serif"'>crc16-a.f</span></span></a><span style='font-size:14.0pt;
+mso-bidi-font-size:12.0pt;font-family:"Arial","sans-serif"'><span
+style='mso-spacerun:yes'>   </span>as above for ISO10373 and ISO14443 type A
+(and B )<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:14.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:14.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'><a href="crc32.f.html">crc32.f</a><span
+style='mso-spacerun:yes'>   </span><a href="crc32.zip">crc32.zip</a><o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ crc32.f 2006 Jan 04 Howerd Oakford,<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ based on code by Petrus <span class=SpellE>Prawirodidjojo</span>
+and Wil Baden - thanks!<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ The International Standard 32-bit cyclical
+redundancy check defined <span class=GramE>by :</span><o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ [ITU-T-V42] International
+Telecommunications Union, &quot;Error-correcting<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ Procedures for DCEs Using
+Asynchronous-to-Synchronous Conversion&quot;,<o:p></o:p></span></p>
+
+<p class=MsoNormal><span class=GramE><span style='font-size:10.0pt;mso-bidi-font-size:
+12.0pt;font-family:"Arial","sans-serif"'>\ ITU-T Recommendation V.42, 1994,
+Rev. 1.</span></span><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'><o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ <span class=GramE>and</span><o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ [ISO-3309]<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ International Organization for
+Standardization,<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ &quot;Information Processing Systems--Data
+Communication High-Level Data Link<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ Control Procedure--Frame Structure&quot;,
+IS 3309, October 1984, 3rd Edition.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ This is a 32 bit Little Endian ANS Forth
+version <span class=GramE>( PC</span> ).<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:14.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:14.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'><a href="tean.f.html"><span
+class=SpellE>tean.f</span></a><span style='mso-spacerun:yes'>   </span><a
+href="tean.zip">tean.zip</a><o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ <span class=SpellE>tean.f</span> 2006 Jan
+04<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ TEA is the Tiny Encryption Algorithm - a
+shared private key system<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ based on many iterations of a simple
+hashing function.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ Created by David J. Wheeler and Roger M.
+Needham.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ TEAN <span class=GramE>( TEA</span> New ) is
+an improved version of TEA which includes modifications<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ to TEA made after David Wagner discovered
+weaknesses in the key scheduling.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ Based on C code from
+http://www.simonshepherd.supanet.com/source.htm#new_ansi<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ See also http://www.ftp.cl.cam.ac.uk/ftp/papers/djw-rmn/djw-rmn-tea.html<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ TEA and TEAN are 64-bit block <span
+class=SpellE>Feistel</span> cyphers using a 128-bit key.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:14.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'><a href="tea26.f.html">tea26.f</a><span
+style='mso-spacerun:yes'>   </span><a href="tea26.zip">tea26.zip</a><o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ <span class=GramE>tea26.f<span
+style='mso-spacerun:yes'>  </span>Tiny</span> Encryption Algorithm limited to
+26 bits. 2006 Jan 04<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ The 26 bit value is split into two 13 bit
+numbers.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ Each calculation is performed modulo 2**<span
+class=GramE>13 ,</span> then the two 13 bit results<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ <span class=GramE>are</span> converted back
+to 26 bits. <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ An 8 digit decimal number can be used to
+describe the 26 bit value.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ Some of the 26 bits <span class=GramE>( say</span>
+10 ) should be used to make random guesses<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ <span class=GramE>unlikely</span>. This
+could be used to encrypt a 16 bit number with a 0.1%<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ <span class=GramE>chance</span> that a
+random number appears as valid - equivalent to a <o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'>\ <span class=GramE>three</span> digit PIN
+code.<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:14.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'><o:p>&nbsp;</o:p></span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;mso-bidi-font-size:12.0pt;
+font-family:"Arial","sans-serif"'><o:p>&nbsp;</o:p></span></p>
+
+</div>
+
+</body>
+
+</html>

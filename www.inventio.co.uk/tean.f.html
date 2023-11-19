@@ -1,0 +1,753 @@
+\ tean.f  2015 Jun 18
+\ 
+\ TEA is the Tiny Encryption Algorithm - a shared private key system
+\ based on many iterations of a simple hashing function.
+\ Created by David J. Wheeler and Roger M. Needham.
+\ TEAN ( TEA New ) is an improved version of TEA which includes modifications
+\ to TEA made after David Wagner discovered weaknesses in the key scheduling.
+\ TEAN may also be known as XTEA 
+\ Based on C code from :
+\ http://simonshepherd.com/ TEA Crypto link --> http://143.53.36.235:8080/tea.htm
+\ See also http://www.shokhirev.com/nikolai/programs/code/Cryptography/uTeaSet_pas.html
+\ TEA and TEAN are 64-bit block Feistel cyphers using a 128-bit key.
+
+\ +tean  encrypts d to d' using the given number of rounds and initial key
+\ -tean  decrypts d' to d using the same parameters.
+\ You can use these to encrypt an array, adjusting the parameters
+\ after each 64 bit value is encrypted if required.
+
+\ This is a 32 bit Little Endian ANS Forth version ( PC ).
+\ Usage : 123456. +tean  2dup d.  -tean d.
+
+decimal
+
+\ user inputs - you choose the number of rounds and shared private key :
+\ #rounds holds the number of times round the loop :
+\ should be > 8, increase for stronger encryption ( say 32 )
+variable #rounds
+
+create TheKey   \ the shared private key
+   $11111111 , $22222222 , $33333333 , $44444444 ,   
+
+\ The Golden Ratio ( 5 sqrt 1+ 2/ ) = 1.618033989, - 1 , scaled up to 32 bits
+$9e3779b9 constant delta    \ could be anything except "bad" values...
+
+\ working variables
+variable delta#rounds@* \ pre-calculated value, for speed
+variable MySum
+2variable varZ
+varZ cell+ constant varY
+
+\ get a new key value ( two flavours )
+: GetKey1 ( -- u)   MySum @  dup 3 and cells TheKey + @ + ;
+: GetKey2 ( -- u)   MySum @  dup 11 rshift 3 and cells TheKey + @ + ;
+
+\ mix the bits of the variables ( two flavours again )
+: Mangle1 ( -- u)   varZ @ 4 lshift  varZ @ 5 rshift xor  varZ @ + ;
+: Mangle2 ( -- u)   varY @ 4 lshift  varY @ 5 rshift xor  varY @ + ;
+
+\             |              MangleN                   |        GetKey      |    
+\ varY += ( ( ( varZ << 4 ) ^ ( varZ >> 5 ) ) + varZ ) ^ ( sum + k[sum&3] ) ;
+\ sum += delta;
+\ varZ += ( ( ( varY << 4 ) ^ ( varY >> 5 ) ) + varY ) ^ ( sum + k[sum>>11 & 3] );
+
+
+\ one round of the encryption algorithm
+: (+tean) ( a b -- a' b' )
+   Mangle1
+   GetKey1        \ key
+   xor            \ mangled 1 and key
+   varY +!        \ add to Y
+   delta MySum +! \ add to sum
+   Mangle2
+   GetKey2        \ key
+   xor            \ mangled 2 and key
+   varZ +!        \ add to Z
+;
+
+\ encrypt d to d' using the number of rounds and private key values
+: +tean ( d -- d' )
+   varY !  varZ !
+   0 MySum !
+   #rounds @ 0 do  (+tean)  loop
+   varZ @  varY @
+;
+
+\ one round of the decryption algorithm
+: (-tean) ( a' b' -- a b )
+    Mangle2
+    GetKey2                \ key
+    xor                    \ mangled 2 and key
+    negate varZ +!         \ subtract from Z
+    delta negate MySum +!  \ subtract from sum
+    Mangle1
+    GetKey1                \ key
+    xor                    \ mangled 1 and key
+    negate varY +!         \ subtract from Y
+;
+
+\ decrypt d' back to d using the number of rounds and private key values
+: -tean ( d' -- d )
+   varY !  varZ !
+   delta#rounds@* @ MySum ! \ initial value
+   #rounds @ 0 do  (-tean)  loop
+   varZ @  varY @
+;
+
+: SetRounds ( n -- )   1 max 10000 min #rounds !
+   #rounds @ delta * delta#rounds@* ! ;
+
+#32 SetRounds   \ set the default values
+
+
+\ *****************************************************************************
+\ Example usage and tests
+\ *****************************************************************************
+
+variable NumberOfTests
+variable NumberFailed
+
+\ Add n bytes to the structure, using the n hex ASCII words following, then ignore the rest of the line
+\ This allows captured packet data to be copied and pasted...
+: nc, ( -- )  base @ >r  hex 
+   ( n -- ) 0 do   bl word  count number  c,  loop 
+   r> base ! 
+   postpone \ 
+; 
+
+: 2.hex ( c -- )   base @ >r  hex  0 <#  # #  #> type  r> base ! ;
+
+\ dump on the same line
+: dumpL ( a n -- )   0 max  $100 min  space  dup 2.hex ."  |  " over + swap ?do  i c@  2.hex space  loop ; 
+
+
+\ PseudoMAC.f  2015 Jun 18
+\ 
+\ Create a "probably unique" 6 byte "pseudo MAC" address from the
+\ STM32F4 ARM chip's 12 byte Unique ID value
+\ 
+\ From http://preshing.com/20110504/hash-collision-probabilities/ :
+\ The probability of a collision ( two different ARM chips giving the same
+\ pseudo MAC ) is roughly P = ( k ** 2 ) / ( 2 * N ) where k is the number of 
+\ ARM chips being tested, and N is the number of possible hashes.
+\ 
+\ For a MAC address with 46 bits N = 2 ** 46  ( 2 bits of the MSB represent
+\    Unicast (bit 0) and Globally Unique (bit 1), and are always 0 )       
+\ For a probability of 1 in ( 2 ** 30 )
+\ ( 1 / ( 2 ** 30 ) is 3.58 times less likely than being killed by a shark )
+\ k = sqrt( P * ( 2 ** N ) ) = sqrt( ( 1 / ( 2 ** 30 ) ) * ( 2 ** 46 ) * 2 ) )
+\ k = sqrt( 2 ** 17 ) = 362
+\ 
+\ Conclusion : for a network with 362 devices, the chance of any two
+\ devices being assigned the same "probably unique" MAC is 1 in a billion
+
+create UniqueID  #12 dup c, nc, 32 00 35 00 14 47 30 35 31 35 32 31
+                           
+create KAT_PseudoMAC #6 nc, B0 32 7A 7C AF 80  \ Note : B0 was B2 until the bottom two bits were zeroed
+
+\ TEAN is applied to the first 8 bytes of the UniqueID, then the last 4 bytes with remaining 4 bytes zeroed
+\ and the results xor'd 
+\ Key = "TinyEncryptHash."
+
+create MyKey[] ," TinyEncryptHash."
+
+#16 Buffer: UIDpad[]
+
+: Dxor ( d d -- d )
+   >r swap >r 
+   xor r> r> xor
+;
+
+: GetPseudoMAC ( UniqueID -- d )
+   UIDpad[] #16 erase
+   UIDpad[] #12 move
+   
+   MyKey[] count TheKey swap move    \ load the key
+   
+   UIDpad[] 2@ +tean
+   UIDpad[] 8 + 2@ +tean
+   Dxor
+   $FFFFFFFC and  \ clear the low two bits of byte 0 (the most significant byte)
+                  \ this indicates that the MAC is Unicast and Globally Unique
+;
+
+create FullMAC ( -- a )    8 c,  8 nc, B2 32 7A 7C AF 80 33 83
+create PrunedMAC ( -- a )  6 c,  6 nc, B0 32 7A 7C AF 80 
+
+: ttPseudoMAC ( -- )  
+   UniqueID count 2dup 
+   cr ." UniqueID       = " dumpL 
+   drop GetPseudoMAC 
+   cr ." PseudoMAC      = "  pad 2! pad 6 dumpL  ." ( " pad 6 + c@ 2.hex space pad 7 + c@ 2.hex ."  ) 
+   pad 6 PrunedMAC count compare 0= if  ."  Passed "  else  ." Failed!!! "  1 NumberFailed +!  then
+   cr
+   1 NumberOfTests +!
+;
+
+
+\ *****************************************************************************
+\ Tests
+\ *****************************************************************************
+
+: DU.R ( d n -- )
+   >R  (DU.)  R> OVER - 0 MAX SPACES  TYPE ;
+
+
+: (ttTEAN) ( d dKAT -- )
+   2>r 
+   2dup 
+   cr ." Input = " 2dup $11 du.r  
+   +tean  ."  --> " 2dup $11 du.r
+   2dup 2r> d= if ."   passed "   else  ."   Failed!!! "  1 NumberFailed +!  then
+   -tean d= if ."   "   else  ."   -tean Failed!!! "  1 NumberFailed +!  then
+   1 NumberOfTests +!
+;
+
+: ttTEAN ( -- )
+   0 NumberOfTests ! 
+   0 NumberFailed  ! 
+
+   base @ >r  hex 
+   $0000000000000000.   $F07AC29023C92672. (ttTEAN)
+   $0000000000000001.   $05F8348EEAECB363. (ttTEAN)
+   $000000007FFFFFFF.   $7BFC714C0619E9A7. (ttTEAN)
+   $1000000000000000.   $D7E1E6233A345CF6. (ttTEAN)
+   $1000000000000001.   $16F0EC4536A2D4CA. (ttTEAN)
+   $7FFFFFFF00000000.   $9742E72408982143. (ttTEAN)
+   $7FFFFFFF7FFFFFFF.   $B56E63AA9B9E61D9. (ttTEAN)
+   $8000000000000000.   $62C75D982CFE7D08. (ttTEAN)
+   $8000000080000000.   $8ABB78D216062668. (ttTEAN)
+   r> base !
+   ttPseudoMAC
+   cr ." Number of tests = " NumberOfTests @ .
+   NumberFailed @ ?dup if  2 spaces  . ."  Failed!!!"  else  ."  all passed"  then 
+;
+
+\\
+
+\ *****************************************************************************
+\ More tests
+\ *****************************************************************************
+
+variable #errors
+
+: testtean
+   base @ >r
+   cr ." testtean "
+   #32 SetRounds
+   \ set up our key :
+   $1111111122222222. swap TheKey 2!  $3333333344444444. TheKey 2 cells + 2!
+   $123456789ABCDEF. 2dup +tean
+   2dup hex 9 u.r 8 u.r
+   2DUP $963DD06EF4D92C99. D= >r
+   -tean  D= r> and if  ."  passed"  else  ."  Failed"  1 #errors +!  then
+   r> base !
+;
+
+: testtean2 ( u)   \ the number of rounds
+   base @ >r
+   cr ." testtean2 "
+   1 max  1000 min SetRounds
+   cr ."    #rounds = "  #rounds @ decimal . hex
+   \ set up our key :
+   $1111111122222222. swap TheKey 2!  $3333333344444444. TheKey 2 cells + 2!
+   $123456789ABCDEF. 2dup +tean
+   2dup hex 9 u.r 8 u.r
+   -tean  D= if  ."  passed"  else  ."  Failed"  1 #errors +!  then
+   r> base !
+;
+
+variable k#
+variable j#
+
+: tttean
+   17 0 do  i j# !
+      81 16 do
+         2dup
+         i SetRounds
+         +tean
+         2rot over 4 pick xor +
+         tuck 3 pick + xor swap 2rot 2rot
+         j k# @ or 7 and 0= if  cr .s  then
+         -tean
+         2over d= not if ." FAIL" 1 #errors +!  then
+      16 +loop
+      i k# @ or 7 and 0= if  cr i . j# @ .  then
+      2 pick + swap 3 pick xor swap
+   loop
+;
+
+: ttteans
+   0 #errors !
+   base @ >r  hex
+   TheKey 4 cells erase
+   0 0 0 0
+   17 0 do i k# !
+      tttean
+      2over TheKey +! TheKey cell+ +!
+      2over TheKey @ + TheKey 2 cells + +! TheKey cell + @ + TheKey 3 cells + +!
+   loop 4drop
+   r> base !
+   cr  #errors @ if  ." Failed with "  #errors @ .  ."  errors!!! "
+      else  ." Passed "  then
+;
+
+\\
+\ Known good output of ttteans
+
+[6] 3AE4E7F3h 1072425Fh 0h 0h 1072425Fh 2A72A594h
+[6] -784F086Eh -2195C477h 0h 0h -8ECE127h -21162B28h
+[6] -137F7C36h 665F8E58h 0h 0h 45A55Dh 4D0E600h
+[6] -1A3D3632h CAFFCF2h 0h 0h 4AD0ED50h -36DB2EEh
+[6] B0D30F9h 10DE56C3h 0h 0h -1E136FE1h -220E5D8Ch
+0 0
+[6] -7E440F0Ah -30ACDFA1h A1CCCD5h -331AB38Dh 774B231Dh -2AFAA0DDh
+[6] -2625E3B9h 4F37FF68h A1CCCD5h -331AB38Dh -1A0D001h 929ED49h
+[6] -602E1678h -32A92150h A1CCCD5h -331AB38Dh -583B3CF1h 78B5171Fh
+[6] 660F43B1h -3D7FFA7Bh A1CCCD5h -331AB38Dh 6AF8CF5Dh 375EA4B4h
+[6] -3B71662Dh -1B04DB78h A1CCCD5h -331AB38Dh 44745CB2h -42794A26h
+8 0
+[6] 41949923h -56BE49F7h 7C3240BAh -412DA6B6h 1506ADDDh 67DCF5BCh
+[6] -3333B979h -B56EAD3h 7C3240BAh -412DA6B6h AF3C607h -67503589h
+[6] 49910221h 2C4422E3h 7C3240BAh -412DA6B6h -4A8B4CFh 591921C3h
+[6] -413D8DE1h 7E24524Fh 7C3240BAh -412DA6B6h 18712D4Dh 792F1DEFh
+[6] 6D78E85Eh 69B62A9Fh 7C3240BAh -412DA6B6h 5553AA4Fh 6A046FA2h
+10 0
+[6] -70517341h 655C4D5Eh -3486E1E0h -6FFDD857h 236C3274h -23061BA1h
+[6] -73030AD4h -1E3E42D0h -3486E1E0h -6FFDD857h -C341C93h 2190BC63h
+[6] 40043002h D4C0656h -3486E1E0h -6FFDD857h -588943F6h -40534128h
+[6] 473FCBB3h 440451B2h -3486E1E0h -6FFDD857h 76BC7B5Eh -3CC85601h
+[6] 77B5D704h -317BD22Eh -3486E1E0h -6FFDD857h -32BFE86Dh 6205EEE5h
+0 8
+[6] 6CDF4CEBh -55983F8Ch -3DF29F7Ah -5F02850Fh -2FB165B6h -471A52FFh
+[6] 67B91B10h 22AD4EE0h -3DF29F7Ah -5F02850Fh 149AC287h -1746F6E5h
+[6] -BAE4051h 29095F8Ch -3DF29F7Ah -5F02850Fh 61E50BBCh 6ADF4533h
+[6] -1840873Ah -7E55CE1Fh -3DF29F7Ah -5F02850Fh -530E9206h -6DBB6A78h
+[6] -309790E3h -3AD5ABBh -3DF29F7Ah -5F02850Fh -62E8F45Eh 2C847296h
+8 8
+[6] 3F6866E6h -62225F57h -7CCC9F40h -570384FAh 66F258B6h -7D06B3D2h
+[6] -26D6D1ADh 303765E2h -7CCC9F40h -570384FAh -52CE5C21h -49F61D2Dh
+[6] -39C968DBh -7D34C3CEh -7CCC9F40h -570384FAh -744507FDh -63AB82BCh
+[6] 385DA9A9h -4468BF9Ah -7CCC9F40h -570384FAh -1056CEFh 42D3FE26h
+[6] 29A9F3F5h 631CCEB6h -7CCC9F40h -570384FAh -6027D807h -5128745Ah
+10 8
+[6] -7A75911Eh 55A02C8Dh 4A040C21h 52CB2790h 5ED72126h -38F3F434h
+[6] 6ABEF3BBh -1E9957B0h 4A040C21h 52CB2790h E4C1521h DCDF509h
+[6] 1B5C29CAh -2D17EBBAh 4A040C21h 52CB2790h -64C067B3h -610539D5h
+[6] -3577C78Bh -2A4824B4h 4A040C21h 52CB2790h 1993EECCh -3E3C98Dh
+[6] 3FD5EDA3h -25622B7Eh 4A040C21h 52CB2790h -31923EBDh 1AC00154h
+0 10
+[6] -21392671h -3285EA49h 553872A7h -5D691E21h F22FD15h -D9AE43Fh
+[6] -1789EF9Bh 4F10E7F4h 553872A7h -5D691E21h 5F500BB2h -18601E0Ah
+[6] 2EBB7013h -5B605D69h 553872A7h -5D691E21h -4207553Ah 222DBDDFh
+[6] 1D9B5773h -4BC7A133h 553872A7h -5D691E21h 2123CC25h 7EE7C893h
+[6] 1440247Dh 50402BEAh 553872A7h -5D691E21h -7E636592h -4664B8DCh
+8 10
+[6] 5BB6EA16h 70E6E0D4h 5269AA55h 62C4141Ah -254C81C6h -542FC5EEh
+[6] 37ECCF41h 21441540h 5269AA55h 62C4141Ah -14142186h 4B161017h
+[6] 1DD59311h -48EB6747h 5269AA55h 62C4141Ah -5DC3B3C8h 7324C397h
+[6] 58442D88h 6CA214h 5269AA55h 62C4141Ah 548D9A4Ah 45251C85h
+[6] -3A047B9Eh -79DFC6B7h 5269AA55h 62C4141Ah -22084543h 179F70A1h
+10 10
+
+/******************************************************************************
+ * Create a "probably unique" 6 byte "pseudo MAC" address from the
+ * STM32F4 ARM chip's 12 byte Unique ID value
+ *
+ * From http://preshing.com/20110504/hash-collision-probabilities/ :
+ * The probability of a collision ( two different ARM chips giving the same
+ * pseudo MAC ) is roughly P = ( k ** 2 ) / ( 2 * N ) where k is the number of 
+ * ARM chips being tested, and N is the number of possible hashes.
+ *
+ * For a MAC address with 46 bits N = 2 ** 46  ( 2 bits of the MSB represent 
+ *    Unicast (bit 0) and Globally Unique (bit 1), and are always 0 )
+ * For a probability of 1 in ( 2 ** 30 )
+ * ( 1 / ( 2 ** 30 ) is 3.58 times less likely than being killed by a shark )
+ * k = sqrt( P * ( 2 ** N ) ) = sqrt( ( 1 / ( 2 ** 30 ) ) * ( 2 ** 46 ) * 2 ) )
+ * k = sqrt( 2 ** 17 ) = 362
+ *
+ * Conclusion : for a network with 362 devices, the chance of any two        
+ * devices being assigned the same "probably unique" MAC is 1 in a billion   
+ *
+ ******************************************************************************/
+// Tiny Encryption Algorithm New variant
+// From http://simonshepherd.com/ TEA Crypto link --> http://143.53.36.235:8080/tea.htm
+void TEANencipher( const unsigned long *const v , unsigned long *const w , const unsigned long * const k )
+{
+   const unsigned long delta=0x9E3779B9;
+   /* register */  static unsigned long  y , z , sum , n ;
+   n = 32;
+   y = v[0];
+   z = v[1];
+   sum = 0;
+   while( n-- > 0 )
+   {
+      y += ( ( ( z << 4 ) ^ ( z >> 5 ) ) + z ) ^ ( sum + k[sum&3] ) ;
+      sum += delta;
+      z += ( ( ( y << 4 ) ^ ( y >> 5 ) ) + y ) ^ ( sum + k[sum>>11 & 3] ) ;
+   }
+
+   w[0] = y; 
+   w[1] = z;
+}
+
+void TEANdecipher( const unsigned long *const v , unsigned long *const w , const unsigned long * const k )
+{
+    register unsigned long       y=v[0],z=v[1],sum=0xC6EF3720,
+    delta=0x9E3779B9,n=32;
+
+    // sum = delta<<5, in general sum = delta * n
+
+    while( n-- > 0 )
+    {
+        z -= ( ( ( y << 4 ) ^ ( y >> 5 ) ) + y ) ^ ( sum + k[sum>>11 & 3] ) ;
+        sum -= delta;
+        y -= ( ( ( z << 4 ) ^ ( z >> 5 ) ) + z ) ^ ( sum + k[sum&3] );
+    }
+   w[0] = y; 
+   w[1] = z;
+}
+
+char TheKey[ 16 ] = { 0x11, 0x11, 0x11, 0x11,  0x22, 0x22, 0x22, 0x22,  0x33, 0x33, 0x33, 0x33,  0x44, 0x44, 0x44, 0x44,   } ; // the fixed key
+
+int NumberFailed;
+	
+void testTean( unsigned long long Input, unsigned long long KAT )
+{
+		unsigned long long Encrypted;
+		TEANencipher( (unsigned long*)&Input ,
+			(unsigned long*)&Encrypted , 
+		(unsigned long*)&TheKey );
+	  if( Encrypted != KAT ) 
+		{
+				NumberFailed++;
+		}			
+}
+
+void ttTean( void )
+{
+	 NumberFailed = 0;
+// Note that the high and low 32 bits of each long long number are swapped compared 
+// to the Forth versions, because Forth holds the high cell on top of the stack, and 2! puts it
+// into the low memory cell.
+   testTean( 0x0000000000000000 , 0x23C92672F07AC290 ); 
+   testTean( 0x0000000100000000 , 0xEAECB36305F8348E ); 
+   testTean( 0x7FFFFFFF00000000 , 0x0619E9A77BFC714C ); 
+   testTean( 0x0000000010000000 , 0x3A345CF6D7E1E623 ); 
+   testTean( 0x0000000110000000 , 0x36A2D4CA16F0EC45 ); 
+   testTean( 0x000000007FFFFFFF , 0x089821439742E724 ); 
+   testTean( 0x7FFFFFFF7FFFFFFF , 0x9B9E61D9B56E63AA ); 
+   testTean( 0x0000000080000000 , 0x2CFE7D0862C75D98 ); 
+   testTean( 0x8000000080000000 , 0x160626688ABB78D2 ); 
+	 while( NumberFailed ){};
+}
+
+
+/**
+ * @brief  returns a pointer to a 48 bit ( 6 byte ) "probably unique" value calculated
+ * from the the 96 bit Unique ID of the STM32F2xxx ARM chip, using the TEAN algorithm
+ *
+ * @param  none
+ *
+ * @retval pointer to the 6 byte "Pseudo MAC" array
+ *
+ */
+Public char* getUniqueIDpseudoMAC ( void )  // HPO
+{
+    uint8_t i;
+    static char UniqueIDpseudoMAC[ 8 ];     // two bytes longer than needed so that we can XOR two full TEAN outputs into it
+    static char v[ 16 ];    // the input
+    static char w[ 8 ];     // the output
+    const char k[ 16 ] = "TinyEncryptHash_"; // a fixed key - must be the same to give the same hash value
+    char* UniqueIDPtr;
+
+    UniqueIDPtr = (char*)0x1FFF7A10;    // the address of the 12 byte Unique ID in the STM32F04 ARM chip
+
+    // load the 128 bit input vector v with the first 8 bytes of our 12 byte Unique ID
+    for( i = 0 ; i < 8 ; i++ )
+    {
+        v[ i ] = UniqueIDPtr[ i ] ;
+    }
+    TEANencipher( (unsigned long *)v , (unsigned long *)w , (unsigned long *)k );   // put the result into w
+
+    // load the 128 bit input vector v with the last 4 bytes of our 12 byte Unique ID, with the remaining 4 bytes zeroed
+    // this covers up to the end of the 12 byte Unique ID
+    for( i = 0 ; i < 4 ; i++ )
+    {
+        v[ i ] = UniqueIDPtr[ i + 8 ] ;
+    }
+    for( i = 4 ; i < 8 ; i++ )
+    {
+        v[ i ] = 0;
+    }
+    TEANencipher( (unsigned long *)v , (unsigned long *)UniqueIDpseudoMAC , (unsigned long *)k ); // put the result into our output array
+
+    for( i = 0 ; i < 8 ; i++ )
+    {
+        UniqueIDpseudoMAC[ i ] ^= w[ i ] ;  // xor the two 8 byte outputs, from the TEAN encryption of bytes 0 to 7 and bytes 4 to 11 of the 12 byte UniqueID
+    }
+    
+    UniqueIDpseudoMAC[ 0 ] &= 0xFC;     // clear the low two bits of the low byte - this indicates that the MAC is Unicast and Globally Unique
+
+
+    return( UniqueIDpseudoMAC );        // the Pseudo MAC is only 6 bytes - just ignore the last two
+}
+
+// ****************************************************************************
+// XXTEA
+// From : https://en.wikipedia.org/wiki/XXTEA#Reference_code
+// ****************************************************************************
+
+#include <stdint.h>
+
+#define DELTA 0x9e3779b9
+#define MX (((z>>5^y<<2) + (y>>3^z<<4)) ^ ((sum^y) + (key[(p&3)^e] ^ z)))
+
+void btea(uint32_t *v, int n, uint32_t const key[4]) {
+ uint32_t y, z, sum;
+ unsigned p, rounds, e;
+ if (n > 1) {          /* Coding Part */
+   rounds = 6 + 52/n;
+   sum = 0;
+   z = v[n-1];
+   do {
+     sum += DELTA;
+     e = (sum >> 2) & 3;
+     for (p=0; p<n-1; p++) {
+       y = v[p+1]; 
+       z = v[p] += MX;
+     }
+     y = v[0];
+     z = v[n-1] += MX;
+   } while (--rounds);
+ } else if (n < -1) {  /* Decoding Part */
+   n = -n;
+   rounds = 6 + 52/n;
+   sum = rounds*DELTA;
+   y = v[0];
+   do {
+     e = (sum >> 2) & 3;
+     for (p=n-1; p>0; p--) {
+       z = v[p-1];
+       y = v[p] -= MX;
+     }
+     z = v[n-1];
+     y = v[0] -= MX;
+     sum -= DELTA;
+   } while (--rounds);
+ }
+}
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+/*  Block TEA (xxtea) Tiny Encryption Algorithm         (c) Chris Veness 2002-2014 / MIT Licence  */
+/*   - www.movable-type.co.uk/scripts/tea-block.html                                              */
+/*                                                                                                */
+/*  Algorithm: David Wheeler & Roger Needham, Cambridge University Computer Lab                   */
+/*             http://www.cl.cam.ac.uk/ftp/papers/djw-rmn/djw-rmn-tea.html (1994)                 */
+/*             http://www.cl.cam.ac.uk/ftp/users/djw3/xtea.ps (1997)                              */
+/*             http://www.cl.cam.ac.uk/ftp/users/djw3/xxtea.ps (1998)                             */
+/* JavaScript
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+
+/* jshint node:true *//* global define, escape, unescape, btoa, atob */
+'use strict';
+
+
+/**
+ * Tiny Encryption Algorithm
+ *
+ * @namespace
+ */
+var Tea = {};
+
+
+/**
+ * Encrypts text using Corrected Block TEA (xxtea) algorithm.
+ *
+ * @param   {string} plaintext - String to be encrypted (multi-byte safe).
+ * @param   {string} password - Password to be used for encryption (1st 16 chars).
+ * @returns {string} Encrypted text (encoded as base64).
+ */
+Tea.encrypt = function(plaintext, password) {
+    plaintext = String(plaintext);
+    password = String(password);
+
+    if (plaintext.length == 0) return('');  // nothing to encrypt
+
+    //  v is n-word data vector; converted to array of longs from UTF-8 string
+    var v = Tea.strToLongs(plaintext.utf8Encode());
+    //  k is 4-word key; simply convert first 16 chars of password as key
+    var k = Tea.strToLongs(password.utf8Encode().slice(0,16));
+    var n = v.length;
+
+    v = Tea.encode(v, k);
+
+    // convert array of longs to string
+    var ciphertext = Tea.longsToStr(v);
+
+    // convert binary string to base64 ascii for safe transport
+    return ciphertext.base64Encode();
+};
+
+
+/**
+ * Decrypts text using Corrected Block TEA (xxtea) algorithm.
+ *
+ * @param   {string} ciphertext - String to be decrypted.
+ * @param   {string} password - Password to be used for decryption (1st 16 chars).
+ * @returns {string} Decrypted text.
+ */
+Tea.decrypt = function(ciphertext, password) {
+    ciphertext = String(ciphertext);
+    password = String(password);
+
+    if (ciphertext.length == 0) return('');
+
+    //  v is n-word data vector; converted to array of longs from base64 string
+    var v = Tea.strToLongs(ciphertext.base64Decode());
+    //  k is 4-word key; simply convert first 16 chars of password as key
+    var k = Tea.strToLongs(password.utf8Encode().slice(0,16));
+    var n = v.length;
+
+    v = Tea.decode(v, k);
+
+    var plaintext = Tea.longsToStr(v);
+
+    // strip trailing null chars resulting from filling 4-char blocks:
+    plaintext = plaintext.replace(/\0+$/,'');
+
+    return plaintext.utf8Decode();
+};
+
+
+/**
+ * XXTEA: encodes array of unsigned 32-bit integers using 128-bit key.
+ *
+ * @param   {number[]} v - Data vector.
+ * @param   {number[]} k - Key.
+ * @returns {number[]} Encoded vector.
+ */
+Tea.encode = function(v, k) {
+    if (v.length < 2) v[1] = 0;  // algorithm doesn't work for n<2 so fudge by adding a null
+    var n = v.length;
+
+    var z = v[n-1], y = v[0], delta = 0x9E3779B9;
+    var mx, e, q = Math.floor(6 + 52/n), sum = 0;
+
+    while (q-- > 0) {  // 6 + 52/n operations gives between 6 & 32 mixes on each word
+        sum += delta;
+        e = sum>>>2 & 3;
+        for (var p = 0; p < n; p++) {
+            y = v[(p+1)%n];
+            mx = (z>>>5 ^ y<<2) + (y>>>3 ^ z<<4) ^ (sum^y) + (k[p&3 ^ e] ^ z);
+            z = v[p] += mx;
+        }
+    }
+
+    return v;
+};
+
+
+/**
+ * XXTEA: decodes array of unsigned 32-bit integers using 128-bit key.
+ *
+ * @param   {number[]} v - Data vector.
+ * @param   {number[]} k - Key.
+ * @returns {number[]} Decoded vector.
+ */
+Tea.decode = function(v, k) {
+    var n = v.length;
+
+    var z = v[n-1], y = v[0], delta = 0x9E3779B9;
+    var mx, e, q = Math.floor(6 + 52/n), sum = q*delta;
+
+    while (sum != 0) {
+        e = sum>>>2 & 3;
+        for (var p = n-1; p >= 0; p--) {
+            z = v[p>0 ? p-1 : n-1];
+            mx = (z>>>5 ^ y<<2) + (y>>>3 ^ z<<4) ^ (sum^y) + (k[p&3 ^ e] ^ z);
+            y = v[p] -= mx;
+        }
+        sum -= delta;
+    }
+
+    return v;
+};
+
+
+/**
+ * Converts string to array of longs (each containing 4 chars).
+ * @private
+ */
+Tea.strToLongs = function(s) {
+    // note chars must be within ISO-8859-1 (Unicode code-point <= U+00FF) to fit 4/long
+    var l = new Array(Math.ceil(s.length/4));
+    for (var i=0; i<l.length; i++) {
+        // note little-endian encoding - endianness is irrelevant as long as it matches longsToStr()
+        l[i] = s.charCodeAt(i*4)        + (s.charCodeAt(i*4+1)<<8) +
+              (s.charCodeAt(i*4+2)<<16) + (s.charCodeAt(i*4+3)<<24);
+    }
+    return l; // note running off the end of the string generates nulls since bitwise operators
+};            // treat NaN as 0
+
+
+/**
+ * Converts array of longs to string.
+ * @private
+ */
+Tea.longsToStr = function(l) {
+    var a = new Array(l.length);
+    for (var i=0; i<l.length; i++) {
+        a[i] = String.fromCharCode(l[i] & 0xFF, l[i]>>>8 & 0xFF, l[i]>>>16 & 0xFF, l[i]>>>24 & 0xFF);
+    }
+    return a.join('');  // use Array.join() for better performance than repeated string appends
+};
+
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+
+
+/** Extend String object with method to encode multi-byte string to utf8
+ *  - monsur.hossa.in/2012/07/20/utf-8-in-javascript.html */
+if (typeof String.prototype.utf8Encode == 'undefined') {
+    String.prototype.utf8Encode = function() {
+        return unescape( encodeURIComponent( this ) );
+    };
+}
+
+/** Extend String object with method to decode utf8 string to multi-byte */
+if (typeof String.prototype.utf8Decode == 'undefined') {
+    String.prototype.utf8Decode = function() {
+        try {
+            return decodeURIComponent( escape( this ) );
+        } catch (e) {
+            return this; // invalid UTF-8? return as-is
+        }
+    };
+}
+
+
+/** Extend String object with method to encode base64
+ *  - developer.mozilla.org/en-US/docs/Web/API/window.btoa, nodejs.org/api/buffer.html
+ *  note: if btoa()/atob() are not available (eg IE9-), try github.com/davidchambers/Base64.js */
+if (typeof String.prototype.base64Encode == 'undefined') {
+    String.prototype.base64Encode = function() {
+        if (typeof btoa != 'undefined') return btoa(this); // browser
+        if (typeof Buffer != 'undefined') return new Buffer(this, 'utf8').toString('base64'); // Node.js
+        throw new Error('No Base64 Encode');
+    };
+}
+
+/** Extend String object with method to decode base64 */
+if (typeof String.prototype.base64Decode == 'undefined') {
+    String.prototype.base64Decode = function() {
+        if (typeof atob != 'undefined') return atob(this); // browser
+        if (typeof Buffer != 'undefined') return new Buffer(this, 'base64').toString('utf8'); // Node.js
+        throw new Error('No Base64 Decode');
+    };
+}
+
+
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  */
+if (typeof module != 'undefined' && module.exports) module.exports = Tea; // CommonJS export
+if (typeof define == 'function' && define.amd) define([''], function() { return Tea; }); // AMD

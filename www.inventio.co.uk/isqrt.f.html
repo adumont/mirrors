@@ -1,0 +1,65 @@
+\ isqrt.f  Howerd Oakford  2008 Jun 04
+\ Square Root of unsigned 32 bit integer 
+\ from James Ulery's Computing Integer Square Roots
+\ http://www.azillionmonkeys.com/qed/ulerysqroot.pdf
+
+decimal 
+
+variable Result
+variable BitMask
+
+: isqrt ( u - u' ) 
+   0 Result !
+   $8000 BitMask !
+   0 15 do
+        BitMask @  Result @ 2*  +  i lshift 
+        2dup u< not 
+        if
+           -
+           BitMask @ Result +!
+        else
+           drop
+        then
+        BitMask @ 2/ Bitmask !
+   -1 +loop
+   drop
+   Result @
+;
+
+: U* ( uw uw - u)   UM* DROP ;  \ unsigned multiply
+
+: ttisq ( u)   \ test isqrt using integer u
+   dup $07 and 0= if  cr  then 
+   dup 5 u.r  dup dup u* 9 u.r 
+   dup >r 
+   r@ dup m* drop isqrt  ( dup 5 u.r )  3 spaces 
+   r> = not if  cr ." Failed at " 9 u.r  quit  else  drop  then
+;
+
+: ttisqs  \ test a subset of unsigned 32 bit integers 
+   base @ >r  hex 
+   $10000 0 do  i ttisq  loop 
+   r> base !
+;
+
+\\
+\ /* C version by Jim Ulery & Howerd Oakford 2008 Jun 04 */
+\ unsigned long temp, g=0, b = 0x8000, bshft = 15;
+\ 
+\ static unsigned julery_isqrt( unsigned long val )
+\ {
+\    g = 0;
+\    b = 0x8000;
+\    bshft = 15;
+\ 
+\    do{
+\         temp = ( ( g << 1 ) + b) << bshft-- ;
+\         if( val >= temp )
+\         {
+\            g += b;
+\             val -= temp;
+\         }
+\       b = b >> 1;
+\     } while( b != 0 );
+\     return g;
+\ }

@@ -1,0 +1,245 @@
+\ Average.f  2014 Nov 07  Running averaging of n data readings.   Howerd Oakford  www.inventio.co.uk
+\ Uses a buffer size that is a power of 2 for efficiency
+\ Calculates a running total by adding the current reading and subtracting the 
+\ n'th reading, so looping over many values is not required - see UpdatePulses
+\ You can extract averages over a different period of time from the same average buffer.
+\ For SwiftForth - www.forth.com - a 32 bit ANS Forth for the PC 
+\ include Average.f  ttAv    \ will show a demo using the MiniScope ASCII display
+
+decimal 
+
+\ *****************************************************************************
+\ Averaging buffer
+\ *****************************************************************************
+
+\ number of stack items in each average buffer entry
+#2 constant AVERAGE_FIELD_CELLS                          \ must be a power of 2
+
+\ number of bytes to store in each the average buffer entry
+AVERAGE_FIELD_CELLS cells constant AVERAGE_FIELD_SIZE    \ must be a power of 2
+
+#64 constant NUM_AVERAGE_ENTRIES 
+NUM_AVERAGE_ENTRIES AVERAGE_FIELD_SIZE * constant AVERAGE_BUFFER_SIZE   \ must be a power of 2
+
+AVERAGE_BUFFER_SIZE Buffer: AverageBuffer[]
+
+variable AverageBufferPtr        \ entry's offset into the average buffer array
+variable AverageBufferEntries    \ how many entries we have put into the AverageBuffer  
+
+: InitAverageBuffer ( -- )
+   AverageBuffer[] AVERAGE_BUFFER_SIZE erase \ just for DUMPing the data
+   0 AverageBufferPtr !                      \ not necessary, but makes it easier to follow the operation
+;
+
+\ return the address in memory of the n'th entry in the average buffer relative to the current pointer position
+\ i.e. the entry that was stored in the average buffer n system ticks ago
+\ Boundary checking is only done here - the address returned cannot lie outside of the buffer area
+\ Also you cannot access an entry that is not in the buffer - if there are 3 entries and you ask for the 10th
+\ you will get the address of th oldest entry
+: AverageAddress ( n -- a ) 
+   AverageBufferEntries @ min    \ limit access to the oldest entry in the AverageBuffer
+   negate                        \ the Ptr moves up in memory, so older entries have lower addresses
+   AverageBufferPtr @  +   
+   NUM_AVERAGE_ENTRIES 1- and    \ limit the offset into the average buffer here
+   AVERAGE_FIELD_SIZE *
+   AverageBuffer[] + 
+;
+
+\ put the 2 values on the stack into the average buffer and count the pointer down
+\ at the current pointer position
+: AverageStore ( n1 n2 -- ) 
+   swap 
+   \ we don't worry about overflow here, just when we access the average buffer in AverageAddress
+   1 AverageBufferPtr +!   \ point to the next entry 
+   0 AverageAddress                                \ the address of the new entry
+   2!                 
+   \ update the count of entries in the AverageBuffer, up to the maximum possible
+   AverageBufferEntries @  1+  NUM_AVERAGE_ENTRIES min  AverageBufferEntries !
+;
+
+ 
+\ *****************************************************************************
+\ typical application
+\ *****************************************************************************
+
+: @Pulse ( n -- d )    AverageAddress @ ;
+: @Weight ( n -- n )   AverageAddress cell+ @ ;
+
+2variable Pulses    \ accumulated totals
+2variable Weights 
+
+\ averaging time in system tick units ( say 100 ms ) 100 => 10 seconds
+NUM_AVERAGE_ENTRIES 2/ constant PULSE_FILTER_TIME 
+NUM_AVERAGE_ENTRIES 1- constant WEIGHT_FILTER_TIME 
+variable PulseFilterTime
+variable WeightFilterTime
+
+: M+! ( n a -- )   >r  r@ 2@  rot m+ r> 2! ; \ like +! , but for a double variable
+: U/ ( d u -- u )   UM/MOD swap drop ;       
+
+: UpdatePulses  ( -- )   0 @Pulse   PulseFilterTime  @ @Pulse  -  Pulses  M+! ;
+: UpdateWeights ( -- )   0 @Weight  WeightFilterTime @ @Weight -  Weights M+! ;
+
+: InitVariables ( -- )    
+   PULSE_FILTER_TIME PulseFilterTime ! 
+   WEIGHT_FILTER_TIME WeightFilterTime !
+;
+
+: InitAverages ( -- )
+   0 AverageBufferPtr !      \ this is pre-incremented before storing
+   0 AverageBufferEntries !  \ mark the average buffer as empty
+   0 AverageAddress AVERAGE_FIELD_SIZE erase    \ clear the zero'th entry 
+   0. Weights 2!
+   0. Pulses 2!
+;
+
+\ *****************************************************************************
+\ pretend to read real hardware 
+\ *****************************************************************************
+
+\ Pseudo random numbers
+
+variable seed
+
+: InitRandom   0 seed ! ;
+
+: Random ( -- u )   seed @  3141592621 *  1+  DUP seed !  ; 
+: Rand ( n -- u )   1+ Random UM* NIP ;
+
+InitRandom
+
+: ttrand   InitRandom 0 1000000 0 do  20 1+ Rand +  loop ;
+
+\ Simulate noisy input data
+: ReadPulses ( -- u )  400 200 Rand + ;   \ "get value from hardware"
+: ReadWeight ( -- u )  500  60 Rand + ;   \ "get value from hardware"
+
+\ *****************************************************************************
+\ Update the average buffer and results
+\ *****************************************************************************
+
+
+\ call this every time you want to store a new reading to average ( say 100 ms )
+\ If a longer averaging interval is required than there is room for in the buffer,
+\ accumulate n readings in a double variable, every n readings divide the sum by n
+\ and use that value to update the Average buffer.
+: EveryAverageUpdate ( -- )   
+   ReadPulses ReadWeight AverageStore  \ store into the average buffer
+   UpdateWeights  UpdatePulses         \ update the average values
+;
+
+variable vSync
+
+: InitSync ( -- )   counter vSync ! ;
+
+: sync ( u -- )   \ wait until the next u ms time interval, measured from InitSync 
+   vSync +!
+   vSync @  
+   BEGIN
+      PAUSE  1 Sleep DROP
+      DUP EXPIRED
+   UNTIL DROP
+;
+
+1000 Task SystemTickTask   \ this should be a task that is woken by a timer interrupt
+                           \ it is simulated under Windows by sync'ing to the system clock
+
+variable NewReadingAvailable 
+
+: StartSystemTickTask ( -- )
+   SystemTickTask activate       \ the code following is run in the SystemTickTask
+   InitSync
+   begin
+      EveryAverageUpdate         \ update the average buffer and results here - must be called on precise time intervals
+      -1 NewReadingAvailable !   \ let other tasks know that we have some new data for them
+      100 sync \ Note : do not use 100 ms here - it will slip, lose or gain time, and make the average wrong
+   again
+;
+
+: StopSystemTickTask ( -- )
+   SystemTickTask activate    \ the code following is run in the SystemTickTask
+   begin  STOP  again
+;
+
+:PRUNE ( -- )   StopSystemTickTask ;   \ stop the task on EMPTY ( for Windows )
+
+: WaitForNewReading ( -- )    \ wait for the SystemTickTask to update the average values, or a key press
+   0 NewReadingAvailable !
+   begin  
+      pause  1 Sleep Drop  
+   NewReadingAvailable @ key? or until
+;
+
+\ *****************************************************************************
+\ Read the average values
+\ *****************************************************************************
+
+\ call these as required                                       
+: AveragePulse  ( -- u )   Pulses  2@  PulseFilterTime @ AverageBufferEntries @ min 1 max M/ ; 
+: AverageWeight ( -- u )   Weights 2@ WeightFilterTime @ AverageBufferEntries @ min 1 max M/ ; 
+
+
+\ *****************************************************************************
+\ tests 
+\ *****************************************************************************
+\ a simple digital oscilloscope display
+\ displays n as a number and graphically
+: MiniScope ( n -- )   dup 2 u.r space  $3F and spaces  ." *" ;
+
+: MiniScope2 ( n1 n2 -- )   \ a dual channel 'scope   
+   over  ( green) 7 ATTRIBUTE  2 u.r  space  ( magenta) 5 ATTRIBUTE  dup 2 u.r space  
+   10 / $3F and  swap 10 / $3F and  swap
+   $40 0 do
+      2dup i = swap i = or  if  
+      dup i = not if   [char] +  ( green) 7  else  [char] * ( magenta) 5  then  ATTRIBUTE  emit  
+      else  space  then  
+   loop
+   2drop
+   0 ATTRIBUTE
+;
+
+: DoKey ( c -- c )   \ act on key presses   
+   dup [char] + = if    PulseFilterTime @ 1+ NUM_AVERAGE_ENTRIES 1- MIN PulseFilterTime !  InitAverages  cr  then
+   dup [char] = = if    PulseFilterTime @ 1+ NUM_AVERAGE_ENTRIES 1- MIN PulseFilterTime !  InitAverages  cr  then
+   dup [char] - = if    PulseFilterTime @ 1- 1 max PulseFilterTime !  InitAverages  cr  then
+   dup [char] 0 = if    InitAverages  cr  then
+   dup BL = if  key drop  then
+;   
+
+\ A simple test and example of how to use the average buffer 
+\ Press 0 to restart the averaging by setting the number of entries in the buffer to zero
+\ The average result is calculated over the number of entries in the buffer, so the first result is an average of one reading
+\ This means that it is identical to the noisy input value - you can see this, and how the result gets back on track. 
+\ Averaging over a variable number of entries is better than filling the whole buffer with the first initial value, 
+\ because any noise in the initial value will be multiplied by the number of entries.
+\ Likewise setting every entry in the buffer to zero will cause the result to ramp up, so will lose 50% of the
+\ reading's value until the buffer is full.
+\ InitAverages  should be called at power up, because previous history is no longer valid.
+\ It is also called in this example when the filter time is changed, because this does not happen often,
+\ and it is complicated to keep the calculation in step when it is changed ( it could be done though, without
+\ clearing the buffer ).
+: ttAv ( -- )
+   InitRandom
+   InitAverageBuffer
+   InitVariables
+   InitAverages
+   StartSystemTickTask
+   cr ." Press space bar to start/stop, , + and - to change the averaging time, 0 to restart, Esc to quit"
+   cr 
+   cr ."    # time  raw average " 
+   key 27 = if  exit  then 
+   10000 0 do 
+      WaitForNewReading  
+      \   How many entries we have in the buffer  # of entries to average over             newest entry + result  plotted on screen
+      cr  AverageBufferEntries @ 4 u.r  2 spaces  PulseFilterTime  @ 3 u.r  2 spaces  0 @Pulse       AveragePulse  MiniScope2
+\      cr  AverageBufferEntries @ 4 u.r  2 spaces  WeightFilterTime @ 3 u.r  2 spaces  0 @Weight      AverageWeight MiniScope2
+      key? if  key DoKey 27 = if  leave  then  then
+   loop
+   cr ." Done." cr
+;
+
+: ShowAverageBuffer ( -- )
+   AverageBuffer[] AVERAGE_BUFFER_SIZE DUMP
+;
+
+cr .( Type  ttAv <cr>  to run the demo, then press '0' ) cr

@@ -1,0 +1,853 @@
+\ SHA-256.f Secure Hash Algorithm SHA-256 Howerd Oakford 2012 Nov 21
+\ For 32 bit Little Endian ANS Forth, with Round functions in coded in SwiftForth x86 assembler 
+\ With thanks to Jabari Zakiya and Dick van Oudheusden for providing a starting point...
+\ http://csrc.nist.gov/publications/fips/fips180-4/fips-180-4.pdf
+\ Tested on SwiftForth, VFX Forth and Win32Forth
+
+decimal
+
+0 constant HIGH-LEVEL  \ true for high level, else use SwiftForth assembler coded versions
+
+[undefined] Buffer: [if]
+: buffer:   dup  create  here  swap  allot  swap erase  ;
+[then]
+
+[defined] VFXFORTH [if]
+
+: counter ( -- ms )   gettickcount ;
+
+: Timer ( ms1 -- )   counter SWAP - . ;
+
+[then]
+
+[defined] WIN32FORTH-MESSAGE [if]
+
+: counter ( -- ms )   MS@ ;
+
+: Timer ( ms1 -- )   counter SWAP - . ;
+
+[then]
+
+[defined] LIBRARY [if]  \ SwiftForth
+
+: ToColumn ( u -- )   get-xy drop - 1 max 100 min  spaces ;
+
+[else] \ VFX or Win32Forth
+
+\ Force High level code
+1 constant HIGH-LEVEL  \ true for high level, else use SwiftForth assembler coded versions
+
+: ToColumn ( u -- )   drop 2 spaces ;
+
+[then]
+
+\ variables
+ 8 cells Buffer: SHAresult \ holds the hash result 
+72 cells Buffer: SHAhash   \ working array
+16 cells Buffer: SHAtemp   \ a scratch block for the final round
+variable Kptr              \ pointer to the K constant array
+variable HashPtr           \ pointer to addr of hash value H for each round
+ 
+\ constants 
+create Kconstants    \ SHA-256 constants
+   $428a2f98 , $71374491 , $b5c0fbcf , $e9b5dba5 ,  $3956c25b , $59f111f1 , $923f82a4 , $ab1c5ed5 , 
+   $d807aa98 , $12835b01 , $243185be , $550c7dc3 ,  $72be5d74 , $80deb1fe , $9bdc06a7 , $c19bf174 , 
+   $e49b69c1 , $efbe4786 , $0fc19dc6 , $240ca1cc ,  $2de92c6f , $4a7484aa , $5cb0a9dc , $76f988da , 
+   $983e5152 , $a831c66d , $b00327c8 , $bf597fc7 ,  $c6e00bf3 , $d5a79147 , $06ca6351 , $14292967 , 
+   $27b70a85 , $2e1b2138 , $4d2c6dfc , $53380d13 ,  $650a7354 , $766a0abb , $81c2c92e , $92722c85 , 
+   $a2bfe8a1 , $a81a664b , $c24b8b70 , $c76c51a3 ,  $d192e819 , $d6990624 , $f40e3585 , $106aa070 , 
+   $19a4c116 , $1e376c08 , $2748774c , $34b0bcb5 ,  $391c0cb3 , $4ed8aa4a , $5b9cca4f , $682e6ff3 , 
+   $748f82ee , $78a5636f , $84c87814 , $8cc70208 ,  $90befffa , $a4506ceb , $bef9a3f7 , $c67178f2 , 
+
+create InitialHashValue    \ in reverse order to match the H[H] array
+   ( 0) $5be0cd19 ,  ( 1) $1f83d9ab ,  ( 2) $9b05688c ,  ( 3) $510e527f ,  
+   ( 4) $a54ff53a ,  ( 5) $3c6ef372 ,  ( 6) $bb67ae85 ,  ( 7) $6a09e667 , 
+
+: SHA-256init ( -)  \ Load initial hash values H0 - H7
+   InitialHashValue SHAhash  8 cells cmove
+   SHAhash SHAresult  8 cells cmove    \ Put copy in SHAresult array
+   SHAhash HashPtr !                   \ Init pointer to last hash value
+;
+
+: UpDateHash ( -)  \ Update hash values and load arrays with new values
+   SHAresult  HashPtr @ 8 cells over + swap do  i @ over +!  cell+  cell +loop  drop
+   SHAresult  SHAhash 8 cells move
+   SHAhash HashPtr !    \ Init pointer to last subvalue
+;
+
+[defined] VFXFORTH [if]
+
+CODE RROTATE ( x1 n -- x2 )
+   MOV  ECX , EBX                     \ count in ecx
+   POP EBX , CL                        \ and rotate bits right
+   RET   END-CODE
+  
+CODE RROTATE2 ( x1 -- x2 )
+   ROR EBX , # 2                      \ rotate 2 bits right
+   RET   END-CODE
+
+CODE RROTATE6 ( x1 -- x2 )
+   ROR EBX , # 6                      \ rotate 2 bits right
+   RET   END-CODE
+
+CODE RROTATE11 ( x1 -- x2 )
+   ROR EBX , # 11                      \ rotate 2 bits right
+   RET   END-CODE
+
+CODE RROTATE25 ( x1 -- x2 )
+   ROR EBX , # 25                      \ rotate 2 bits right
+   RET   END-CODE
+
+CODE RROTATE7 ( x1 -- x2 )
+   ROR EBX , # 7                       \ rotate bits right
+   RET   END-CODE
+
+CODE RROTATE13 ( x1 -- x2 )
+   ROR EBX , # 13                      \ rotate bits right
+   RET   END-CODE
+
+CODE RROTATE22 ( x1 -- x2 )
+   ROR EBX , # 22                      \ rotate bits right
+   RET   END-CODE
+
+CODE RROTATE18 ( x1 -- x2 )
+   ROR EBX , # 18                      \ rotate bits right
+   RET   END-CODE
+
+CODE RROTATE17 ( x1 -- x2 )
+   ROR EBX , # 17                      \ rotate bits right
+   RET   END-CODE
+
+CODE RROTATE19 ( x1 -- x2 )
+   ROR EBX , # 19                      \ rotate bits right
+   RET   END-CODE
+
+[then]
+
+[defined] WIN32FORTH-MESSAGE [if]
+
+CODE RROTATE ( x1 n -- x2 )   \ rotate u1 right by n bits 
+   mov     ecx, ebx                     \ count in ecx
+   pop     ebx
+   ror     ebx, cl                       \ and rotate bits right
+   next  c;
+ 
+CODE RROTATE2 ( x1 -- x2 )
+   ROR EBX , # 2                      \ rotate 2 bits right
+   next  c;
+
+CODE RROTATE6 ( x1 -- x2 )
+   ROR EBX , # 6                      \ rotate 2 bits right
+   next  c;
+
+CODE RROTATE11 ( x1 -- x2 )
+   ROR EBX , # 11                      \ rotate 2 bits right
+   next  c;
+
+CODE RROTATE25 ( x1 -- x2 )
+   ROR EBX , # 25                      \ rotate 2 bits right
+   next  c;
+
+CODE RROTATE7 ( x1 -- x2 )
+   ROR EBX , # 7                       \ rotate bits right
+   next  c;
+
+CODE RROTATE13 ( x1 -- x2 )
+   ROR EBX , # 13                      \ rotate bits right
+   next  c;
+
+CODE RROTATE22 ( x1 -- x2 )
+   ROR EBX , # 22                      \ rotate bits right
+   next  c;
+
+CODE RROTATE18 ( x1 -- x2 )
+   ROR EBX , # 18                      \ rotate bits right
+   next  c;
+
+CODE RROTATE17 ( x1 -- x2 )
+   ROR EBX , # 17                      \ rotate bits right
+   next  c;
+
+CODE RROTATE19 ( x1 -- x2 )
+   ROR EBX , # 19                      \ rotate bits right
+   next  c;
+[then]
+
+[defined] LIBRARY [if] \ SwiftForth
+
+ICODE RROTATE ( x1 n -- x2 )
+   EBX ECX MOV                      \ count in ecx
+   POP(EBX)                         \ get new tos
+   EBX CL ROR                       \ and rotate bits right
+   RET   END-CODE
+
+ICODE RROTATE2 ( x1 -- x2 )
+   EBX 2 # ROR                       \ rotate bits right
+   RET   END-CODE
+
+ICODE RROTATE6 ( x1 -- x2 )
+   EBX 6 # ROR                       \ rotate bits right
+   RET   END-CODE
+
+ICODE  RROTATE11 ( x1 -- x2 )
+   EBX 11 # ROR                       \ rotate bits right
+   RET   END-CODE
+
+ICODE  RROTATE25 ( x1 -- x2 )
+   EBX 25 # ROR                       \ rotate bits right
+   RET   END-CODE
+
+ICODE  RROTATE7 ( x1 -- x2 )
+   EBX 7 # ROR                       \ rotate bits right
+   RET   END-CODE
+
+ICODE  RROTATE13 ( x1 -- x2 )
+   EBX 13 # ROR                       \ rotate bits right
+   RET   END-CODE
+
+ICODE  RROTATE22 ( x1 -- x2 )
+   EBX 22 # ROR                       \ rotate bits right
+   RET   END-CODE
+
+ICODE  RROTATE18 ( x1 -- x2 )
+   EBX 18 # ROR                       \ rotate bits right
+   RET   END-CODE
+
+ICODE  RROTATE17 ( x1 -- x2 )
+   EBX 17 # ROR                       \ rotate bits right
+   RET   END-CODE
+
+ICODE  RROTATE19 ( x1 -- x2 )
+   EBX 19 # ROR                       \ rotate bits right
+   RET   END-CODE
+
+[then]
+
+HIGH-LEVEL [IF]
+
+0 cells constant H0
+1 cells constant H1
+2 cells constant H2
+3 cells constant H3
+4 cells constant H4
+5 cells constant H5
+6 cells constant H6
+7 cells constant H7
+
+: GetK+ ( -- u )   Kptr @ @  cell Kptr +! + ;    \ get the current K constant, increment the pointer to next one for next time
+ 
+\ ICODE GetK+ ( u -- u' )
+\   Kptr # EAX MOV
+\   0 [EAX] EAX MOV
+\   0 [EAX] EBX ADD
+\   Kptr # EAX MOV
+\   4 # 0 [EAX] ADD
+\   RET END-CODE
+
+
+: RoundI ( a -- u u )
+   HashPtr @ >r 
+   DUP  @  DUP -ROT  
+   r@ H2 + @  r@ H3 + @  AND  
+   r@ H3 + @  INVERT  
+   r@ H1 + @  AND 
+   XOR  
+   r@ 3 cells + @  DUP >R  RROTATE6 R@  RROTATE11  XOR  R>  RROTATE25  XOR  +  
+   r@ H0 + @  +  +  
+   GetK+ 
+   dup  r@  H4 +  +! 
+   r@ H6 + @  r@  H7 + @   AND  
+   r@ H7 + @ 
+   r@ H5 + @  AND XOR 
+   r@ H6 + @  r@  H5 + @   AND 
+   XOR   
+   r@ 7 cells + @  DUP >R  RROTATE2  R@  RROTATE13  XOR  R>  RROTATE22  XOR  +  +  
+   cell HashPtr +!   
+   r>  cell+ H7 + !  
+   cell+ 
+;
+                          
+: RoundN  ( a -- u u )       
+   HashPtr @ >r             
+   15 PICK  15 PICK         
+   DUP >R  RROTATE7  R@  RROTATE18  XOR  R>   3 RSHIFT   XOR + 
+   7 PICK  +  2 PICK  
+   DUP >R  RROTATE17 R@  RROTATE19  XOR  R>  10 RSHIFT   XOR  +  
+   DUP   
+   r@ H2 + @  r@  H3 + @   AND  
+   r@ H3 + @  INVERT  
+   r@ H1 + @  AND  XOR   
+   r@ 3 cells + @  DUP >R  RROTATE6 R@  RROTATE11  XOR  R>  RROTATE25  XOR  +  
+   r@ H0 + @  +  
+   +  
+   GetK+ 
+   dup  
+   r@ H4 +  +!  
+   r@ H6 + @   r@  H7 + @  AND  
+   r@ H7 + @   r@  H5 + @  AND 
+   XOR 
+   r@ H6 + @   r@  H5 + @  AND  
+   XOR  
+   r@ 7 cells + @  DUP >R  RROTATE2  R@  RROTATE13  XOR  R>  RROTATE22  XOR  +  +  
+   cell HashPtr +! 
+   r> cell+  H7 + ! 
+;
+
+: CellEndianReverse ( m -- w )  \ Reverse cell bytes: 12345678 <-> 78563412
+   dup >r  $18 lshift  r@  $ff00 and  $08 lshift  or
+   r@  $ff0000 and  $08 rshift  or  r>  $18 rshift  or 
+;
+
+: BlockEndianReverse  ( a -- )  \ Reverse bytes in 16 cells at a
+   16 0 do  dup  @  CellEndianReverse  over !  cell+  loop  drop
+;
+
+: SetLength  ( n -- )  \ Store count into last two cells
+   dup  3 lshift  swap  29 rshift   SHAtemp 56 + 2! 
+;
+
+[ELSE]
+
+decimal
+
+code RoundI ( a -- u a' )      \ EBP must point to a 64 cell stack, growing down
+   $04 # EBP SUB              \ push onto the data stack
+   EBX -4 [EBP] MOV           \      
+   HashPtr # EDX MOV          \   HashPtr   
+   $00 [EDX] EDX MOV          \   @  --> EDX
+   $00 [EBX] EBX MOV          \      
+   EBX 0 [EBP] MOV            \    
+   EBX -8 [EBP] MOV           \   
+   $08 [EDX] EBX MOV          \      
+   EBX -12 [EBP] MOV          \      
+   $0C [EDX] EBX MOV          \      
+   -12 [EBP] EBX AND          \      
+   EBX -12 [EBP] MOV          \      
+   $0C [EDX] EBX MOV          \      
+   EBX NOT                    \        
+   EBX -16 [EBP] MOV          \      
+   $04 [EDX] EBX MOV          \      
+   -16 [EBP] EBX AND          \      
+   -12 [EBP] EBX XOR          \      
+   EBX -12 [EBP] MOV          \      
+   $0C [EDX] EBX MOV          \      
+   EBX EAX MOV                \     
+   EBX $06 # ROR              \     
+   EBX -16 [EBP] MOV          \      
+   EAX EBX MOV                \      
+   EBX $0B # ROR              \      
+   -16 [EBP] EBX XOR          \      
+   EBX -16 [EBP] MOV          \      
+   EAX EBX MOV                \    
+   EBX $19 # ROR              \      
+   -16 [EBP] EBX XOR          \      
+   -12 [EBP] EBX ADD          \      
+   EBX -12 [EBP] MOV          \      
+   $00 [EDX] EBX MOV          \      
+   -12 [EBP] EBX ADD          \      
+   -8 [EBP] EBX ADD           \      
+   Kptr # EAX MOV             \   GetK+  
+   $04 # 0 [EAX] ADD          \      
+   $00 [EAX] EAX MOV          \      
+   -4 [EAX] EBX ADD           \      
+   EBX -12 [EBP] MOV          \      
+   EBX -8 [EBP] MOV           \      
+   -12 [EBP] EAX MOV          \      
+   EAX $10 [EDX] ADD          \      
+   -8 [EBP] EBX MOV           \      
+   EBX -8 [EBP] MOV           \      
+   $18 [EDX] EBX MOV          \    
+   EBX -12 [EBP] MOV          \      
+   $1C [EDX] EBX MOV          \      
+   -12 [EBP] EBX AND          \      
+   EBX -12 [EBP] MOV          \      
+   $1C [EDX] EBX MOV          \      
+   EBX -16 [EBP] MOV          \      
+   $14 [EDX] EBX MOV          \  
+   -16 [EBP] EBX AND          \      
+   -12 [EBP] EBX XOR          \      
+   EBX -12 [EBP] MOV          \      
+   $18 [EDX] EBX MOV          \      
+   EBX -16 [EBP] MOV          \      
+   $14 [EDX] EBX MOV          \      
+   -16 [EBP] EBX AND          \      
+   -12 [EBP] EBX XOR          \      
+   EBX -12 [EBP] MOV          \      
+   $1C [EDX] EBX MOV          \      
+   EBX EAX MOV                \      
+   EBX $02 # ROR              \     
+   EBX -16 [EBP] MOV          \      
+   EAX EBX MOV                \      
+   EBX $0D # ROR              \      
+   -16 [EBP] EBX XOR          \      
+   EBX -16 [EBP] MOV          \      
+   EAX EBX MOV                \        
+   EBX $16 # ROR              \      
+   -16 [EBP] EBX XOR          \      
+   -12 [EBP] EBX ADD          \      
+   -8 [EBP] EBX ADD           \       
+   HashPtr # EAX MOV          \    4 HashPtr +!
+   $04 # 0 [EAX] ADD          \         
+   EBX -8 [EBP] MOV           \      
+   -8 [EBP] EAX MOV           \      
+   EAX $20 [EDX] MOV          \      
+   -4 [EBP] EBX MOV           \      
+   $04 # EBX ADD              \      
+   RET                        \      
+   end-code
+
+code RoundN ( a -- u a' )      \ EBP must point to a 64 cell stack, growing down
+   $04 # EBP SUB              \ push onto the data stack
+   EBX $00 [EBP] MOV          \ 
+   HashPtr # EDX MOV          \   HashPtr   
+   $00 [EDX] EDX MOV          \   @  --> EDX  
+   $0F # EBX MOV              \    
+   $00 [EBP] [EBX*4] EBX MOV  \       
+   EBX -4 [EBP] MOV           \   
+   $38 [EBP] EBX MOV          \   
+   EBX EAX MOV                \  
+   EBX $07 # ROR              \       
+   EBX -8 [EBP] MOV           \     
+   EAX EBX MOV                \ 
+   EBX $12 # ROR              \   
+   -8 [EBP] EBX XOR           \             
+   EBX -8 [EBP] MOV           \        
+   EAX EBX MOV                \ 
+   EBX $03 # SHR              \    
+   -8 [EBP] EBX XOR           \               
+   -4 [EBP] EBX ADD           \   
+   EBX -4 [EBP] MOV           \   
+   $18 [EBP] EBX MOV          \   
+   -4 [EBP] EBX ADD           \   
+   EBX -4 [EBP] MOV           \   
+   $04 [EBP] EBX MOV          \    
+   EBX EAX MOV                \      
+   EBX $11 # ROR              \      
+   EBX -8 [EBP] MOV           \   
+   EAX EBX MOV                \ 
+   EBX $13 # ROR              \   
+   -8 [EBP] EBX XOR           \   
+   EBX -8 [EBP] MOV           \   
+   EAX EBX MOV                \ 
+   EBX $0A # SHR              \    
+   -8 [EBP] EBX XOR           \ 
+   -4 [EBP] EBX ADD           \   
+   EBX -4 [EBP] MOV           \ 
+   EBX -8 [EBP] MOV           \   
+   $08 [EdX] EBX MOV          \       
+   EBX -12 [EBP] MOV          \    
+   $0C [EDX] EBX MOV          \    
+   -12 [EBP] EBX AND          \    
+   EBX -12 [EBP] MOV          \    
+   $0C [EDX] EBX MOV          \    
+   EBX NOT                    \    
+   EBX -16 [EBP] MOV          \                    
+   $04 [EDX] EBX MOV          \  
+   -16 [EBP] EBX AND          \    
+   -12 [EBP] EBX XOR          \    
+   EBX -12 [EBP] MOV          \           
+   $0C [EDX] EBX MOV          \    
+   EBX EAX MOV                \     
+   EBX $06 # ROR              \    
+   EBX -16 [EBP] MOV          \    
+   EAX EBX MOV                \ 
+   EBX $0B # ROR              \    
+   -16 [EBP] EBX XOR          \    
+   EBX -16 [EBP] MOV          \       
+   EAX EBX MOV                \         
+   EBX $19 # ROR              \   
+   -16 [EBP] EBX XOR          \      
+   -12 [EBP] EBX ADD          \    
+   EBX -12 [EBP] MOV          \    
+   $00 [EDX] EBX MOV          \       
+   -12 [EBP] EBX ADD          \ 
+   -8 [EBP] EBX ADD           \   
+   Kptr # EAX MOV             \   GetK+  
+   $04 # 0 [EAX] ADD          \      
+   $00 [EAX] EAX MOV          \      
+   -4 [EAX] EBX ADD           \               
+   EBX -12 [EBP] MOV          \    
+   EBX -8 [EBP] MOV           \ 
+   -12 [EBP] EAX MOV          \    
+   EAX $10 [EDX] ADD          \    
+   -8 [EBP] EBX MOV           \ 
+   EBX -8 [EBP] MOV           \ 
+   $18 [EDX] EBX MOV          \ 
+   EBX -12 [EBP] MOV          \                      
+   $1C [EDX] EBX MOV          \     
+   -12 [EBP] EBX AND          \     
+   EBX -12 [EBP] MOV          \                      
+   $1C [EDX] EBX MOV          \     
+   EBX -16 [EBP] MOV          \                       
+   $14 [EDX] EBX MOV          \     
+   -16 [EBP] EBX AND          \     
+   -12 [EBP] EBX XOR          \     
+   EBX -12 [EBP] MOV          \                     
+   $18 [EDX] EBX MOV          \     
+   EBX -16 [EBP] MOV          \                     
+   $14 [EDX] EBX MOV          \     
+   -16 [EBP] EBX AND          \     
+   -12 [EBP] EBX XOR          \     
+   EBX -12 [EBP] MOV          \     
+   $1C [EDX] EBX MOV          \     
+   EBX EAX MOV                \   
+   EBX $02 # ROR              \        
+   EBX -16 [EBP] MOV          \     
+   EAX EBX MOV                \ 
+   EBX $0D # ROR              \     
+   -16 [EBP] EBX XOR          \     
+   EBX -16 [EBP] MOV          \        
+   EAX EBX MOV                \ 
+   EBX $16 # ROR              \    
+   -16 [EBP] EBX XOR          \      
+   -12 [EBP] EBX ADD          \        
+   -8 [EBP] EBX ADD           \    
+   EBX -8 [EBP] MOV           \    
+   -8 [EBP] EAX MOV           \   
+   EAX $20 [EDX] MOV          \    
+   -4 [EBP] EBX MOV           \   
+   HashPtr # EAX MOV          \   4 HashPtr +!
+   $04 # 0 [EAX] ADD          \        
+   RET                        \   
+   end-code                   \ 
+
+{ 
+ICODE CellEndianReverse ( x1 -- x2 )
+   BL BH XCHG                       \ swap bytes 
+   EBX $10 # ROL
+   BL BH XCHG                       \ swap bytes 
+   RET   END-CODE
+
+: BlockEndianReverse  ( a -- )  \ Reverse bytes in 16 cells at a
+   16 0 do  dup  @  CellEndianReverse  over !  cell+  loop  drop
+;
+} 
+ICODE BlockEndianReverse  ( a -- )  \ Reverse bytes in 16 cells at a
+   $10 # ECX MOV
+   BEGIN
+      0 [EBX] EAX MOV
+      AL AH XCHG     \ swap bytes 
+      EAX $10 # ROL  \ swap half-words
+      AL AH XCHG     \ swap bytes 
+      EAX 0 [EBX] MOV
+      4 # EBX ADD 
+   LOOP
+   0 [EBP] EBX MOV   \ drop TOS            
+   4 # EBP ADD                 
+   RET
+   END-CODE
+
+{ 
+: SetLength  ( n -- )  \ Store count into last two cells
+   dup  3 lshift  swap  29 rshift   SHAtemp 56 + 2! 
+;
+}
+ICODE SetLength 
+   SHAtemp # EDX MOV
+   EBX EAX MOV
+   EBX 3 # SHL 
+   EAX $1D # SHR
+   EBX  #60 [EDX] MOV   
+   EAX  #56 [EDX] MOV   
+   0 [EBP] EBX MOV     
+   4 # EBP ADD         
+   RET    END-CODE         
+
+[then]
+
+: (SHA-256)  ( a -- )   \ process the 64 byte block at  a
+  Kconstants Kptr !
+  16 0 do  RoundI    loop   \ Wi = Mi for 1st 16 rounds
+  drop  ( W0..W15 )
+  48 0 do  RoundN    loop   \ Wj now function of Wi   
+  8 0 do  2drop 2drop 2drop 2drop  loop  
+  UpDateHash
+;
+
+\ Do all 64 byte blocks leaving remainder block
+: SHA-256FullBlocks ( adr1 count1 --  adr2 count2 )
+   dup  -64  and                 \ Maskoff byte count, if > 63 then
+   if  dup >r  6 rshift          \ Compute number of full 64 byte blocks
+      0 do  
+         dup  
+         dup BlockEndianReverse  \ Convert the block to Big Endian format
+         (SHA-256)               \ Hash block
+         64 +                    \ set address to next blcok
+      loop                       \ Do for all full 64 byte blocks
+      r> 63 and                  \ Maskoff partial block bytes count: 0-63
+   then                          \ Leave address and count for last block
+;
+
+: SHA-256Final ( addr count totalCount -- )  \ Hash partial and/or last block
+   >r 
+   dup >r  
+   SHAtemp  dup >r swap cmove    \ Move bytes into block SHAtemp message array
+   r> r@ +  128  over  c!        \ Put 80h after last message byte
+   1+ 55 r@ -                    \ Compute tentative 0 byte erase count
+   r> 55 >                       \ Is partial block byte count > 55 ?
+   if   8 + erase                \ If yes, FILL rest of block w/zeroes
+      SHAtemp BlockEndianReverse \ Convert the block to Big Endian format
+      SHAtemp (SHA-256)          \ perform the hash
+      SHAtemp  56                \ Now setup last block with the count
+   then                     
+   erase  
+   SHAtemp BlockEndianReverse    \ Convert the block to Big Endian format
+   r> SetLength         \ set message bit count
+   SHAtemp (SHA-256)    \ Zero FILL last block
+;                              
+
+\ Compute the SHA-256 hash of n bytes at address a
+: SHA-256 ( a n -- )
+   dup >r  SHA-256init  SHA-256FullBlocks  r> SHA-256Final
+;
+
+\ *******************************************************************************
+\ *S Display the hash
+\ *******************************************************************************
+
+: SHA-256hash>stack ( -- d0 ... d7 )   \ get the SHA-256 result onto the stack
+   8 cells 0 do  SHAresult 7 cells i - + @  cell +loop 
+;
+
+: SHA-256hash>$ ( -- c-addr n )
+\ *G fetches the SHA-256 hash result from the array and formats it as a string.
+\ ** Note that the string is NOT in LittleEndian format.
+\ ** It is in the same format as the test strings...
+   base @ >r  hex
+   SHA-256hash>stack 0 0
+   <#  8 0 do  2drop 0  # # # # # # # #  loop  #>
+   r> base !
+;
+
+: .SHA-256 ( -- )   \ displays the SHA-256 hash result array, without spaces
+   SHA-256hash>$ type
+;
+
+\ *******************************************************************************
+\ *S File interface 
+\ *******************************************************************************
+
+variable fShowHandle
+variable fShowSize
+variable fShowAllocate
+
+: (SHA-256file) ( $filename -- )   \ show a files SHA-256 hash adn NumName
+   2dup R/O      OPEN-FILE if  cr  ." Could not open file "  type   1234 throw  then  fShowHandle !
+   fShowHandle @ FILE-SIZE if  cr  ." Could not read file size !" 1236 throw  then  drop  fShowSize !
+   fShowSize @    allocate if  cr  ." Could not ALLOCATE !"   1237 throw  then fShowAllocate !
+   fShowAllocate @ fShowSize @ fShowHandle @ READ-FILE  if  fShowHandle @ CLOSE-FILE drop  cr  ." Could not read file "  1238 throw  then
+   fShowHandle @ CLOSE-FILE drop
+   fShowAllocate @ fShowSize @ SHA-256  
+   fShowAllocate @ FREE drop
+;
+
+: SHA-256file"   
+\ *G display the SHA-256 hash of the file whose name follows, terminated by "
+   [char] " 
+   word count (SHA-256file)  .SHA-256
+;
+
+: SHA-256file   
+\ *G display the SHA-256 hash of the file whose name follows
+   32 word count (SHA-256file)  .SHA-256
+;
+
+\ *******************************************************************************
+\ *S Known Answer Tests
+\ ** The known answers are from hashcalc.exe 
+\ ** available from http://www.slavasoft.com/hashcalc/
+\ *******************************************************************************
+
+
+variable NumErrors
+
+\ report result - 0 is OK
+: .Pass/Fail ( f -- )   
+   if  
+      1 NumErrors +!  ."  FAILED <<<<<<<<<<<<<<<< "   
+   else  
+      ."  passed "  
+   then 
+;
+
+: ShowResult
+\ *G show the number of errors
+   cr  NumErrors @ if  
+      ." !!!!! Tests failed with " NumErrors @ .  ." error"   
+      NumErrors @ 1 = not if  ." s"  then  ."  !!!!! "  
+   else
+      ." All tests passed "  
+   then 
+;
+
+: SHA-256test- ( a n a' n' $description -- )
+\ *G takes a string and its pre-calculated SHA-256 hash,
+\ ** and compares this to its own calculation, takes a desciroptin string rather than displaying the input.
+  cr  type  2>r  82 ToColumn ."  -> " 
+  SHA-256 SHA-256hash>$  2dup type
+  2r>
+  compare .Pass/Fail
+;
+
+: SHA-256test ( a n a' n' -- )
+\ *G takes a string and its pre-calculated SHA-256 hash,
+\ ** and compares this to its own calculation.
+  cr  2>r  2dup type  82 ToColumn  ."  -> " 
+  SHA-256 SHA-256hash>$  2dup type
+  2r>
+  compare .Pass/Fail
+;
+
+variable NULL$  0 NULL$ !
+\ *G a null string
+
+1024 dup * Buffer: MyBigBuffer
+
+: ttSHA-256                 \ --
+\ *G runs a standard set of tests to verify the SHA-256 program
+   cr ." SHA-256 tests : " 
+   0 NumErrors !
+   NULL$ 0  S" E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855" SHA-256test
+   S" a"    S" CA978112CA1BBDCAFAC231B39A23DC4DA786EFF8147C4E72B9807785AFEE48BB" SHA-256test
+   S" abc"  S" BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD" SHA-256test
+   S" message digest"
+     S" F7846F55CF23E14EEBEAB5B4E1550CAD5B509E3348FBC4EFA3A1413D393CB650" SHA-256test
+   S" abcdefghijklmnopqrstuvwxyz"
+     S" 71C480DF93D6AE2F1EFAD1447C66C9525E316218CF51FC8D9ED832F2DAF18B73" SHA-256test
+   S" ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+     S" DB4BFCBD4DA0CD85A60C3C37D3FBD8805C77F15FC6B1FDFE614EE0A7C8FDB4C0" SHA-256test
+   S" A"  S" 559AEAD08264D5795D3909718CDD05ABD49572E84FE55590EEF31A88A08FDFFD" SHA-256test
+   S" AA"  S" 58BB119C35513A451D24DC20EF0E9031EC85B35BFC919D263E7E5D9868909CB5" SHA-256test
+   S" AAA"  S" CB1AD2119D8FAFB69566510EE712661F9F14B83385006EF92AEC47F523A38358" SHA-256test
+   s" abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"
+   s" 248D6A61D20638B8E5C026930C3E6039A33CE45964FF2167F6ECEDD419DB06C1" SHA-256test 
+
+   \ S" 12345678901234567890123456789012345678901234567890123456789012345678901234567890"
+   80 0 do  i 1+ 10 mod [char] 0 +  MyBigBuffer i + c!  loop 
+   MyBigBuffer 80  S" F371BC4A311F2B009EEF952DD83CA80E2B60026C8E935592D0F9C308453C813E"  SHA-256test
+
+   MyBigBuffer 66 [char] A FILL     \ test the boundary numbers
+   MyBigBuffer 54 s" 2D0009D7DF28CDC6B5A4C36063D97415A8FE99515317458FCB0B0E2A821DBCB9" s" 54 'A's "  SHA-256test-
+   MyBigBuffer 55 s" 8963CC0AFD622CC7574AC2011F93A3059B3D65548A77542A1559E3D202E6AB00" s" 55 'A's "  SHA-256test-
+   MyBigBuffer 56 s" 6EA719CEFA4B31862035A7FA606B7CC3602F46231117D135CC7119B3C1412314" s" 56 'A's "  SHA-256test-
+   MyBigBuffer 57 s" A00DF74FBDADD9EB0E7742A019E5B2D77374DE5417EBA5B7A0730A60CCE5E7BF" s" 57 'A's "  SHA-256test-
+   MyBigBuffer 58 s" CEE244D999F8CF49F2A4EE4D89695130C9C95C33538CEDF0306881EBD42714D2" s" 58 'A's "  SHA-256test-
+   MyBigBuffer 59 s" 5B29354EE33CBA5B924DED5E3C873A76E1D12527D824ACE01FF9683D24E06816" s" 59 'A's "  SHA-256test-
+   MyBigBuffer 60 s" C5FB235BEFD875B915FA6C4702A7ABB93CACF3D7C414B71CBEFF9E1B0A9FBD41" s" 60 'A's "  SHA-256test-
+   MyBigBuffer 61 s" 0AE45129EF1EDF64309559F6CB7BB0AF16EFF14AD82F24D55FA029C1B4144078" s" 61 'A's "  SHA-256test-
+   MyBigBuffer 62 s" 5A2AAFCACB9828E41FB7C8F8098952638645874B3A8CA45D2523FB2D5FC7166D" s" 62 'A's "  SHA-256test-
+   MyBigBuffer 63 s" 1B58D00F5B1FBD2A1884D666A2BE33C2FA7463DFF32CD60EF200C0F750A6B70F" s" 63 'A's "  SHA-256test-
+   MyBigBuffer 64 s" D53EDA7A637C99CC7FB566D96E9FA109BF15C478410A3F5EB4D4C4E26CD081F6" s" 64 'A's "  SHA-256test-
+   MyBigBuffer 65 s" 836203944F4C0280461AD73D31457C22BA19D1D99E232DC231000085899E00A2" s" 65 'A's "  SHA-256test-
+   MyBigBuffer 66 s" FD8AFE9151793A84A21AF054BA985D1486A705561E2A50D4A50F814664F5E806" s" 66 'A's "  SHA-256test-
+
+   MyBigBuffer 10000         BL FILL  MyBigBuffer 10000   s" 7C99BC050D0856D05A0D84B544718F5F2764CF6EFC939D7042086F2719FE8EC2"  s" 10,000 spaces "  SHA-256test-
+   MyBigBuffer 1000000 [char] a FILL  MyBigBuffer 1000000 s" CDC76E5C9914FB9281A1C7E284D73E67F1809A48A497200E046D39CCC7112CD0" s" 1 million 'a's "  SHA-256test-
+
+
+   cr ShowResult  
+   
+   cr 
+   Counter
+   10    0 do  MyBigBuffer 1000000 SHA-256  loop
+   100   0 do  MyBigBuffer  100000 SHA-256  loop
+   1000  0 do  MyBigBuffer   10000 SHA-256  loop
+   10000 0 do  MyBigBuffer     100 SHA-256  loop
+   cr ." Test time = "  Timer ." ms" 
+;
+
+ttSHA-256
+
+\\
+
+hex 
+cr 
+cr .( SHAresult) SHAresult u.
+cr .( SHAhash  ) SHAhash u. 
+cr .( SHAtemp  ) SHAtemp u. 
+cr .( Kptr     ) Kptr    u. 
+cr .( HashPtr  ) HashPtr u. 
+decimal
+
+\\
+
+{ 
+http://www.quadibloc.com/crypto/mi060501.htm
+
+SHA-256, SHA-384, and SHA-512
+New algorithms were announced shortly after the selection of Rijndael as the Advanced Encryption Standard, SHA-256, SHA-384, and SHA-512. 
+The SHA-384 algorithm is essentially the same as the SHA-512 algorithm, but with a different starting value, and with the final result truncated to 384 bits. 
+Although full specifications for the three new algorithms are available here, I thought I might explain them here as well. 
+(Although I have a description of RIPE-MD available, it was rather too complicated to easily describe in full.)
+
+Description of SHA-256
+The SHA-256 algorithm is very similar in structure to SHA-1, but not only does it use eight, rather than five, 32-bit subblocks, but there are other ways in which it is not analogous.
+
+For SHA-256, the message is padded, and divided into 512-bit blocks, in the same way as for SHA-1.
+
+From each block, considered as 16 32-bit words, 64 32-bit words are produced, the first 16 being the block itself, and the remaining words being the sum, modulo 2^32, of the following quantities:
+
+the word 16 words ago; 
+the word 7 words ago; 
+
+the XOR of the following three quantities: 
+the word 2 words ago rotated right 17 places 
+that word rotated right 19 places 
+that word shifted right 10 places; 
+
+the XOR of the following three quantities: 
+the word 15 words ago rotated right 7 places 
+that word rotated right 18 places 
+that word shifted right 3 places. 
+
+One round of the part of SHA-256 that looks like a round of a block cipher is performed for each of these 64 words. For the first block, the initial input values to SHA-256 are:
+
+6A09E667 BB67AE85 3C6EF372 A54FF53A 510E527F 9B05688C 1F83D9AB 5BE0CD19
+
+which are the beginnings, in hexadecimal, of the fractional parts of the square roots of 2, 3, 5, 7, 11, 13, 17, and 19.
+
+The round function of SHA-256 is as follows:
+
+An intermediate result is calculated, which is equal to the modulo 2^32 sum of
+
+The XOR of the following three quantities: 
+the fifth word in the block rotated right 6 places 
+that word rotated right 11 places 
+that word rotated right 25 places; 
+
+a word consisting of those bits in the sixth word of the block which correspond to bits of the fifth word of the block that are ones, 
+and those bits in the seventh word of the block that correspond to bits of the fifth word of the block that are zeroes; 
+the current one of the 64 words to which the 16 word block is expanded; 
+the current one of 64 constants introduced into this phase. 
+The eighth word of the block is modified by having this intermediate result added to it modulo 2^32.
+
+The resulting incompletely modified new value of the eighth word in the block is then added to the fourth word in the block modulo 2^32.
+
+Then, two additional quantities are added to the eighth word in the block modulo 2^32:
+
+A word whose bits are 1 if and only if two of the corresponding three bits taken from each of the first, second, and third words in the block are 1; 
+The XOR of the following three quantities: 
+The first word in the block rotated right 2 bits, 
+that word rotated right 13 bits, 
+that word rotated right 22 bits. 
+
+Finally, each of the eight words of the block that will ultimately become the hash is moved to the position of the next word in the block,
+with the first word in the block being replaced by the modified eighth word in the block.
+
+The 64 constant words, added to each word in the expanded block, are:
+
+428A2F98 71374491 B5C0FBCF E9B5DBA5 3956C25B 59F111F1 923F82A4 AB1C5ED5
+D807AA98 12835B01 243185BE 550C7DC3 72BE5D74 80DEB1FE 9BDC06A7 C19BF174
+E49B69C1 EFBE4786 0FC19DC6 240CA1CC 2DE92C6F 4A7484AA 5CB0A9DC 76F988DA
+983E5152 A831C66D B00327C8 BF597FC7 C6E00BF3 D5A79147 06CA6351 14292967
+27B70A85 2E1B2138 4D2C6DFC 53380D13 650A7354 766A0ABB 81C2C92E 92722C85
+A2BFE8A1 A81A664B C24B8B70 C76C51A3 D192E819 D6990624 F40E3585 106AA070
+19A4C116 1E376C08 2748774C 34B0BCB5 391C0CB3 4ED8AA4A 5B9CCA4F 682E6FF3
+748F82EE 78A5636F 84C87814 8CC70208 90BEFFFA A4506CEB BEF9A3F7 C67178F2
+
+After this has been done 64 times, the final result is the sum, by individual words modulo 2^32, of the result of this transformation and the original eight-word input.
+
+Thus, one important difference between SHA-256 and SHA-1 is that the nonlinear functions do not change during the hashing of a block,
+but instead of having only four constants, each of which is used for 20 words, there are now 64 constants, each used for only one word.
+}
+

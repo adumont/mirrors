@@ -1,0 +1,203 @@
+\ *****************************************************************************
+\ CRC16-A.f  2012 Apr 11 ITU-V.41
+\ CRC-16 for ITU-V.41 using a table 
+\ *****************************************************************************
+
+\ for ISO10373 and ISO14443 ( contact and contactless SmartCards ) TypeA (initialised to $6363) and TypeB (initialised to $FFFF and inverted)
+
+\ The CCITT standard crc-polynomial for XMODEM : x^16+x^15+x^2+x^0)
+\ ( X*16 is implicit )
+\ $1021 CONSTANT CRCpolynomial 
+\ $8005 CONSTANT CRCpolynomial  \ CRC-16-IBM
+
+\ For HDLC ref RFC1331, hex 8408 = bits 16, 12, 5 and 0
+\ ( read bits backwards, bit 16 is implied )
+\ For ModBus bits 16, 15, 2, 0 -->  $8005 ( reversed )
+$8408 CONSTANT CRCpolynomial  
+
+: w, ( w -- )   dup c, >< c, ;
+
+create CRC16table    \ created using the code at the end of the file
+ $0000 w, $1189 w, $2312 w, $329B w, $4624 w, $57AD w, $6536 w, $74BF w,
+ $8C48 w, $9DC1 w, $AF5A w, $BED3 w, $CA6C w, $DBE5 w, $E97E w, $F8F7 w,
+ $1081 w, $0108 w, $3393 w, $221A w, $56A5 w, $472C w, $75B7 w, $643E w,
+ $9CC9 w, $8D40 w, $BFDB w, $AE52 w, $DAED w, $CB64 w, $F9FF w, $E876 w,
+ $2102 w, $308B w, $0210 w, $1399 w, $6726 w, $76AF w, $4434 w, $55BD w,
+ $AD4A w, $BCC3 w, $8E58 w, $9FD1 w, $EB6E w, $FAE7 w, $C87C w, $D9F5 w,
+ $3183 w, $200A w, $1291 w, $0318 w, $77A7 w, $662E w, $54B5 w, $453C w,
+ $BDCB w, $AC42 w, $9ED9 w, $8F50 w, $FBEF w, $EA66 w, $D8FD w, $C974 w,
+ $4204 w, $538D w, $6116 w, $709F w, $0420 w, $15A9 w, $2732 w, $36BB w,
+ $CE4C w, $DFC5 w, $ED5E w, $FCD7 w, $8868 w, $99E1 w, $AB7A w, $BAF3 w,
+ $5285 w, $430C w, $7197 w, $601E w, $14A1 w, $0528 w, $37B3 w, $263A w,
+ $DECD w, $CF44 w, $FDDF w, $EC56 w, $98E9 w, $8960 w, $BBFB w, $AA72 w,
+ $6306 w, $728F w, $4014 w, $519D w, $2522 w, $34AB w, $0630 w, $17B9 w,
+ $EF4E w, $FEC7 w, $CC5C w, $DDD5 w, $A96A w, $B8E3 w, $8A78 w, $9BF1 w,
+ $7387 w, $620E w, $5095 w, $411C w, $35A3 w, $242A w, $16B1 w, $0738 w,
+ $FFCF w, $EE46 w, $DCDD w, $CD54 w, $B9EB w, $A862 w, $9AF9 w, $8B70 w,
+ $8408 w, $9581 w, $A71A w, $B693 w, $C22C w, $D3A5 w, $E13E w, $F0B7 w,
+ $0840 w, $19C9 w, $2B52 w, $3ADB w, $4E64 w, $5FED w, $6D76 w, $7CFF w,
+ $9489 w, $8500 w, $B79B w, $A612 w, $D2AD w, $C324 w, $F1BF w, $E036 w,
+ $18C1 w, $0948 w, $3BD3 w, $2A5A w, $5EE5 w, $4F6C w, $7DF7 w, $6C7E w,
+ $A50A w, $B483 w, $8618 w, $9791 w, $E32E w, $F2A7 w, $C03C w, $D1B5 w,
+ $2942 w, $38CB w, $0A50 w, $1BD9 w, $6F66 w, $7EEF w, $4C74 w, $5DFD w,
+ $B58B w, $A402 w, $9699 w, $8710 w, $F3AF w, $E226 w, $D0BD w, $C134 w,
+ $39C3 w, $284A w, $1AD1 w, $0B58 w, $7FE7 w, $6E6E w, $5CF5 w, $4D7C w,
+ $C60C w, $D785 w, $E51E w, $F497 w, $8028 w, $91A1 w, $A33A w, $B2B3 w,
+ $4A44 w, $5BCD w, $6956 w, $78DF w, $0C60 w, $1DE9 w, $2F72 w, $3EFB w,
+ $D68D w, $C704 w, $F59F w, $E416 w, $90A9 w, $8120 w, $B3BB w, $A232 w,
+ $5AC5 w, $4B4C w, $79D7 w, $685E w, $1CE1 w, $0D68 w, $3FF3 w, $2E7A w,
+ $E70E w, $F687 w, $C41C w, $D595 w, $A12A w, $B0A3 w, $8238 w, $93B1 w,
+ $6B46 w, $7ACF w, $4854 w, $59DD w, $2D62 w, $3CEB w, $0E70 w, $1FF9 w,
+ $F78F w, $E606 w, $D49D w, $C514 w, $B1AB w, $A022 w, $92B9 w, $8330 w,
+ $7BC7 w, $6A4E w, $58D5 w, $495C w, $3DE3 w, $2C6A w, $1EF1 w, $0F78 w,
+
+\ accumulates the CRC for character c into address a
+: CRC16accumulate ( c a -- )   
+   >r  
+   r@ w@ xor  $FF and  
+   2* CRC16table + w@
+   r@ w@ 8 rshift $ff and  xor  
+   r> w! 
+;
+
+variable incomingCRC    \ contains the input CRC value
+variable outgoingCRC    \ contains the output CRC value
+
+\ initialises the input CRC value in the required way
+: initIncomingCRC   $6363 incomingCRC w! ; 
+\ : initIncomingCRC   $FFFF outgoingCRC w! ;  \ Type B card
+                                        
+\ initialises the output CRC value in the required way
+: initOutgoingCRC   $6363 outgoingCRC w! ;  \ Type A card
+\ : initOutgoingCRC   $FFFF outgoingCRC w! ;  \ Type B card
+
+\ calculates the CRC-16 for the given string.
+: CRC16 ( a n -- u )
+   initOutgoingCRC  
+   over + swap ?do
+      i c@ outgoingCRC CRC16accumulate
+   loop
+   outgoingCRC w@ 
+\   $FFFF xor   \ Type B
+;
+
+\ A string that has as its last two bytes the CRC16 of the previous bytes always has a fixed CRC :
+$0000 pad w!  pad 2 CRC16  pad 2+ w!  pad 4 CRC16  constant CRC_VALID
+
+\ *****************************************************************************
+\ Tests
+\ http://www.lammertbies.nl/comm/info/crc-calculation.html - thanks!
+\ *****************************************************************************
+hex
+\ ISO 14443-3 From B.1 CRC_A encoding
+create ExampleA1  00 c, 00 c, A0 c, 1E c, 
+create ExampleA2  12 c, 34 c, 26 c, CF c, 
+\ ISO 14443-3 From B.1 CRC_A encoding
+create ExampleB1  00 c, 00 c, 00 c, CC c, C6 c, 
+create ExampleB2  0F c, AA c, FF c, FC c, D1 c,
+create ExampleB3  0A c, 12 c, 34 c, 56 c, 2C c, F6 c,
+decimal
+
+: =Valid ( crc -- )   CRC_VALID 2dup = if  2drop  ." passed"  else   ." FAILED!!! "   5 .hex  2 spaces  5 .hex  then ;
+
+: ttcrc16iso  
+   ExampleA1   cr ." ExampleA1 " 4 CRC16  =Valid 
+   ExampleA2   cr ." ExampleA2 " 4 CRC16  =Valid
+\   ExampleB1   cr ." ExampleB1 " 5 CRC16  =Valid
+\   ExampleB2   cr ." ExampleB2 " 5 CRC16  =Valid
+\   ExampleB3   cr ." ExampleB3 " 6 CRC16  =Valid
+;
+
+variable #failed 
+
+\ tests the CRC16 of a string given its correct result u
+: CRCtest ( a n u )   base @ >r  hex 
+   >r
+\   cr 2dup dump
+   cr  2 spaces  2dup type  $30 over - 0 max spaces
+   CRC16  dup base @ >r  hex  0 <#  # # # #  #> type  r> base !
+   r>    2dup = if  
+      2drop ."  ok"  
+   else  
+      ."  <-- should be " 4 u.r ."  failed!"  drop  1 #failed +!  
+   then 
+   r> base ! 
+;
+
+\ Add 16 bytes to the structure, using the 16 hex ASCII words following, then ignore the rest of the line
+\ This allows captured packet data to be copied and pasted...
+: Nc, ( n -- )   base @ >r  hex 
+   ( n) 0 do   bl word  count number  c,  loop 
+   r> base ! 
+   postpone \ 
+;  
+
+create TestString1  $0E Nc,  0C 75 77 80 02 C1 05 2F 2F 01 BC D6 60 D3
+
+: ttcrc1   TestString1 $0C CRC16 hex  5 u.r ;
+: ttcrc2   TestString1 $0E CRC16 hex  5 u.r ;
+
+\ ttcrc16  tests a selection of strings against known answers - TypeA.
+: ttCRC16
+   0 #failed !
+
+   cr ." CRC-16 ModBus tests : " 
+
+   s" A"                            $0273 CRCtest
+   s" An Arbitrary String"          $3E7C CRCtest
+   s" ZYXWVUTSRQPONMLKJIHGFEDBCA"   $087C CRCtest
+   s" Hello, World!"                $7706 CRCtest
+   s" 123456789"                    $BF05 CRCtest 
+   s" abc"                          $FDFD CRCtest  
+   s" ABC"                          $FCF7 CRCtest 
+   s" This is a string"             $B7BF CRCtest
+   s" \uFFFE\u0000\u0001\u0002"     $5AE1 CRCtest 
+   s" 0"                            $607D CRCtest
+   s" 01"                           $8808 CRCtest
+   s" 012"                          $9E51 CRCtest
+   s" 0123"                         $408A CRCtest
+   s" 01234"                        $5CB5 CRCtest
+   s" www.inventio.co.uk/crc16.f"   $5E69 CRCtest
+   s" ABCDEFGHIJKLMNOPQRSTUVWXYZ"   $D818 CRCtest
+   s" ZYXWVUTSRQPONMLKJIHGFEDBCA"   $087C CRCtest
+   s" abcdefghijklmnopqrstuvwxyz"   $EEF6 CRCtest
+   s" zyxwvutsrqponmlkjihgfedbca"   $3E92 CRCtest  
+   s" THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG" $787C CRCtest
+   s"  "  drop 0 $6363 CRCtest      ."  ( null string )" 
+   pad #2  $00 fill pad #2  $1EA0 CRCtest  ."  (  2 bytes of 0 )"
+   pad #26 $00 fill pad #26 $6E46 CRCtest  ."  ( 26 bytes of 0 )"
+   pad #26 $11 fill pad #26 $0701 CRCtest  ."  ( 26 bytes of hex 11 )"
+
+   cr  #failed @ if  
+      ." Failed with "  #failed @ . ." error" #failed @ 1 = not if  ." s"  then ." !"  
+   else  
+      ." All tests passed"  
+   then
+;
+
+\\
+
+\ *************************************************************************** 
+\ Create the table used above
+\ *************************************************************************** 
+
+\ getCRC  calculates the CRC value for table element n , slow method
+: (CRC16calc) ( n - n)   8 0 DO  dup 1 AND
+      if  U2/  CRCpolynomial xor  else  U2/  then  LOOP ;
+
+: ShowCRCtable   
+   hex cr  
+   $100 0 do  
+      0 incomingCRC !  i (CRC16calc)    
+
+      \ SwiftForth format
+      0 <# [char] , hold  [char] w hold  bl hold  # # # #  [char] $ hold  bl hold #> type
+      \ C format - please remove the final ,
+\      0 <# [char] , hold # # # #  [char] x hold  [char] 0 hold  bl hold #> type
+
+      i 7 and 7 = if  cr  then 
+   loop
+;
+
+\\
+

@@ -1,0 +1,2196 @@
+\ USBclarify.f   V1.0 Howerd Oakford  www.inventio.co.uk
+
+\ Displays when a USB device is connected and disconnected, including which COM port a USB serial device is assigned to
+\ Demonstrates how to use Windows device notifications 
+\ Defines HID and other constants and structures, including support for GUIDs
+\ Compile using SwiftForth, available from www.forth.com
+\ The file usb.ids from http://www.linux-usb.org/usb.ids must be in the local folder in order to compile this program.
+\ Thank you to the Linux guys for making this information available :-)
+
+: HostVersion   s" USBclarify  display of USB devices V1.0 2014 May 25" ;
+: Acronym  HostVersion drop 7 ;
+
+: 2**   ( c -- u )   \ takes 2 to the power c
+   1 swap lshift
+;
+
+variable CurrentAttribute  
+variable LastAttribute
+
+4 2** constant |AttributeStack|  \ must be a power of 2
+|AttributeStack| cells Buffer: AttributeStack[]  
+variable AttributeStackPtr
+: InitAttributeStack ( -- )
+   0 AttributeStackPtr ! AttributeStack[] |AttributeStack| cells erase
+;
+InitAttributeStack
+
+: >AttributeStackPtr ( -- a )   AttributeStack[]  AttributeStackPtr @  |AttributeStack| 1-  and cells + ; 
+
+: AttributePush ( u -- )   1 AttributeStackPtr +!  >AttributeStackPtr ! ;
+: AttributePop  ( u -- )   >AttributeStackPtr @  -1 AttributeStackPtr +! ;
+
+
+: ATTRIBUTE+ ( c -- )     
+   CurrentAttribute @ AttributePush
+   dup CurrentAttribute ! ATTRIBUTE ;
+
+: -MAGENTA.   18 ATTRIBUTE+ ;
+: GREEN.    7 ATTRIBUTE+ ;
+: YELLOW.   6 ATTRIBUTE+ ;
+: MAGENTA.  5 ATTRIBUTE+ ;
+: CYAN.     4 ATTRIBUTE+ ;
+: BLUE.     3 ATTRIBUTE+ ;
+: RED.      2 ATTRIBUTE+ ;
+: INVERSE.  1 ATTRIBUTE+ ;
+: NORMAL.   0 ATTRIBUTE+ ;
+: RESTORE.  AttributePop dup CurrentAttribute ! ATTRIBUTE ;
+
+: .hex ( u c -- )   base @ >r  hex  u.r  r> base ! ;
+\ these include leading zeros
+: 2.hex ( c -- )   base @ >r  hex  0 <#  # #  #> type  r> base ! ;
+: 4.hex ( w -- )   base @ >r  hex  0 <#  # # # #  #> type  r> base ! ;
+: 8.hex ( u -- )   base @ >r  hex  0 <#  # # # # # # # #  #> type  r> base ! ;
+
+: ShowAttributes ( -- )   
+   $100 0 do  
+      i $0F and 0= if  cr  then 
+      BLUE. i 3 .hex  1 spaces  i RESTORE. attribute+  1234 .  RESTORE.  2 spaces  
+   loop 
+;
+
+: .Len ( u -- )   dup  .  1023 + 1024 /  ."   = "  .  ." Ki bytes"  ;
+
+\ like +! , but OR's the bits in u into the variable
+: +or ( u a -- )   >r  r@ @ or r> ! ;
+
+\ like +! , but AND's out the bits in u from the variable
+: -or ( u a -- )   >r -1 xor  r@ @ and r> ! ;
+
+: v+ ( n1 n2 n -- n1+n n2+n )   >r  r@ +  swap r> +  swap ;
+
+\ move to the given column number
+: ToColumn ( u -- )   get-xy drop - 1 max 200 min  spaces ;
+
+: struct ( a c -- a' )    over  CONSTANT + ;
+
+\ dump on the same line
+: dumpL ( a n -- )   0 max  120 min  space  dup 2.hex ."  |  " over + swap ?do  i c@  2.hex space  loop ; 
+
+
+MAX_PATH constant |SaveFilename| 
+|SaveFilename| Buffer: SaveFilename
+
+: InitSaveFilename ( -- )    Acronym SaveFilename place   s" _SaveFile.txt" SaveFilename append ;
+InitSaveFilename
+
+\ OPENDLLS 
+\ LIBRARY KERNEL32.DLL
+\ 0 IMPORT: GetLastError
+8 IMPORT: DeviceIoControl
+
+LIBRARY HID.DLL
+2 IMPORT: HidD_GetAttributes
+2 IMPORT: HidD_GetPreparsedData
+3 IMPORT: HidD_SetNumInputBuffers
+2 IMPORT: HidP_GetCaps           
+1 IMPORT: HidD_FreePreparsedData 
+4 IMPORT: HidP_GetValueCaps
+8 IMPORT: HidP_GetUsageValue
+9 IMPORT: HidP_GetUsageValueArray
+6 IMPORT: HidP_GetData
+6 IMPORT: HidP_SetData
+3 IMPORT: HidD_GetProductString
+3 IMPORT: HidD_GetManufacturerString
+1 IMPORT: HidD_GetHidGuid
+
+3 IMPORT: HidD_SetOutputReport
+3 IMPORT: HidD_GetInputReport
+
+3 IMPORT: HidD_SetFeature        
+3 IMPORT: HidD_GetFeature        
+
+\ LIBRARY USER32.DLL
+3 IMPORT: RegisterDeviceNotification \ required for HID detection
+1 IMPORT: UnregisterDeviceNotification
+
+variable lMouse  0 lMouse !
+
+$100 Buffer: MyHIDguid[]
+
+
+\ *****************************************************************************
+\ constants
+\ *****************************************************************************
+
+\ Flags controlling what is included in the device information set built by 
+\ SetupDiGetClassDevs
+$01 CONSTANT DIGCF_DEFAULT          \ only valid with DIGCF_DEVICEINTERFACE; only the device that is associated with the system default device interface
+$02 CONSTANT DIGCF_PRESENT          \ only devices that are currently present in a system
+$04 CONSTANT DIGCF_ALLCLASSES       \ list of installed devices for all device setup classes or all device interface classes
+$08 CONSTANT DIGCF_PROFILE          \ only devices that are a part of the current hardware profile
+$10 CONSTANT DIGCF_DEVICEINTERFACE  \ devices that support device interfaces for the specified device interface classes.
+
+\ From http://msdn.microsoft.com/en-us/library/aa363858%28VS.85%29.aspx
+$00000004 constant OPEN_ALWAYS 
+$08000000 constant FILE_FLAG_SEQUENTIAL_SCAN    
+$40000000 constant FILE_FLAG_OVERLAPPED         
+$00000080 constant FILE_ATTRIBUTE_NORMAL        \ The file does not have other attributes set. This attribute is valid only if used alone.
+
+$80000000 constant GENERIC_READ          
+$40000000 constant GENERIC_WRITE         
+$00000001 constant FILE_SHARE_READ         
+$00000002 constant FILE_SHARE_WRITE        
+
+\ *****************************************************************************
+\ control codes
+\ *****************************************************************************
+\ some useful constants
+$07   constant IOCTL_DISK_BASE 
+$00   constant FILE_ANY_ACCESS
+$22   constant FILE_DEVICE_USB         
+$00   constant USB_IOCTL_INTERNAL_INDEX      
+$00FF constant USB_IOCTL_INDEX                
+$00   constant METHOD_BUFFERED
+$01   constant METHOD_IN_DIRECT 
+$02   constant METHOD_OUT_DIRECT  
+$03   constant METHOD_NEITHER  
+
+$00000001 constant FILE_DEVICE_BEEP                
+$00000002 constant FILE_DEVICE_CD_ROM              
+$00000003 constant FILE_DEVICE_CD_ROM_FILE_SYSTEM  
+$00000004 constant FILE_DEVICE_CONTROLLER          
+$00000005 constant FILE_DEVICE_DATALINK            
+$00000006 constant FILE_DEVICE_DFS                 
+$00000007 constant FILE_DEVICE_DISK                
+$00000008 constant FILE_DEVICE_DISK_FILE_SYSTEM    
+$00000009 constant FILE_DEVICE_FILE_SYSTEM         
+$0000000a constant FILE_DEVICE_INPORT_PORT         
+$0000000b constant FILE_DEVICE_KEYBOARD            
+$0000000c constant FILE_DEVICE_MAILSLOT            
+$0000000d constant FILE_DEVICE_MIDI_IN             
+$0000000e constant FILE_DEVICE_MIDI_OUT            
+$0000000f constant FILE_DEVICE_MOUSE               
+$00000010 constant FILE_DEVICE_MULTI_UNC_PROVIDER  
+$00000011 constant FILE_DEVICE_NAMED_PIPE          
+$00000012 constant FILE_DEVICE_NETWORK             
+$00000013 constant FILE_DEVICE_NETWORK_BROWSER     
+$00000014 constant FILE_DEVICE_NETWORK_FILE_SYSTEM 
+$00000015 constant FILE_DEVICE_NULL                
+$00000016 constant FILE_DEVICE_PARALLEL_PORT       
+$00000017 constant FILE_DEVICE_PHYSICAL_NETCARD    
+$00000018 constant FILE_DEVICE_PRINTER             
+$00000019 constant FILE_DEVICE_SCANNER             
+$0000001a constant FILE_DEVICE_SERIAL_MOUSE_PORT   
+$0000001b constant FILE_DEVICE_SERIAL_PORT         
+$0000001c constant FILE_DEVICE_SCREEN              
+$0000001d constant FILE_DEVICE_SOUND               
+$0000001e constant FILE_DEVICE_STREAMS             
+$0000001f constant FILE_DEVICE_TAPE                
+$00000020 constant FILE_DEVICE_TAPE_FILE_SYSTEM    
+$00000021 constant FILE_DEVICE_TRANSPORT           
+$00000022 constant FILE_DEVICE_UNKNOWN             
+$00000023 constant FILE_DEVICE_VIDEO               
+$00000024 constant FILE_DEVICE_VIRTUAL_DISK        
+$00000025 constant FILE_DEVICE_WAVE_IN             
+$00000026 constant FILE_DEVICE_WAVE_OUT            
+$00000027 constant FILE_DEVICE_8042_PORT           
+$00000028 constant FILE_DEVICE_NETWORK_REDIRECTOR  
+$00000029 constant FILE_DEVICE_BATTERY             
+$0000002a constant FILE_DEVICE_BUS_EXTENDER        
+$0000002b constant FILE_DEVICE_MODEM               
+
+{ 
+\ convert four parameters to the corresponding control code
+\ ( useful if you want more control codes - the ones following are
+\ pre-calculated )
+: CTL_CODE ( DeviceType Function Method Acccess -- u )
+   ( Access) #14 lshift 
+   ( Method) or
+   swap ( Function) 2 lshift or
+   swap ( DeviceType) #16 lshift or
+;
+\ example usage :
+\ #define FILE_DEVICE_MASS_STORAGE        0x0000002d
+\ #define IOCTL_STORAGE_BASE FILE_DEVICE_MASS_STORAGE
+\ IOCTL_STORAGE_BASE  0x0500 METHOD_BUFFERED  FILE_ANY_ACCESS
+\ $0000002d $0500 0 0 CTL_CODE hex u. decimal 
+\ #define FILE_DEVICE_SERIAL_PORT         0x0000001b
+\ $0000001b #21 0 0 CTL_CODE hex u.
+} 
+\ some I/O control codes 
+
+  $222028 constant IOCTL_USBIO_SEND_PACKET
+
+  $1B0054 constant IOCTL_SERIAL_GET_LINE_CONTROL
+
+  $2D1400 constant IOCTL_STORAGE_QUERY_PROPERTY   
+  
+  $0700A0 constant IOCTL_DISK_GET_DRIVE_GEOMETRY_EX
+
+  $220003 constant IOCTL_INTERNAL_USB_SUBMIT_URB
+  $220007 constant IOCTL_INTERNAL_USB_RESET_PORT
+  $22000F constant IOCTL_INTERNAL_USB_GET_ROOTHUB_PDO
+  $220013 constant IOCTL_INTERNAL_USB_GET_PORT_STATUS
+  $220017 constant IOCTL_INTERNAL_USB_ENABLE_PORT
+  $22001B constant IOCTL_INTERNAL_USB_GET_HUB_COUNT
+  $22001F constant IOCTL_INTERNAL_USB_CYCLE_PORT
+
+  $220020 constant IOCTL_INTERNAL_USB_GET_HUB_NAME
+
+  $2203FC constant IOCTL_USB_HCD_GET_STATS_1
+  $220428 constant IOCTL_USB_HCD_GET_STATS_2
+  $220400 constant IOCTL_USB_DIAGNOSTIC_MODE_ON
+  $220404 constant IOCTL_USB_DIAGNOSTIC_MODE_OFF
+  $220408 constant IOCTL_USB_GET_ROOT_HUB_NAME
+  $220408 constant IOCTL_USB_GET_NODE_INFORMATION
+  $22040C constant IOCTL_USB_GET_NODE_CONNECTION_INFORMATION
+  $220410 constant IOCTL_USB_GET_DESCRIPTOR_FROM_NODE_CONNECTION
+  $220414 constant IOCTL_USB_GET_NODE_CONNECTION_NAME
+  $220418 constant IOCTL_USB_DIAG_IGNORE_HUBS_ON
+  $22041C constant IOCTL_USB_DIAG_IGNORE_HUBS_OFF
+  $220420 constant IOCTL_USB_GET_NODE_CONNECTION_DRIVERKEY_NAME
+  $220420 constant IOCTL_INTERNAL_USB_GET_BUS_INFO
+  $220424 constant IOCTL_GET_HCD_DRIVERKEY_NAME
+  $220424 constant IOCTL_INTERNAL_USB_GET_CONTROLLER_NAME
+  $220428 constant IOCTL_INTERNAL_USB_GET_BUSGUID_INFO
+  $22042C constant IOCTL_INTERNAL_USB_GET_PARENT_HUB_INFO
+  $220430 constant IOCTL_USB_HCD_DISABLE_PORT
+  $220434 constant IOCTL_USB_HCD_ENABLE_PORT
+
+
+\ Macro for defining HID ioctls
+\ #define HID_CTL_CODE(id)    \
+\    CTL_CODE(FILE_DEVICE_KEYBOARD, (id), METHOD_NEITHER, FILE_ANY_ACCESS)
+: HID_CTL_CODE ( id -- u )
+   ( Access) FILE_ANY_ACCESS #14 lshift 
+   ( Method) METHOD_NEITHER or
+   ( Function) 2 lshift or
+   FILE_DEVICE_KEYBOARD ( DeviceType) #16 lshift or
+;
+
+\ #define HID_BUFFER_CTL_CODE(id)  \
+\    CTL_CODE(FILE_DEVICE_KEYBOARD, (id), METHOD_BUFFERED, FILE_ANY_ACCESS)
+: HID_BUFFER_CTL_CODE ( id -- u )
+   ( Access) FILE_ANY_ACCESS #14 lshift 
+   ( Method) METHOD_BUFFERED or
+   ( Function) 2 lshift or
+   FILE_DEVICE_KEYBOARD ( DeviceType) #16 lshift or
+;
+
+\ #define HID_IN_CTL_CODE(id)  \
+\     CTL_CODE(FILE_DEVICE_KEYBOARD, (id), METHOD_IN_DIRECT, FILE_ANY_ACCESS)
+: HID_IN_CTL_CODE ( id -- u )
+   ( Access) FILE_ANY_ACCESS #14 lshift 
+   ( Method) METHOD_IN_DIRECT or
+   ( Function) 2 lshift or
+   FILE_DEVICE_KEYBOARD ( DeviceType) #16 lshift or
+;
+
+\ #define HID_OUT_CTL_CODE(id)  \
+\     CTL_CODE(FILE_DEVICE_KEYBOARD, (id), METHOD_OUT_DIRECT, FILE_ANY_ACCESS)
+: HID_OUT_CTL_CODE ( id -- u )
+   ( Access) FILE_ANY_ACCESS #14 lshift 
+   ( Method) METHOD_OUT_DIRECT or
+   ( Function) 2 lshift or
+   FILE_DEVICE_KEYBOARD ( DeviceType) #16 lshift or
+;
+
+\ IOCTLs supported by the upper edge of the HID class driver
+#100 HID_BUFFER_CTL_CODE constant IOCTL_HID_GET_DRIVER_CONFIG             
+#101 HID_BUFFER_CTL_CODE constant IOCTL_HID_SET_DRIVER_CONFIG             
+#102 HID_BUFFER_CTL_CODE constant IOCTL_HID_GET_POLL_FREQUENCY_MSEC       
+#103 HID_BUFFER_CTL_CODE constant IOCTL_HID_SET_POLL_FREQUENCY_MSEC       
+#104 HID_BUFFER_CTL_CODE constant IOCTL_GET_NUM_DEVICE_INPUT_BUFFERS      
+#105 HID_BUFFER_CTL_CODE constant IOCTL_SET_NUM_DEVICE_INPUT_BUFFERS      
+#106 HID_BUFFER_CTL_CODE constant IOCTL_HID_GET_COLLECTION_INFORMATION    
+
+#100 HID_CTL_CODE  constant IOCTL_HID_GET_COLLECTION_DESCRIPTOR     
+#101 HID_CTL_CODE  constant IOCTL_HID_FLUSH_QUEUE                   
+
+#100 HID_IN_CTL_CODE  constant IOCTL_HID_SET_FEATURE 
+   
+#100 HID_OUT_CTL_CODE constant IOCTL_HID_GET_FEATURE                 
+#102 HID_OUT_CTL_CODE constant IOCTL_GET_PHYSICAL_DESCRIPTOR         
+#103 HID_OUT_CTL_CODE constant IOCTL_HID_GET_HARDWARE_ID             
+
+\ No more IOCTL_HID_GET_FRIENDLY_NAME - use one of the following:
+#110 HID_OUT_CTL_CODE constant IOCTL_HID_GET_MANUFACTURER_STRING      
+#111 HID_OUT_CTL_CODE constant IOCTL_HID_GET_PRODUCT_STRING           
+#112 HID_OUT_CTL_CODE constant IOCTL_HID_GET_SERIALNUMBER_STRING      
+                     
+#120 HID_OUT_CTL_CODE constant IOCTL_HID_GET_INDEXED_STRING           
+
+{ 
+// FACILITY_HID_ERROR_CODE defined in ntstatus.h
+#define FACILITY_HID_ERROR_CODE 0x11
+
+#define HIDP_ERROR_CODES(SEV, CODE) \
+        ((NTSTATUS) (((SEV) << 28) | (FACILITY_HID_ERROR_CODE << 16) | (CODE)))
+}
+: HIDP_ERROR_CODES ( sev code -- u )
+   ( sev ) swap #28 lshift 
+   $110000  ( FACILITY_HID_ERROR_CODE << 16) or
+   ( code ) or
+;
+
+$00 $00 HIDP_ERROR_CODES constant  HIDP_STATUS_SUCCESS
+$08 $01 HIDP_ERROR_CODES constant  HIDP_STATUS_NULL                     
+$0C $01 HIDP_ERROR_CODES constant  HIDP_STATUS_INVALID_PREPARSED_DATA   
+$0C $02 HIDP_ERROR_CODES constant  HIDP_STATUS_INVALID_REPORT_TYPE      
+$0C $03 HIDP_ERROR_CODES constant  HIDP_STATUS_INVALID_REPORT_LENGTH    
+$0C $04 HIDP_ERROR_CODES constant  HIDP_STATUS_USAGE_NOT_FOUND          
+$0C $05 HIDP_ERROR_CODES constant  HIDP_STATUS_VALUE_OUT_OF_RANGE       
+$0C $06 HIDP_ERROR_CODES constant  HIDP_STATUS_BAD_LOG_PHY_VALUES       
+$0C $07 HIDP_ERROR_CODES constant  HIDP_STATUS_BUFFER_TOO_SMALL         
+$0C $08 HIDP_ERROR_CODES constant  HIDP_STATUS_INTERNAL_ERROR           
+\ $0C $09 HIDP_ERROR_CODES constant  HIDP_STATUS_I8042_TRANS_UNKNOWN   
+$0C $09 HIDP_ERROR_CODES constant  HIDP_STATUS_I8242_TRANS_UNKNOWN   
+$0C $0A HIDP_ERROR_CODES constant  HIDP_STATUS_INCOMPATIBLE_REPORT_ID   
+$0C $0B HIDP_ERROR_CODES constant  HIDP_STATUS_NOT_VALUE_ARRAY          
+$0C $0C HIDP_ERROR_CODES constant  HIDP_STATUS_IS_VALUE_ARRAY           
+$0C $0D HIDP_ERROR_CODES constant  HIDP_STATUS_DATA_INDEX_NOT_FOUND     
+$0C $0E HIDP_ERROR_CODES constant  HIDP_STATUS_DATA_INDEX_OUT_OF_RANGE  
+$0C $0F HIDP_ERROR_CODES constant  HIDP_STATUS_BUTTON_NOT_PRESSED       
+$0C $10 HIDP_ERROR_CODES constant  HIDP_STATUS_REPORT_DOES_NOT_EXIST    
+$0C $20 HIDP_ERROR_CODES constant  HIDP_STATUS_NOT_IMPLEMENTED          
+
+\ *****************************************************************************
+\ Display  GetLastError  values
+\ *****************************************************************************
+\ show the error and abort
+: ShowHIDerror ( u -- )  \ 
+   dup HIDP_STATUS_SUCCESS = if  
+      drop  
+      exit  \ Not an error at all, so do nothing...  
+   then    
+
+   RED.  
+   ."  HIDerror = " dup 4 .hex  2 spaces 
+   case
+\   HIDP_STATUS_SUCCESS                 of  ." HIDP_STATUS_SUCCESS "                endof
+   HIDP_STATUS_NULL                    of  ." HIDP_STATUS_NULL"                    endof
+   HIDP_STATUS_INVALID_PREPARSED_DATA  of  ." HIDP_STATUS_INVALID_PREPARSED_DATA"  endof \ The system cannot find the file specified.
+   HIDP_STATUS_INVALID_REPORT_TYPE     of  ." HIDP_STATUS_INVALID_REPORT_TYPE"     endof
+   HIDP_STATUS_INVALID_REPORT_LENGTH   of  ." HIDP_STATUS_INVALID_REPORT_LENGTH"   endof
+   HIDP_STATUS_USAGE_NOT_FOUND         of  ." HIDP_STATUS_USAGE_NOT_FOUND"         endof
+   HIDP_STATUS_VALUE_OUT_OF_RANGE      of  ." HIDP_STATUS_VALUE_OUT_OF_RANGE"      endof
+   HIDP_STATUS_BAD_LOG_PHY_VALUES      of  ." HIDP_STATUS_BAD_LOG_PHY_VALUES"      endof
+   HIDP_STATUS_BUFFER_TOO_SMALL        of  ." HIDP_STATUS_BUFFER_TOO_SMALL"        endof
+   HIDP_STATUS_INTERNAL_ERROR          of  ." HIDP_STATUS_INTERNAL_ERROR"          endof
+   HIDP_STATUS_I8242_TRANS_UNKNOWN     of  ." HIDP_STATUS_I8242_TRANS_UNKNOWN"     endof
+   HIDP_STATUS_INCOMPATIBLE_REPORT_ID  of  ." HIDP_STATUS_INCOMPATIBLE_REPORT_ID"  endof
+   HIDP_STATUS_NOT_VALUE_ARRAY         of  ." HIDP_STATUS_NOT_VALUE_ARRAY"         endof
+   HIDP_STATUS_IS_VALUE_ARRAY          of  ." HIDP_STATUS_IS_VALUE_ARRAY"          endof
+   HIDP_STATUS_DATA_INDEX_NOT_FOUND    of  ." HIDP_STATUS_DATA_INDEX_NOT_FOUND"    endof
+   HIDP_STATUS_DATA_INDEX_OUT_OF_RANGE of  ." HIDP_STATUS_DATA_INDEX_OUT_OF_RANGE" endof
+   HIDP_STATUS_BUTTON_NOT_PRESSED      of  ." HIDP_STATUS_BUTTON_NOT_PRESSED"      endof 
+   HIDP_STATUS_REPORT_DOES_NOT_EXIST   of  ." HIDP_STATUS_REPORT_DOES_NOT_EXIST"   endof 
+   HIDP_STATUS_NOT_IMPLEMENTED         of  ." HIDP_STATUS_NOT_IMPLEMENTED"         endof 
+         ." Unknown HID error "
+   endcase      
+   RESTORE.
+;
+
+\ *****************************************************************************
+\ Display  GetLastError  values
+\ *****************************************************************************
+
+\ *****************************************************************************
+\ Windows error display using FormatMessage
+\ *****************************************************************************
+
+$200 constant |ErrorString| 
+|ErrorString| Buffer: ErrorString[]
+
+: .LastError ( n -- )   \ displays the error message text for a Win32 error code
+   dup 
+   FORMAT_MESSAGE_IGNORE_INSERTS  FORMAT_MESSAGE_FROM_SYSTEM or  FORMAT_MESSAGE_ARGUMENT_ARRAY or
+   NULL 
+   rot ( format 0 n -- )
+   0 
+   ErrorString[]
+   |ErrorString|
+   NULL
+   FormatMessage
+   ?dup if
+      ErrorString[] swap 2- 0 max  type  space 
+   then
+;
+
+\ show the error and abort
+: LastError ( -- )   
+   RED.  
+   ."  LastError = "  GetLastError .LastError
+   RESTORE.
+   abort 
+;
+
+\ From DBT.H - Equates for WM_DEVICECHANGE and BroadcastSystemMessage
+$0219 constant WM_DEVICECHANGE 
+ 
+\ DEV_BROADCAST_HDR Structure
+$00 constant DBT_DEVTYP_OEM              \ OEM- or IHV-defined device type.
+$01 constant DBT_DEVTYP_DEVNODE          \ devnode number
+$02 constant DBT_DEVTYP_VOLUME           \ logical volume
+$03 constant DBT_DEVTYP_PORT             \ port device (serial or parallel).
+$04 constant DBT_DEVTYP_NET              \ network resource
+$05 constant DBT_DEVTYP_DEVICEINTERFACE  \ Class of devices.
+$06 constant DBT_DEVTYP_HANDLE           \ File system handle.
+
+\ WM_DEVICECHANGE wParam specifies event, lParam specifies data
+$0007 constant DBT_DEVNODES_CHANGED        \ device has been added or removed CBLPARAM constant zero
+$0017 constant DBT_QUERYCHANGECONFIG       \ 
+$0018 constant DBT_CONFIGCHANGED           \ 
+$0019 constant DBT_CONFIGCHANGECANCELED    \ 
+$001B constant DBT_MONITORCHANGE           \ 
+$0020 constant DBT_SHELLLOGGEDON           \ 
+$0022 constant DBT_CONFIGMGAPI32           \    
+$0023 constant DBT_VXDINITCOMPLETE         \    
+$0047 constant DBT_NO_DISK_SPACE              
+$0048 constant DBT_LOW_DISK_SPACE             
+$7FFF constant DBT_CONFIGMGPRIVATE            
+$8000 constant DBT_DEVICEARRIVAL           \ system detected a new device
+$8001 constant DBT_DEVICEQUERYREMOVE       \ wants to remove, may fail   
+$8002 constant DBT_DEVICEQUERYREMOVEFAILED \ removal aborted             
+$8003 constant DBT_DEVICEREMOVEPENDING     \ about to remove, still available
+$8004 constant DBT_DEVICEREMOVECOMPLETE    \ device is gone              
+$8005 constant DBT_DEVICETYPESPECIFIC      \ type specific event         
+$8006 constant DBT_CUSTOMEVENT             \ user-defined event  
+$8041 constant DBT_VOLLOCKQUERYLOCK                    
+$8042 constant DBT_VOLLOCKLOCKTAKEN    
+$8043 constant DBT_VOLLOCKLOCKFAILED   
+$8044 constant DBT_VOLLOCKQUERYUNLOCK  
+$8045 constant DBT_VOLLOCKLOCKRELEASED 
+$8046 constant DBT_VOLLOCKUNLOCKFAILED 
+$FFFF constant DBT_USERDEFINED             \ 
+
+\ Drive or media, networked or not
+$01 constant DBTF_MEDIA     \ if set Media changed, else physical drive changed
+$02 constant DBTF_NET       \ Network volume
+
+$00 constant DEVICE_NOTIFY_WINDOW_HANDLE
+$01 constant DEVICE_NOTIFY_SERVICE_HANDLE
+$04 constant DEVICE_NOTIFY_ALL_INTERFACE_CLASSES
+
+\ *****************************************************************************
+\ Display the GUID in the obfuscated form
+\ *****************************************************************************
+
+\ display a binary format GUID in the usually published text form
+: .BinaryGUID ( a -- )
+   >r
+   r@ @ 8.hex
+   ." -"
+   r@ 4 + w@ 4.hex
+   ." -"
+   r@ 6 + w@ 4.hex
+   ." -"
+   r@ 8 + w@ >< 4.hex   \ why the byte swap? Just don't ask...
+   ." -"
+   r> $0A + 6 0 do  dup c@ 2.hex  1+  loop  drop 
+;
+
+: ShowHidGuid ( -- )
+   MyHIDguid[] $100 erase
+   MyHIDguid[] HidD_GetHidGuid
+   MyHIDguid[] .BinaryGUID
+   drop \ don't know why
+;
+
+decimal
+\ HID_GUID = 4D1E55B2-F16F-11CF-88CB-001111000030
+
+\ *****************************************************************************
+\ Events queue, stored here, to be processed by the main program
+\ *****************************************************************************
+
+variable DriveBitmap    \ the bitmap form of the Drives currently connected
+variable DriveLetter    \ the drive letter assigned to the USB drive by Windows
+
+ 0
+   4 struct dbcv_size 
+   4 struct dbcv_devicetype 
+   4 struct dbcv_reserved 
+   4 struct dbcv_unitmask 
+   2 struct dbcv_flags 
+constant |DEV_BROADCAST_VOLUME|
+
+|DEV_BROADCAST_VOLUME| Buffer: DevBroadcastVolumeBuffer 
+ 
+variable devBroadcastWparam               \ the wparam event type value from, the event queue
+variable devBroadcastDeviceinterfacePtr   \ pointer to the event's wparam
+
+: DEV_BROADCAST_DEV: ( n -- n' )   create  over , +  does>  @ devBroadcastDeviceinterfacePtr @ + ;
+
+\ DEV_BROADCAST_DEVICEINTERFACE  the wparam
+0
+   4    DEV_BROADCAST_DEV: devint.size         \  0                                                 
+   4    DEV_BROADCAST_DEV: devint.devicetype   \  4                                                 
+   4    DEV_BROADCAST_DEV: devint.reserved     \  8                                                 
+   $10  DEV_BROADCAST_DEV: devint.classguid    \ 0C                                                 
+   $100 DEV_BROADCAST_DEV: devint.name         \ 1C    Null terminated "filename" , we save up to a fixed amount 
+constant |DEV_BROADCAST_DEVICEINTERFACE|
+
+: Event.MediaType ( -- a )   devint.classguid 4 + ;
+
+: 8.hexBlue  BLUE. 8.hex RESTORE. ;
+
+4 2** constant MAX_NUMBER_EVENTS    \ must be a power of 2
+     
+\ For each event the wParam *value* and lParam *data contents* are copied into the event queue
+cell |DEV_BROADCAST_DEVICEINTERFACE| +  constant |Event|
+
+|Event| MAX_NUMBER_EVENTS *  Buffer: Event[]
+
+variable ptrEventOut  \ display pointer 
+variable ptrEventIn  \ event write pointer
+
+: >Event ( n -- a )   MAX_NUMBER_EVENTS 1- and  |Event| * Event[] + ;
+
+\ put the event into the event FIFO queue
+: (EventIn) ( lParam wParam -- )   
+   ptrEventIn @ >Event  
+   >r  
+   ( wParam ) r@ !         \ save the wparam event type value
+   ( lParam ) r> cell+ |DEV_BROADCAST_DEVICEINTERFACE| cmove   \ save the lparam data  
+   1 ptrEventIn +! 
+; 
+
+: EventIn ( lParam wParam -- )   
+   ['] (EventIn) catch drop
+;
+
+: ShowEventData
+   cr
+   cr  ." DEV_BROADCAST_DEVICEINTERFACE  the lparam data "
+   cr  ."    devint.size       "  devint.size        dup 8.hexBlue space  @ 8.hexBlue
+   cr  ."    devint.devicetype "  devint.devicetype  dup 8.hexBlue space  @ 8.hexBlue
+   cr  ."    devint.reserved   "  devint.reserved    dup 8.hexBlue space  @ 8.hexBlue
+   cr  ."    devint.classguid  "  devint.classguid   dup 8.hexBlue space  BLUE. .BinaryGUID  RESTORE. 
+   cr  ."    devint.name       "  devint.name        dup 8.hexBlue space  @ 8.hexBlue
+   cr
+   cr  ." devBroadcastWparam  the wparam value = " devBroadcastWparam @ 8.hexBlue
+   cr
+   cr  ." Event.MediaType "  Event.MediaType dup 8.hexBlue space  @ 8.hexBlue   
+   cr
+;
+
+\ save the event details here :
+$100 Buffer: LastDevint.name[]
+variable LastDevBroadcastWparam
+variable LastDevint.devicetype 
+variable LastDevint.classguid
+
+$100 Buffer: LastDevintVolume.name[]
+
+\ read an event from the event FIFO queue. The pointer to the events "filename" is saved
+: EventOut ( -- )   
+   ptrEventOut @ >Event  
+   dup @ devBroadcastWparam !
+   cell+ devBroadcastDeviceinterfacePtr ! 
+   1 ptrEventOut +! 
+
+   \ This event is when a DeviceInterface Disk has been plugged in
+   \ so we save everything for display later by ShowDeviceDetails
+   devint.name zcount 
+   dup 4 > if  
+      LastDevint.name[] $100 erase  \ for null terminator
+      LastDevint.name[] place
+   else
+      2drop
+   then
+   devBroadcastWparam @ LastDevBroadcastWparam !
+   devint.devicetype  @ LastDevint.devicetype !
+   devint.classguid @ LastDevint.classguid !
+\   -1 DeviceInserted !     \ and note that the disk has been inserted
+\   0 SectorSourceFile !    \ display data from the inserted device, not from a file
+\   0 SectorDestinationFloppy !
+\ un-comment this to see the event data
+\    ShowEventData
+; 
+
+: #Events ( - n )  ptrEventIn @  ptrEventOut @ -  MAX_NUMBER_EVENTS 1- and ;
+
+: InitEvents
+   0 ptrEventOut !
+   0 ptrEventIn !
+   0 DriveBitmap !
+   LastDevint.name[] $100 erase  \ 
+   Event[] cell+ devBroadcastDeviceinterfacePtr !
+\   Event[] |Event| MAX_NUMBER_EVENTS * erase
+;
+InitEvents
+
+\ *****************************************************************************
+\ Device insertion and removal
+\ *****************************************************************************
+
+variable USBneedsToBeReInserted
+
+variable UnitMask
+
+variable #CONNECTED          #0 #CONNECTED !
+variable #DISCONNECTED    #0 #DISCONNECTED !
+variable #DIFF
+
+\ access the data in the structure in lParam
+: GetDeviceType  ( -- u )   lParam cell + @ ;
+: GetDBCVflags ( -- u )   lParam 4 cells + @ ;
+: GetUnitMask ( -- )   lParam $0C cells + @  UnitMask ! ;
+
+: OnDeviceChange ( -- 0 )
+\    wParam DBT_DEVICEARRIVAL DBT_VOLLOCKUNLOCKFAILED 1+ within if
+    wParam DBT_DEVICEARRIVAL = 
+    wParam DBT_DEVICEREMOVECOMPLETE = or if
+\      GetDeviceType DBT_DEVTYP_DEVICEINTERFACE = if
+\      GetDeviceType DBT_DEVTYP_VOLUME = if
+         lParam wParam EventIn
+\      then
+    then
+
+    wParam case
+      DBT_DEVICEARRIVAL of 
+         GetDeviceType DBT_DEVTYP_VOLUME = if \ Volume type, so determine the Drive letter
+            lParam dbcv_unitmask + @ DriveBitmap !    \ save the drive bitmap info from the volume event
+         then 
+         GetDeviceType DBT_DEVTYP_DEVICEINTERFACE = if 
+\            0 DriveBitmap !   \ a new USB disk drive has been inserted, so clear the drive letter and wait for a Volume event
+          then 
+
+\            GetDBCVflags  DBTF_MEDIA and 0= if \ Physical 
+\               cr ." Device : Physical Volume arrived "
+\               GetUnitMask
+               1 #CONNECTED +!
+\            then
+\         then
+         0 USBneedsToBeReInserted !  \ the drive must be removed before copying the kernel file
+      endof
+      DBT_DEVICEREMOVECOMPLETE of 
+          0 DriveBitmap ! \ clear the drive letter when a disk is removed
+\         GetDeviceType DBT_DEVTYP_VOLUME = if \ Volume   
+\            GetDBCVflags  DBTF_MEDIA and 0= if \ Physical 
+\               cr ." Physical Volume removed "
+               1 #DISCONNECTED +!
+\            then
+\         then
+         0 USBneedsToBeReInserted !  \ the drive must be removed before copying the kernel file
+      endof
+      drop
+   endcase
+   #CONNECTED @ #DISCONNECTED @ - #DIFF !
+   0
+;
+
+
+\ *****************************************************************************
+\ GUID table
+\ The GUID table has n entries, each with three fields :
+\ The 16 byte binary value ( the address is passed to Windows )
+\ The value in the published text format ( obfuscated version of the binary )
+\ The description of the GUID ( for the human reader )
+\ Each entry has a Forth word named GUID_XXXXXXXXXXXXXXX
+\ which is taken from the first word of the description
+\ *****************************************************************************
+
+#16 constant |MyGUID|
+|MyGUID| Buffer: MyGUID
+
+variable pUSBguidEntry  \ pointer to address in GUID table binary field
+
+\ convert two hex digits at a into a number and store it in the USBguid array
+: OneByte ( a -- )   
+   base @ >r  hex 2 NUMBER?  r> base !  
+   drop  \ discard the number size - it will be 1
+   pUSBguidEntry @ c!
+   1 pUSBguidEntry +!
+;
+
+\ Convert a Microsoft device interface class 36 byte string ( a n -- ) into
+\ the corresponding 16 byte Globally Unique IDentifier ( GUID ) for that class
+\ in the GUID table at address a2
+: ToMyGUID ( a n -- )
+    MyGUID pUSBguidEntry !
+    #36 = not if  cr ." Wrong length string! " abort  then
+    >r
+    r@ 6 + OneByte 
+    r@ 4 + OneByte 
+    r@ 2 + OneByte 
+    r@ 0 + OneByte 
+
+    r@ 11 + OneByte
+    r@ 09 + OneByte
+
+    r@ 16 + OneByte
+    r@ 14 + OneByte
+
+    r@ 19 + OneByte  \ why are these swapped? 
+    r@ 21 + OneByte
+
+    r@ 24 +  6 0 do  dup OneByte  2+  loop  drop
+    r> drop
+;
+
+\ *****************************************************************************
+\ Register the Window to receive device notifications
+\ These are picked up by WM_DEVICECHANGE
+\ Some device classes are sent automatically - HID is not, so
+\ needs to be registered
+\ *****************************************************************************
+
+$20 constant MAX_NUMBER_REGISTRATIONS \ must be a power of 2
+
+$20 constant |DevBroadcastDeviceInterface|
+|DevBroadcastDeviceInterface| Buffer: DevBroadcastDeviceInterface[]
+
+MAX_NUMBER_REGISTRATIONS cells Buffer: DeviceNotificationHandle[]     
+
+variable ptrDeviceNotificationHandle 
+
+: DeviceNotificationHandle ( -- a )
+   DeviceNotificationHandle[] 
+   ptrDeviceNotificationHandle @ 
+   MAX_NUMBER_REGISTRATIONS 1- and
+   cells + 
+;
+
+: UnregisterForDeviceNotification
+   DeviceNotificationHandle @ ?dup if
+      UnregisterDeviceNotification 0= if  LastError  then
+   then
+   0 DeviceNotificationHandle !
+   1 ptrDeviceNotificationHandle +!
+;
+
+: UnregisterForDeviceNotifications
+   0 ptrDeviceNotificationHandle !
+   MAX_NUMBER_REGISTRATIONS 0 do  
+      UnregisterForDeviceNotification  
+   loop 
+;
+
+\ Request to receive messages when a device is attached or removed
+\ a n is the 36 byte obfuscated GUID string for the class of device
+: RegisterForDeviceNotification ( a n -- )
+   0 DeviceNotificationHandle !
+   ( a n ) ToMyGUID
+   DevBroadcastDeviceInterface[] |DevBroadcastDeviceInterface| erase
+   |DevBroadcastDeviceInterface| DevBroadcastDeviceInterface[] !
+   DBT_DEVTYP_DEVICEINTERFACE DevBroadcastDeviceInterface[] 4 + !
+   MyGUID DevBroadcastDeviceInterface[] $0C + $10 move
+   HWND
+   DevBroadcastDeviceInterface[] 
+   DEVICE_NOTIFY_WINDOW_HANDLE
+   RegisterDeviceNotification
+   dup 0= if  drop  cr ." RegisterDeviceNotification = " LastError  then
+   ?dup if  
+      DeviceNotificationHandle !  
+      1 ptrDeviceNotificationHandle +! \ use the next handle next time round
+      ptrDeviceNotificationHandle @ MAX_NUMBER_REGISTRATIONS > abort" Please increase MAX_NUMBER_REGISTRATIONS !!!"
+   then
+;
+
+: RegisterForDeviceNotifications
+   \ Note : no more than MAX_NUMBER_REGISTRATIONS of these :
+   \ GUID_DEVINTERFACE_HID  Human Interface Device
+   S" 4D1E55B2-F16F-11CF-88CB-001111000030" RegisterForDeviceNotification 
+   \ GUID_DEVINTERFACE_USB_DEVICE
+   S" A5DCBF10-6530-11D2-901F-00C04FB951ED" RegisterForDeviceNotification 
+   \ GUID_DEVINTERFACE_MOUSE"
+   S" 378DE44C-56EF-11D1-BC8C-00A0C91405DD" RegisterForDeviceNotification 
+   \ GUID_DEVINTERFACE_KEYBOARD"
+   S" 884B96C3-56EF-11D1-BC8C-00A0C91405DD" RegisterForDeviceNotification 
+   \ GUID_DEVINTERFACE_COMPORT
+   S" 86E0D1E0-8089-11D0-9CE4-08003E301F73" RegisterForDeviceNotification 
+   \ GUID_DEVINTERFACE_STORAGEPORT
+   s" 2ACCFE60-C130-11D2-B082-00A0C91EFB8B" RegisterForDeviceNotification 
+
+   \ GUID_DEVINTERFACE_DISK
+   s" 53F56307-B6BF-11D0-94F2-00A0C91EFB8B" RegisterForDeviceNotification
+   \ GUID_DEVINTERFACE_CDROM
+   s" 53F56308-B6BF-11D0-94F2-00A0C91EFB8B" RegisterForDeviceNotification
+   \ GUID_DEVINTERFACE_6309
+   s" 53F56309-B6BF-11D0-94F2-00A0C91EFB8B" RegisterForDeviceNotification   
+   \ GUID_DEVINTERFACE_PARTITION
+   s" 53F5630A-B6BF-11D0-94F2-00A0C91EFB8B" RegisterForDeviceNotification 
+   \ GUID_DEVINTERFACE_TAPE
+   s" 53F5630B-B6BF-11D0-94F2-00A0C91EFB8B" RegisterForDeviceNotification 
+   \ GUID_DEVINTERFACE_WRITEONCEDISK
+   s" 53F5630C-B6BF-11D0-94F2-00A0C91EFB8B" RegisterForDeviceNotification 
+   \ GUID_IO_VOLUME_DEVICE_INTERFACE  aka  MOUNTDEV_MOUNTED_DEVICE_GUID 
+   s" 53F5630D-B6BF-11D0-94F2-00A0C91EFB8B" RegisterForDeviceNotification 
+   \ GUID_DEVINTERFACE_630E
+   s" 53F5630E-B6BF-11D0-94F2-00A0C91EFB8B" RegisterForDeviceNotification 
+   \ GUID_DEVINTERFACE_630F
+   s" 53F5630F-B6BF-11D0-94F2-00A0C91EFB8B" RegisterForDeviceNotification 
+   \ GUID_DEVINTERFACE_MEDIUMCHANGER
+   s" 53F56310-B6BF-11D0-94F2-00A0C91EFB8B" RegisterForDeviceNotification 
+   \ GUID_DEVINTERFACE_FLOPPY
+   s" 53F56311-B6BF-11D0-94F2-00A0C91EFB8B" RegisterForDeviceNotification
+   \ GUID_DEVINTERFACE_CDCHANGER
+   s" 53F56312-B6BF-11D0-94F2-00A0C91EFB8B" RegisterForDeviceNotification
+   \ GUID_DEVINTERFACE_SMART_CARD
+   s" 07748022-E081-455E-AE94-8CAEC9CA79DC" RegisterForDeviceNotification
+   \ GUID_DEVINTERFACE_IMAGE
+   s" 6BDD1FC6-810F-11D0-BEC7-08002BE2092F" RegisterForDeviceNotification
+   \ GUID_DISPLAY_DEVICE_ARRIVAL
+   s" 1CA05180-A699-450A-9A0C-DE4FBE3DDD89" RegisterForDeviceNotification
+   \ KSCATEGORY_CAPTURE
+   s" 65E8773D-8F56-11D0-A3B9-00A0C9223196" RegisterForDeviceNotification
+   \ KSCATEGORY_VIDEO
+   s" 6994AD05-93EF-11D0-A3CC-00A0C9223196" RegisterForDeviceNotification
+;
+
+\ These are the last 32 bits of the full GUIDs, so we can use case to test for which GUID we saw
+$4D1E55B2 constant ShortGUID_HID          
+$A5DCBF10 constant ShortGUID_USB          
+$36FC9E60 constant ShortGUID_USB_Hub      
+$86E0D1E0 constant ShortGUID_COMPORT      
+$378DE44C constant ShortGUID_Mouse        
+$53F56307 constant ShortGUID_Disk         
+$53F56308 constant ShortGUID_CDROM        
+$53F56309 constant ShortGUID_6309         
+$53F5630A constant ShortGUID_Partition    
+$53F5630B constant ShortGUID_Tape         
+$53F5630C constant ShortGUID_WriteOnceDisk
+$53F5630D constant ShortGUID_Volume       
+$53F5630E constant ShortGUID_630E         
+$53F5630F constant ShortGUID_630F         
+$53F56310 constant ShortGUID_MediumChanger
+$53F56311 constant ShortGUID_Floppy       
+$53F56312 constant ShortGUID_CDchanger    
+
+: InitRegisterForDeviceNotifications
+   0 ptrDeviceNotificationHandle !
+   DeviceNotificationHandle[] MAX_NUMBER_REGISTRATIONS cells erase
+   \ do this to prevent the first WM_DEVICECHANGE message from aborting
+   \ no idea why :-(
+   S" 86E0D1E0-8089-11D0-9CE4-08003E301F73" RegisterForDeviceNotification 
+   -1 ptrDeviceNotificationHandle +! UnregisterForDeviceNotification
+;
+\ InitRegisterForDeviceNotifications
+
+\ RegisterForDeviceNotifications
+\ UnregisterForDeviceNotifications
+
+\ This links the device change message action into the SwiftForth Window
+   CONSOLE-WINDOW +ORDER \ add wordlist
+   [+SWITCH SF-MESSAGES
+      WM_DEVICECHANGE RUN:  OnDeviceChange ;
+   SWITCH]
+   CONSOLE-WINDOW -ORDER \ remove wordlist
+
+{ 
+: TTMG   MyGUID .BinaryGUID ;
+
+: InitMyGUID
+   \ GUID_BUS_TYPE_HID
+\   S" EEAF37D0-1963-47C4-AA48-72476DB7CF49" ToMyGUID
+\ GUID_DEVINTERFACE_HID  Human Interface Device
+   S" 4D1E55B2-F16F-11CF-88CB-001111000030" ToMyGUID
+;
+
+InitMyGUID
+} 
+
+
+ 
+\ *****************************************************************************
+\ USBid scans the Unix format file usb.ids to type the vendor and
+\  device ID strings.
+\  The vendor ID is searched first, then the device, assuming that the
+\  device ID will appear immediately following the vendor ID in the file.
+\  Once the vendor ID has been found, the search coninues for the
+\  device ID until the next vendor ID entry. This is determined by
+\  the first character of the line not being a tab or # ( comment ).
+\  New : Pre-compiled USB.ids file
+\ *****************************************************************************
+
+variable USB.idsFileID
+0 USB.idsFileID !
+
+: OpenUSB.idsFile 
+   s" USB.ids" r/o open-file 
+   if ." Couldn't open read file "  s" USB.ids" type space  #2001 throw  then
+   USB.idsFileID !
+;
+
+$100 constant |USB.idsLineBuffer| 
+|USB.idsLineBuffer| Buffer: USB.idsLineBuffer
+
+: USB.idsOneLine ( -- )    \ into the buffer
+   USB.idsFileID @ 0= if  OpenUSB.idsFile  then
+   USB.idsLineBuffer 1+ |USB.idsLineBuffer| USB.idsFileID @ Read-line abort" could not USB.idsOneLine from file"
+   drop
+   USB.idsLineBuffer c! \ count
+;
+
+: CloseUSB.idsFile ( -- )  
+   USB.idsFileID @ CLOSE-FILE drop 
+;
+
+32768 constant NUM_OF_NAMES
+
+: CreateUSB.idsTable
+   ( -- )
+   OpenUSB.idsFile
+   
+   NUM_OF_NAMES 10 + 0 do
+      USB.idsOneLine
+      USB.idsLineBuffer count  
+\      cr  2dup type
+\      STRING,noalign
+      HERE >R DUP C,
+      DUP ALLOT
+      R> 1+ SWAP MOVE
+\      over + swap ?do  i c@ c,  loop 
+   loop  
+   CloseUSB.idsFile
+;
+
+here
+create USB.idsStartAddress   CreateUSB.idsTable
+here 2drop \ cr .( CreateUSB.idsTable size = ) swap  - .
+
+: USB.id ( n -- c-addr n )
+   USB.idsStartAddress swap 0 ?do  count +  loop
+   count 
+;
+
+variable CurrentVID
+variable CurrentPID
+
+#128 constant |MyLine|
+|MyLine| Buffer: CurrentVIDname \ the Vendor ID's name
+|MyLine| Buffer: CurrentPIDname \ the Product ID's name
+
+16 Buffer: Pattern
+
+variable Pointer#
+
+\ convert u to a a four digit string with no leading zero blanking
+: (.4) ( u a - a n)   
+   base @ >r  hex
+   0 <#  # # # #  #> 
+   r> base ! 
+;
+\ convert u to a a four digit string with no leading zero blanking
+\ plus a TAB character at the start
+: (.4)+tab ( u - a n )   
+   base @ >r  hex
+   0 <#  # # # #  $09 hold  #> 
+   r> base ! 
+; 
+
+variable CurrentUSB.idPtr
+
+: Found? ( $ -- f )   drop  Pattern count  rot over compare(nc) 0= ;
+
+: NextUSB.id ( -- $ )   CurrentUSB.idPtr @ count +  dup  CurrentUSB.idPtr !  count ;
+
+: InitUSB.idPtr ( -- )   USB.idsStartAddress CurrentUSB.idPtr ! ;
+
+: ttusbid ( -- )   InitUSB.idPtr 30 0 do  cr  i 4 u.r 2 spaces  NextUSB.id type  loop ;
+
+
+: ScanForVendor ( -- )   
+   InitUSB.idPtr
+   CurrentVID @ (.4) Pattern place
+   begin  
+      NextUSB.id  
+   Found? until
+   CurrentUSB.idPtr @ count  4 /string  CurrentVIDname place
+;
+
+: HexDigit? ( c -- f )  \ returns true if c is a valid hex digit 0 - 9 , A - F 
+   UPPER 
+   >r
+   r@ [char] 0 [char] 9 1+ within 
+   r> [char] A [char] F 1+ within or
+;
+
+: ScanForProduct ( -- )        \ returns true if the Device ID has been found
+   CurrentPID @ (.4)+tab Pattern place \ look for this string
+   begin
+      NextUSB.id 
+      CurrentUSB.idPtr @ count drop c@ HexDigit? if  1005 throw  then  \ exit if its new Vendor line
+   Found? until
+   CurrentUSB.idPtr @ count  5 /string  CurrentPIDname place
+;
+
+
+: (ScanIDfile) ( VID PID -- )
+   CurrentPID !  CurrentVID !
+   0 CurrentVIDname c! 
+   0 CurrentPIDname c!
+   ['] ScanForVendor catch drop
+   ['] ScanForProduct catch drop
+;
+
+: ScanIDfile ( VID PID -- )
+   ['] (ScanIDfile) catch drop  
+;
+
+30 constant MAX_VIDPID_NAME_LENGTH
+
+: .VID ( -- )   
+   CYAN. CurrentVID @ 4.hex  RESTORE.
+   BLUE. CurrentVIDname  count  0 max  MAX_VIDPID_NAME_LENGTH min type  RESTORE. 
+;
+
+: .PID ( -- )  
+   CYAN. CurrentPID @ 4.hex  RESTORE.
+   BLUE.  CurrentPIDname count  0 max  MAX_VIDPID_NAME_LENGTH min type  RESTORE. 
+;
+
+: ShowIDs ( VID PID -- )   
+   ScanIDfile
+   3 ToColumn  .VID  43 ToColumn .PID 
+;
+
+: ttid1  cr $04D8 $8101 ShowIDs ;  \ valid VID and PID
+: ttid2  cr $04D8 $8102 ShowIDs ;  \ valid VID
+: ttid3  cr $F4D8 $8101 ShowIDs ;  \ valid PID
+: ttid4  cr $F4D8 $8102 ShowIDs ;  \ 
+
+: ttIDs  ttid1  ttid2  ttid3  ttid4 ;
+
+\ *****************************************************************************
+\ Generic file open and close
+\ *****************************************************************************
+variable InterfaceHandle   \ the file-like handle of the current interface
+variable ChosenFileHandle  \ the file handle of the chosen file
+variable BytesReturned     \ address of value of number of bytes returned
+
+1024 constant |MyBuffer| 
+|MyBuffer| Buffer: MyBuffer \ a buffer for data transfers
+
+: FloppyName s" \\?\USB#Vid_0409&Pid_0040#5&c4cdfc7&0&1#{a5dcbf10-6530-11d2-901f-00c04fb951ed}" ;
+
+: ttflop   FloppyName r/w OPEN-FILE ABORT" FLOPPY!" 
+   PAD 50 ROT READ-FILE  ABORT" FLOPPY READ!"  PAD swap DUMP
+;
+
+\ these are deferred so that the User Interface can be kept together further down this file
+defer WarnAboutReadFailure
+defer WarnAboutWriteProtection
+defer WarnAboutAdminRights
+
+: ShowPleaseInsertUSBdriveHelp
+   cr
+   cr ."   Please insert a USB device into a USB slot... "
+   cr
+;
+
+\ returns true if able to open the interface
+: OpenInterfaceFile ( -- )  
+    
+   LastDevint.name[] c@ 0= if  ShowPleaseInsertUSBdriveHelp  #7000 throw  then \ no "filename"
+    
+   LastDevint.name[] count drop  
+   GENERIC_READ GENERIC_WRITE or
+   FILE_SHARE_READ FILE_SHARE_WRITE or
+   NULL
+   OPEN_EXISTING
+\   FILE_ATTRIBUTE_NORMAL \ FILE_FLAG_SEQUENTIAL_SCAN FILE_FLAG_OVERLAPPED or
+\   FILE_ATTRIBUTE_NORMAL FILE_FLAG_SEQUENTIAL_SCAN OR
+   FILE_FLAG_NO_BUFFERING  FILE_FLAG_WRITE_THROUGH OR 
+   NULL
+   CreateFile 
+   dup INVALID_HANDLE_VALUE = if  
+      drop
+\      cr RED. ." OpenInterfaceFile CreateFile failed! "  RESTORE. \  LastError  
+      #7009 throw  \ exit quietly - this device cannot be accessed as a file
+   else
+      InterfaceHandle !
+\      LastDevint.name[] count  BLUE.  cr  type  RESTORE. 
+\      cr GREEN.  ." OpenInterfaceFile success"  RESTORE. 
+\      cr  devBroadcastDeviceinterfacePtr @ zcount type
+   then
+;
+
+: CloseInterfaceFile
+   InterfaceHandle @ 0= if  exit  then 
+\   InterfaceHandle @ CLOSE-FILE if  cr RED. ." CloseInterfaceFile could not close the file"  #1400 throw  then
+   InterfaceHandle @ CloseHandle 0= if  cr ." CloseInterfaceFile"  LastError  then
+   0 InterfaceHandle !
+;
+
+create TestHIDname
+hex
+  5C c, 5C c, 3F c, 5C c, 48 c, 49 c, 44 c, 23 c, 56 c, 49 c, 44 c, 5F c, 30 c, 34 c, 36 c, 41 c,  
+  26 c, 50 c, 49 c, 44 c, 5F c, 30 c, 30 c, 31 c, 30 c, 26 c, 4D c, 49 c, 5F c, 30 c, 30 c, 23 c, 
+  38 c, 26 c, 31 c, 37 c, 39 c, 38 c, 34 c, 63 c, 30 c, 66 c, 26 c, 30 c, 26 c, 30 c, 30 c, 30 c, 
+  30 c, 23 c, 7B c, 38 c, 38 c, 34 c, 62 c, 39 c, 36 c, 63 c, 33 c, 2D c, 35 c, 36 c, 65 c, 66 c, 
+  2D c, 31 c, 31 c, 64 c, 31 c, 2D c, 62 c, 63 c, 38 c, 63 c, 2D c, 30 c, 30 c, 61 c, 30 c, 63 c, 
+  39 c, 31 c, 34 c, 30 c, 35 c, 64 c, 64 c, 7D c, 00 c, 00 c, 00 c, 00 c, 00 c, 00 c, 00 c, 00 c, 
+decimal
+
+: TThid ( -- )   
+   TestHIDname zcount LastDevint.name[] place 
+   cr LastDevint.name[] count type  2 spaces 
+   ['] OpenInterfaceFile catch if  ." Yes"  else  RED. ." No!!!"  RESTORE.  then
+   cr ." InterfaceHandle = " InterfaceHandle @ 4 .hex 
+   CloseInterfaceFile
+;
+
+
+
+\ *****************************************************************************
+\ Open a Physical Drive for data read/write
+\ *****************************************************************************
+
+$80 constant |PhysicalDriveName|
+|PhysicalDriveName| Buffer: PhysicalDriveName
+
+variable PhysicalDriveHandle
+
+\ returns true if able to open the PhysicalDrive
+: OpenPhysicalDriveFile ( -- f )  
+    
+   PhysicalDriveName c@ 0= if  
+      cr ." No PhysicalDriveName found!!!"  
+      cr RED.  ." For Win7/Vista you will need to 'Run as administrator'"
+      cr RED.  ." (right click on USBloader.exe and select that option).
+      0  exit  
+   then \ no "filename"
+   
+   0 PhysicalDriveHandle !
+   
+   PhysicalDriveName count drop  \ null terminated form 
+\   cr ." PDN = " PhysicalDriveName count drop zcount type
+   GENERIC_READ GENERIC_WRITE or
+   FILE_SHARE_READ FILE_SHARE_WRITE or
+   NULL
+   OPEN_EXISTING
+\   FILE_ATTRIBUTE_NORMAL \ FILE_FLAG_SEQUENTIAL_SCAN FILE_FLAG_OVERLAPPED or
+   FILE_ATTRIBUTE_NORMAL FILE_FLAG_SEQUENTIAL_SCAN OR
+   NULL
+   CreateFile 
+   dup INVALID_HANDLE_VALUE = if  
+      drop
+      cr RED. ." OpenPhysicalDriveFile CreateFile failed! "  RESTORE. \  LastError  
+      0
+\      abort  \ exit quietly - this device cannot be accessed as a file
+   else
+      PhysicalDriveHandle !
+      cr GREEN.  ." OpenPhysicalDriveFile success"  RESTORE. 
+\      cr  PhysicalDriveName count drop zcount type
+      -1  
+   then
+;
+
+: ClosePhysicalDriveFile
+   PhysicalDriveHandle @ CloseHandle 0= if  cr ." CloseHandle"  LastError  then
+;
+
+\ *****************************************************************************
+\ HID display
+\ *****************************************************************************
+
+$0C constant sizeof(Attributes)
+
+: 4.hexBlue  BLUE. 4.hex RESTORE. ;
+
+: .HIDattributes ( a -- )
+   >r
+   r@ 4 + w@ ."   VID = " 4.hexBlue 
+   r@ 6 + w@ ."   PID = " 4.hexBlue 
+   r@ 8 + w@ ."   Ver = " 4.hexBlue 
+   r> drop
+;
+
+: ShowHIDattributes
+   MyBuffer |MyBuffer| erase
+   sizeof(Attributes) MyBuffer !
+   InterfaceHandle @ 
+   MyBuffer
+   HidD_GetAttributes
+   if 
+\      MyBuffer sizeof(Attributes) dump
+      cr ."    HidD_GetAttributes : "  MyBuffer .HIDattributes
+   then
+;
+
+variable pPreparsedData
+1024 Buffer: Capabilities[]
+
+: >Capability ( c -- a )
+   2 * Capabilities[] + 
+;
+
+: .Capability ( c -- )   >Capability w@  BLUE. #4 .hex  RESTORE. ;
+
+: .3Capabilities ( c -- )
+   3 0 do  6 spaces  dup .Capability 1+  loop  drop 
+;
+
+\ show the named capabilities
+: ShowCapabilities
+\   cr ." Capabilities : "
+\   Capabilities[] $40 dump
+   cr ."    Usage     UsagePage  NumberLinkCollectionNodes " 
+   cr  4 spaces  0 .Capability  #10 spaces  1 .Capability  #6 spaces #22 .Capability
+   cr ."    ReportByteLength    Input    Output   Feature"
+   cr #18 spaces   2 .3Capabilities
+   cr #18 spaces  ." ButtonCaps ValueCaps DataIndices"
+   cr ."    NumberInput    "  23 .3Capabilities
+   cr ."    NumberOutput   "  26 .3Capabilities
+   cr ."    NumberFeature  "  29 .3Capabilities
+;
+
+: Report>Length ( ReportType -- n )
+   2+    \ start at Report length for Input
+   >Capability w@ 
+;
+
+\ HIDP_REPORT_TYPE ReportType
+0 constant HidP_Input
+1 constant HidP_Output
+2 constant HidP_Feature
+
+: .ReportType ( c -- )
+   BLUE.
+   #26 ToColumn
+   dup 2 .hex  space 
+   case
+   HidP_Input   of ." HidP_Input  "  endof
+   HidP_Output  of ." HidP_Output "  endof
+   HidP_Feature of ." HidP_Feature"  endof
+     ." Unknown ReportType = " .
+   endcase
+   RESTORE.
+;
+
+1024 constant |ValueCaps|
+|ValueCaps| Buffer: ValueCaps[] 
+variable p|ValueCaps| |ValueCaps| p|ValueCaps| !
+
+: ShowHidP_GetValueCaps
+   cr ."    GetValueCaps" 
+   ValueCaps[] |ValueCaps| erase
+   HidP_Input ValueCaps[] p|ValueCaps| pPreparsedData @ HidP_GetValueCaps  HIDP_STATUS_SUCCESS = if
+      p|ValueCaps| @ 1 = if
+         ."  ValueCaps[0] = "  ValueCaps[] c@ BLUE. 2 .hex RESTORE.
+      else
+         BLUE.
+         ValueCaps[] p|ValueCaps| @ 0 max |ValueCaps| min dumpL
+         RESTORE.
+      then
+   then
+;
+
+
+$40 constant |HIDstringBuffer|
+|HIDstringBuffer| Buffer: HIDstringBuffer[] 
+
+: ShowHidD_GetProductString ( -- a n )
+   HIDstringBuffer[] |HIDstringBuffer| erase 
+   InterfaceHandle @ HIDstringBuffer[] |HIDstringBuffer| HidD_GetProductString
+   cr ."    HID Product      = " HIDstringBuffer[] |HIDstringBuffer| BLUE. type RESTORE.  \ Note : the string is UCF16
+;
+
+: ShowHidD_GetManufacturerString ( -- a n )
+   HIDstringBuffer[] |HIDstringBuffer| erase 
+   InterfaceHandle @ HIDstringBuffer[] |HIDstringBuffer| HidD_GetManufacturerString
+   cr ."    HID Manufacturer = " HIDstringBuffer[] |HIDstringBuffer| BLUE. type RESTORE.  \ Note : the string is UCF16
+;
+
+
+variable MyReportType
+
+$41 constant |UsageArray|
+|UsageArray| Buffer: UsageArray[] 
+
+$41 constant |Report|
+|Report| Buffer: Report[] 
+
+: ShowHidP_GetUsageValueArray ( ReportType -- )
+   MyReportType !
+   UsageArray[] |UsageArray| erase
+   Report[] |Report| erase
+   ( ReportType) 
+   MyReportType @ Report>Length >r   \ get the report length from the caps array
+   MyReportType @
+   $FF00  \ UsagePage,     
+   0  \ LinkCollection
+   1  \ Usage
+   UsageArray[] |UsageArray|
+   pPreparsedData @
+   Report[] r>
+   HidP_GetUsageValueArray HIDP_STATUS_SUCCESS = if
+      cr ."    GetUsageValueArray" MyReportType @ .ReportType
+      UsageArray[] zcount 0 max |UsageArray|  min dumpL
+      Report[] zcount 0 max |Report|  min dumpL
+   then
+;
+
+variable UsageValue
+
+: ShowHidP_GetUsageValue ( ReportType -- )
+   MyReportType !
+   -1 UsageValue !
+   Report[] |Report| erase
+   ( ReportType) 
+   MyReportType @ Report>Length >r   \ get the report length from the caps array
+   MyReportType @
+   $FF00  \ UsagePage,     
+   0  \ LinkCollection
+   1  \ Usage
+   UsageValue
+   pPreparsedData @
+   Report[] r> \ |Report|
+   HidP_GetUsageValue HIDP_STATUS_SUCCESS = if
+      cr ."    GetUsageValue"  MyReportType @ .ReportType
+      ."  UsageValue = " UsageValue @ BLUE. 1 .hex RESTORE.
+   \   Report[] |Report| dumpL
+   then
+;
+
+$400 constant |DataArray|
+|DataArray| Buffer: DataArray[] 
+
+variable DataValue
+
+: .DataIndex ( n -- )
+   dup 03 and 0= if  cr  3 spaces  then
+   dup 3 .hex 
+   BLUE.
+   8 * DataArray[] + >r
+   r@ w@ 5 .hex  
+   r@ 2+ w@ 5 .hex 
+   r> 4 + @  9 .hex
+   RESTORE.
+;
+
+: ShowHidP_GetData ( ReportType -- )
+   MyReportType !
+   |DataArray| DataValue !
+   Report[] |Report| erase
+   ( ReportType) 
+   MyReportType @ Report>Length >r   \ get the report length from the caps array
+   MyReportType @
+   DataArray[] DataValue
+   pPreparsedData @
+   Report[] r> \ |Report|
+   HidP_GetData HIDP_STATUS_SUCCESS = if
+      cr ."    GetData"  MyReportType @ .ReportType
+      ."  DataValue  = " DataValue @ BLUE. 1 .hex  RESTORE.
+      \   DataArray[] DataValue @ 0 max |DataArray| min dumpL
+      DataValue @ 0 max |DataArray| min 8 / 0 ?do  i .DataIndex  loop 
+      \   Report[] |Report| dumpL
+   then
+;
+
+: ShowHidP_SetData ( ReportType -- )
+   MyReportType !
+   |DataArray| DataValue !
+\   Report[] |Report| erase \ leave the data from ShowHidP_GetData
+   ( ReportType) 
+   MyReportType @ Report>Length >r   \ get the report length from the caps array
+   MyReportType @
+   DataArray[] DataValue
+   pPreparsedData @
+   Report[] r> \ |Report|
+   HidP_SetData HIDP_STATUS_SUCCESS = if
+      cr ."    SetData"  MyReportType @ .ReportType
+      ."  DataValue = " DataValue @ BLUE. 2 .hex  RESTORE.
+      \   DataArray[] DataValue @ 0 max |DataArray| min dumpL
+      DataValue @ 0 max |DataArray| min 8 / 0 ?do  i .DataIndex  loop 
+      \   Report[] |Report| dumpL
+   then
+;
+
+: ShowHIDpreparsedData
+   0 pPreparsedData !
+   InterfaceHandle @ 
+   dup 0= if  drop cr ." InterfaceHandle = 0 !!! "  then
+   pPreparsedData
+   HidD_GetPreparsedData
+   if 
+\      cr ." HidD_GetPreparsedData : "  pPreparsedData @ 8 .hex
+      pPreparsedData @ Capabilities[] HidP_GetCaps 
+      dup HIDP_STATUS_SUCCESS =  
+      if  drop
+         ShowCapabilities
+      else
+         cr ."    HidP_GetCaps : no capabilities found! Error code = " 
+         ShowHIDerror 
+         abort
+      then
+   then
+
+   ShowHidP_GetValueCaps
+
+   8 0 do  i ShowHidP_GetUsageValueArray  loop
+
+   8 0 do  i  ShowHidP_GetUsageValue  loop 
+
+   8 0 do  i ShowHidP_GetData   i ShowHidP_SetData  loop
+\   8 0 do  i ShowHidP_SetData  loop
+
+   pPreparsedData @ HidD_FreePreparsedData 0= if
+      cr ." HidD_FreePreparsedData failed : not a PreparsedData buffer!"
+   then
+;
+
+{ ---------------------------------------------------------------------
+Read the Modem Status Register
+--------------------------------------------------------------------- }
+
+2 IMPORT: GetCommModemStatus
+
+: GetModem ( - c)   
+   InterfaceHandle @ PAD GetCommModemStatus 
+   0= if  ." GetModem "  102 throw  then  
+   PAD c@ 
+;
+
+: .on/off2 ( f)   if  ." on "  else  ." off"  then ;
+
+: ShowModemStatus ( c)   
+   CYAN. ."    Modem status = 0x"  
+   BASE @ >R  HEX  DUP  0 <# # # #> TYPE  R> BASE !
+   RESTORE. BLUE.
+   ."   CTS " dup MS_CTS_ON  and .on/off2 
+   ."   DSR " dup MS_DSR_ON  and .on/off2 
+   ."    RI " dup MS_RING_ON and .on/off2 
+   ."    CD "     MS_RLSD_ON and .on/off2 
+   RESTORE.
+;
+
+\ *****************************************************************************
+\ Extract data from the given "filename"
+\ *****************************************************************************
+
+create XXXMyFileReport $40 c, $3F c,   ," ZHello World! 01234567890123456789012345678901234567890123456"  $04 allot
+create MyFileReport $40 c, $3F c,   ," ZHello_World!_12"  $04 allot
+
+\ 0x3F 0x10 0x5A 0x48 0x65 0x6C 0x6C 0x6F 0x5F 0x57 0x6F 0x72 0x6C 0x64 0x21 0x5F 0x31 0x32 0x00 0x05 0x61 0x6C 0x6C 0x01 0x3A 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x0D 0x53 0x65 0x6E 0x64 0x60 0x04 0x8E 0x00 0x00 0x90 0xF7 0xFF 0xFF 0x00 0x0D 0x53 0x65 0x6E 0x64
+
+: SendHIDreport ( -- )
+   MyFileReport count InterfaceHandle @ WRITE-FILE if  cr ." SendHIDreport???"  QUIT  then
+;
+
+$400 constant |MyReportBuffer| 
+|MyReportBuffer| Buffer: MyReportBuffer
+
+: ReadHIDreport ( -- )
+   MyReportBuffer |MyReportBuffer| erase
+   MyReportBuffer |MyReportBuffer| InterfaceHandle @ READ-FILE if  cr RED. ." ReadHIDreport ???"  RESTORE.  QUIT  then
+   cr ." Report # bytes = " dup 3 .hex 
+   MyReportBuffer swap 0 max |MyReportBuffer| min dump
+;
+
+: (ShowHID) ( a -- )   \ a is null terminated "filename"
+   dup $20 - @ DBT_DEVICEARRIVAL = not if  drop  exit  then
+   ['] OpenInterfaceFile catch if  
+      RED.  cr  ."    Cannot open HID interface, probably because this HID is controlled by Windows"  RESTORE. drop  
+      CloseInterfaceFile  
+      #7009 throw  
+   then
+   cr  BLUE. LastDevint.name[] count type  RESTORE. 
+   ShowHIDattributes
+   ShowHidD_GetProductString
+   ShowHidD_GetManufacturerString
+   ShowHIDpreparsedData
+
+{ 
+   9 0 do 
+      SendHIDreport   \ test only
+      1 ms
+       100 ms 
+   loop
+   1000 ms 
+   1 0 do 
+      ReadHIDreport   \ test only
+      10 ms 
+   loop
+}
+   CloseInterfaceFile
+;
+
+: ShowHID ( a -- )   \ a is null terminated "filename"
+   ['] (ShowHID) catch if  ( cr ." ShowHID caught!!!" ) drop  then
+;
+
+{ 
+BOOL WINAPI WriteFile(
+  __in         HANDLE hFile,
+  __in         LPCVOID lpBuffer,
+  __in         DWORD nNumberOfBytesToWrite,
+  __out_opt    LPDWORD lpNumberOfBytesWritten,
+  __inout_opt  LPOVERLAPPED lpOverlapped
+);
+
+BOOL WINAPI ReadFile(
+  __in         HANDLE hFile,
+  __out        LPVOID lpBuffer,
+  __in         DWORD nNumberOfBytesToRead,
+  __out_opt    LPDWORD lpNumberOfBytesRead,
+  __inout_opt  LPOVERLAPPED lpOverlapped
+);
+}
+
+\ opens and reads the device as a file
+: (ShowFileBlock) ( a -- )   \ a is null terminated "filename"
+\   dup zcount type ." <<< "
+\   cr ." ShowFileBlock : " dup zcount type 
+   dup $20 - @ DBT_DEVICEARRIVAL = not if  drop  exit  then
+   ['] OpenInterfaceFile catch if  
+      RED. ." Cannot open Interface - for Win7/Win8/Vista you will need to 'Run as administrator' - (right click on USBclarify.exe)" RESTORE.  drop  
+      CloseInterfaceFile  
+      #7010 throw  
+   then
+   
+\   MyBuffer |MyBuffer| erase
+
+\   cr ." Before : "
+\   MyBuffer swap 0 max |MyBuffer| min drop $200 dump
+
+   InterfaceHandle @ MyBuffer |MyBuffer| 0 >r RP@ 0 ReadFile r> swap
+   0= if  CloseInterfaceFile  ." ReadFile failed! "  LastError  then
+
+   drop
+
+   cr ." Sector 0 "
+   BLUE.
+   MyBuffer swap 0 max |MyBuffer| min drop $200 dump
+   RESTORE.
+
+   CloseInterfaceFile
+;
+
+: ShowFileBlock ( a -- )   \ a is null terminated "filename"
+   ['] (ShowFileBlock) catch if  drop  then
+;
+
+\ *****************************************************************************
+\ Comports
+\ *****************************************************************************
+
+: OPEN-COM ( zaddr -- handle )
+   GENERIC_READ GENERIC_WRITE OR
+   0
+   0
+   OPEN_EXISTING
+   0
+   0
+   CreateFile
+   DUP -1 = ABORT" Port not available" ;
+
+: ttWriteToComPort ( -- )
+  10 0 do 
+     S" Hello Comport!!!  "  InterfaceHandle @ WRITE-FILE drop
+  loop
+;
+
+
+: (ShowCOMPORT) ( a -- )
+\   cr ." COMPORT address :" dup $20 - $24 dump 
+   dup $20 - @ DBT_DEVICEARRIVAL = not if  drop  exit  then
+
+   ['] OpenInterfaceFile catch if  RED.  ."    Cannot open COM port interface"  RESTORE.  drop  CloseInterfaceFile  $7008 throw  then
+
+\   ttWriteToComPort
+
+   0 BytesReturned !
+   MyBuffer |MyBuffer| erase
+
+   \     +RTS  100 ms  -RTS  100 ms
+   \     +DTR  500 ms  -DTR  500 ms
+   \      +RTS  +DTR  1000 ms
+   cr  GetModem ShowModemStatus
+
+   0 BytesReturned !
+   MyBuffer |MyBuffer| erase
+   InterfaceHandle @ 
+   \     IOCTL_DISK_GET_DRIVE_GEOMETRY_EX
+   \     IOCTL_STORAGE_QUERY_PROPERTY
+   \     IOCTL_INTERNAL_USB_GET_PORT_STATUS
+   \     IOCTL_INTERNAL_USB_GET_ROOTHUB_PDO
+   \     IOCTL_USB_HCD_GET_STATS_1
+   \     IOCTL_USB_GET_ROOT_HUB_NAME
+   \     IOCTL_USBIO_SEND_PACKET
+   \     IOCTL_HID_GET_COLLECTION_DESCRIPTOR
+   \     IOCTL_HID_GET_COLLECTION_INFORMATION
+   IOCTL_SERIAL_GET_LINE_CONTROL
+   NULL
+   0
+   MyBuffer
+   |MyBuffer|
+   BytesReturned
+   NULL
+   DeviceIoControl 0= if  cr ." DeviceIoControl " LastError  then
+\   MyBuffer BytesReturned @ dump
+ 
+   CloseInterfaceFile
+
+   drop
+;
+
+: ShowCOMPORT ( a -- )   \ a is null terminated "filename"
+   ['] (ShowCOMPORT) catch if  drop  then
+;
+
+\ *****************************************************************************
+\ Display VID and PID details from the filename string
+\ *****************************************************************************
+
+\ convert two hex digits at a into a number and store it in the USBguid array
+: (TwoBytes) ( a -- u )   
+   base @ >r  hex 4 NUMBER?  r> base !  
+   1 = not if  
+\      cr ." TwoBytes invalid number "  
+      abort  
+   then
+;
+
+: TwoBytes ( a -- u )   ['] (TwoBytes) catch if  drop 0  then ;
+
+: GetField ( a n s n -- u )    
+   -MATCH 0= if  ( dup 4 type ) TwoBytes  else  drop  0  then
+;
+
+$100 Buffer: MyPad
+\ extract the VID and PID from the device "filename"
+: ParseDetail ( a n -- )
+   >r
+   MyPad r@ move
+   MyPad r> 2dup UPCASE
+   2dup s" VID_" GetField  CurrentVID !   
+   s" PID_" GetField  CurrentPID ! 
+;
+
+: GetSerialNumber ( a n -- a n )    \ roughly a device unique code...
+   s" &PID_" -MATCH 0= if  #16 5 /string  else  0  then
+;
+
+include MD5.f
+
+: ShowVIDandPID ( a -- )
+   zcount 
+   2dup ParseDetail
+   CurrentVID @ 0= not \ found a Vendor ID8
+   if
+      CurrentVID @ CurrentPID @ ScanIDfile
+      #32 ToColumn .VID  
+      #71 ToColumn .PID   
+      #110 ToColumn  
+      \ use the MD5 hash of the device's filename to choose a colour for the serial number display
+      GetSerialNumber 
+      2dup MD5 MD5hash @ $0F and ATTRIBUTE+ \ BLUE.      
+      type  RESTORE.
+   else
+      2drop
+   then
+;
+
+: test$ z" \\?\USB#Vid_067b&Pid_2303#5&38bcb265&0&2#{86e0d1e0-8089-11d0-9ce4-08003e301f73}" ;
+: ttsd test$ ShowVIDandPID ;
+
+: ttnew s" \\?\USB#VID_067B&PID_2303#5&1d94826&0&7#{86e0d1e0-8089-11d0-9ce4-08003e301f73}" 2dup cr type 
+   [char] # SCAN 1 /string cr  2dup type 
+   [char] # SCAN 1 /string  cr  2dup type 
+   [char] & SCAN 1 /string drop #16 cr type ;
+
+: KL26ZUSBCDC1$ ( -- $ )   s" \\?\USB#VID_1357&PID_0089#SDA62FB1E4E#{a5dcbf10-6530-11d2-901f-00c04fb951ed}"  2dup cr type ;
+: KL26ZUSBCDC2$ ( -- $ )   s" \\?\USB#VID_1357&PID_0089#SDA62C21E70#{a5dcbf10-6530-11d2-901f-00c04fb951ed}"  2dup cr type ;
+
+: ShowDBTevent ( u -- )
+   BLUE.
+   case
+   $0007 of  ." DBT_DEVNODES_CHANGED       "  endof  \ device has been added or removed CBLPARAM constant zero
+   $0017 of  ." DBT_QUERYCHANGECONFIG      "  endof  \ 
+   $0018 of  ." DBT_CONFIGCHANGED          "  endof  \ 
+   $0019 of  ." DBT_CONFIGCHANGECANCELED   "  endof  \ 
+   $001B of  ." DBT_MONITORCHANGE          "  endof  \ 
+   $0020 of  ." DBT_SHELLLOGGEDON          "  endof  \ 
+   $0022 of  ." DBT_CONFIGMGAPI32          "  endof  \    
+   $0023 of  ." DBT_VXDINITCOMPLETE        "  endof  \    
+   $0047 of  ." DBT_NO_DISK_SPACE          "  endof     
+   $0048 of  ." DBT_LOW_DISK_SPACE         "  endof     
+   $7FFF of  ." DBT_CONFIGMGPRIVATE        "  endof     
+   $8000 of  GREEN. ." + "  RESTORE.  ( ." DBT_DEVICEARRIVAL          ")  endof  \ system detected a new device
+   $8001 of  ." DBT_DEVICEQUERYREMOVE      "  endof  \ wants to remove, may fail   
+   $8002 of  ." DBT_DEVICEQUERYREMOVEFAILED"  endof  \ removal aborted             
+   $8003 of  ." DBT_DEVICEREMOVEPENDING    "  endof  \ about to remove, still available
+   $8004 of  RED. ." - "  RESTORE.  ( ." DBT_DEVICEREMOVECOMPLETE   ")  endof  \ device is gone              
+   $8005 of  ." DBT_DEVICETYPESPECIFIC     "  endof  \ type specific event         
+   $8006 of  ." DBT_CUSTOMEVENT            "  endof  \ user-defined event  
+   $8041 of  ." DBT_VOLLOCKQUERYLOCK       "  endof              
+   $8042 of  ." DBT_VOLLOCKLOCKTAKEN       "  endof 
+   $8043 of  ." DBT_VOLLOCKLOCKFAILED      "  endof 
+   $8044 of  ." DBT_VOLLOCKQUERYUNLOCK     "  endof 
+   $8045 of  ." DBT_VOLLOCKLOCKRELEASED    "  endof 
+   $8046 of  ." DBT_VOLLOCKUNLOCKFAILED    "  endof 
+   $FFFF of  ." DBT_USERDEFINED            "  endof  \ 
+      RED. ." Unknown Event = " dup 4 .hex  RESTORE.
+   endcase                                  
+   space
+   RESTORE.
+;                                           
+
+\ like COUNT , but with a 4 byte count value
+: count4 ( a -- a n )   dup @  swap  4 + swap ;
+
+\ display a hex dump of the entire Device structure
+\ the first cell is the size
+: DeviceDump ( -- )   
+   devint.size  count4  0 max |Event| min  dump
+;
+
+: ShowDevicePort ( -- )  
+   2 spaces  
+   BLUE.  devint.classguid zcount type  RESTORE. 
+\   r@ DeviceDump 
+;
+
+: ShowDeviceInterface ( -- ) 
+\   cr dup $100 dump
+   2 spaces 
+\ display the type of interface   
+   devint.classguid @ case  
+      $884B96C3 of  ." Keyboard      "  endof
+      $4D1E55B2 of  ." HID           "  endof
+      $A5DCBF10 of  ." USB           "  endof
+      $36FC9E60 of  ." USB Hub       "  endof
+      $86E0D1E0 of  ." COMPORT       "  endof
+      $378DE44C of  ." Mouse         "  endof
+      $53F56307 of  ." Disk          "  endof
+      $53F56308 of  ." CDROM         "  endof
+      $53F56309 of  ." 6309          "  endof
+      $53F5630A of  ." Partition     "  endof
+      $53F5630B of  ." Tape          "  endof
+      $53F5630C of  ." WriteOnceDisk "  endof
+      $53F5630D of  ." Volume        "  endof
+      $53F5630E of  ." 630E          "  endof
+      $53F5630F of  ." 630F          "  endof
+      $53F56310 of  ." MediumChanger "  endof
+      $53F56311 of  ." Floppy        "  endof
+      $53F56312 of  ." CDchanger     "  endof
+      $07748022 of  ." SmartCard     "  endof
+      $6BDD1FC6 of  ." Image         "  endof
+      $1CA05180 of  ." DisplayArrival"  endof
+      $65E8773D of  ." KScatCapture  "  endof
+      $6994AD05 of  ." KScatVideo    "  endof
+      $2ACCFE60 of  ." Storage Port  "  endof
+      ."  Unknown GUID = "  dup 8 .hex
+      cr devint.classguid .BinaryGUID  space 
+   endcase
+   devint.name  ShowVIDandPID
+\   r@ DeviceDump
+   \ display the "filename" of the device
+\   cr devint.name zcount 0 max 80 min CYAN. TYPE  RESTORE.
+
+\ and now display more data
+   devint.classguid @ 
+\      dup 8 .hex space 
+      case 
+      $884B96C3 of  devint.name drop           endof  \ Keyboard           
+      $4D1E55B2 of  devint.name ShowHID        endof  \ HID           
+      $A5DCBF10 of  devint.name drop           endof  \ USB           
+      $36FC9E60 of  devint.name drop           endof  \ USB Hub       
+      $86E0D1E0 of  devint.name ShowCOMPORT    endof  \ COMPORT       
+      $378DE44C of  devint.name drop           endof  \ Mouse         
+      $53F56307 of  devint.name ShowFileBlock  endof  \ Disk          
+      $53F56308 of  devint.name ShowFileBlock  endof  \ CDROM         
+      $53F56309 of  devint.name ShowFileBlock  endof  \ 6309          
+      $53F5630A of  devint.name ShowFileBlock  endof  \ Partition     
+      $53F5630B of  devint.name ShowFileBlock  endof  \ Tape          
+      $53F5630C of  devint.name ShowFileBlock  endof  \ WriteOnceDisk 
+      $53F5630D of  devint.name drop           endof  \ Volume        
+      $53F5630E of  devint.name ShowFileBlock  endof  \ 630E          
+      $53F5630F of  devint.name ShowFileBlock  endof  \ 630F          
+      $53F56310 of  devint.name ShowFileBlock  endof  \ MediumChanger 
+      $53F56311 of  devint.name ShowFileBlock  endof  \ Floppy        
+      $53F56312 of  devint.name ShowFileBlock  endof  \ CDchanger     
+      $07748022 of  devint.name ShowFileBlock  endof  \ SmartCard     
+      $6BDD1FC6 of  devint.name ShowFileBlock  endof  \ Image         
+      $1CA05180 of  devint.name ShowFileBlock  endof  \ DisplayArrival
+      $65E8773D of  devint.name ShowFileBlock  endof  \ KScatCapture  
+      $6994AD05 of  devint.name ShowFileBlock  endof  \ KScatVideo    
+      $2ACCFE60 of  devint.name ShowFileBlock  endof  \ Storage Port    
+      cr  RED.  ." Unknown GUID = "  dup 8 .hex  devint.classguid .BinaryGUID  RESTORE.
+    endcase
+;
+
+: ShowDeviceOEM ( a -- )   DeviceDump ;
+: ShowDeviceDEVNODE ( a -- )   DeviceDump ;
+
+: FirstBit ( u -- c )
+   0 swap 
+   26 0 do  
+      dup 1 and if  swap i +  swap  leave  then
+      1 rshift
+   loop
+   drop
+;
+
+: ShowDeviceVOLUME ( -- )   
+   NORMAL.
+   2 spaces 
+   devint.classguid @ >r    
+   r@ DBTF_NET and if  ." Networked "  else  ." Local"  then
+   r@ DBTF_MEDIA and if  ."  media "      else  ."  physical"  then
+   ."  drive " r@ FirstBit [char] A + emit 2 spaces 
+   RESTORE.
+   r> drop
+\   DeviceDump 
+\   devint.name ShowFileBlock \ <--- no - cannot open a file!
+;
+
+: ShowDeviceNET ( -- )   DeviceDump ;
+: ShowDeviceHANDLE ( -- )   DeviceDump ;
+
+: ShowDeviceType ( c -- )
+   MAGENTA. 
+   case
+      $00 of  ." OEM            "  ShowDeviceOEM        endof  \ OEM- or IHV-defined device type.
+      $01 of  ." DEVNODE        "  ShowDeviceDEVNODE    endof  \ devnode number
+      $02 of  ." VOLUME         "  ShowDeviceVOLUME     endof  \ logical volume
+      $03 of  ." PORT           "  ShowDevicePort       endof  \ port device (serial or parallel).
+      $04 of  ." NET            "  ShowDeviceNET        endof  \ network resource
+      $05 of  ." DEVICEINTERFACE"  ShowDeviceInterface  endof  \ Class of devices.
+      $06 of  ." HANDLE         "  ShowDeviceHANDLE     endof  \ File system handle.
+      RED.  ." Unknown DeviceType = " dup 4 .hex  swap drop  RESTORE.
+   endcase
+   RESTORE.
+;
+
+: ShowEvent ( -- )
+   EventOut    \ load the variables from the event queue
+   cr
+   LastDevBroadcastWparam @ ShowDBTevent
+   MAGENTA. LastDevint.devicetype @ ShowDeviceType  RESTORE.
+;
+
+
+\ ******************************************************************************
+\ Check if a USB drive has been inserted
+\ ******************************************************************************
+
+variable DeviceInserted
+
+: ?DeviceInserted
+   DeviceInserted @ 0= if
+      ShowPleaseInsertUSBdriveHelp
+      #7009 throw
+   then
+;
+
+\ *****************************************************************************
+\ Device detail display
+\ *****************************************************************************
+
+\ count the length of the string up to the next & character
+: &count ( a -- n )   0  swap  32 0 do  count [char] & = if  swap i +  swap  leave  then  loop  drop  ;
+
+$10 constant |DeviceString| 
+|DeviceString| Buffer: DeviceVen_
+|DeviceString| Buffer: DeviceProd_
+
+: ShowDevicePID&VID ( a n -- ) 
+   S" Ven_" SEARCH(NC) if
+      4 /string  2dup 
+      drop  dup &count 33 ToColumn  2dup |DeviceString| 1- min DeviceVen_ place  type   
+         S" Prod_" SEARCH(NC) if 
+            5 /string  drop  dup &count 53 ToColumn 2dup |DeviceString| 1- min DeviceProd_ place  type
+      then
+   then
+;
+
+: ShowDevicePID&VIDshort ( a n -- ) 
+   S" Ven_" SEARCH(NC) if
+      4 /string  2dup 
+      drop  dup &count space  2dup |DeviceString| 1- min DeviceVen_ place  type   
+         S" Prod_" SEARCH(NC) if 
+            5 /string  drop  dup &count space 2dup |DeviceString| 1- min DeviceProd_ place  type
+      then
+   then
+;
+
+: ShowDeviceDetails 
+   cr  \ DeviceInserted @ if  GREEN.  ." + "  else  RED.  ." - "  then   RESTORE. 
+   LastDevBroadcastWparam @ ShowDBTevent  
+   LastDevint.devicetype @ ShowDeviceType   
+   LastDevint.name[] count ShowDevicePID&VID
+   cr  BLUE. LastDevint.name[] count type  RESTORE. 
+\   counter 
+\   40 0 do  DriveBitmap @ if  leave  then  100 ms  loop 
+\   cr ." Timer = " timer
+\   cr  ." Drive letter is "  BLUE.  DriveBitmap @ EMIT ." :"  RESTORE. 
+\ Note : DriveBitmap does not get set in time to be displayed here
+\ Because this is called when a Disk event occurs, but we only can set DriveBitmap when a Volume event occurs
+   cr
+;
+{ 
+: InitBuffers      
+   MBRbuffer MAX-BIG-SECTOR-SIZE erase
+   BPBbuffer        MAX-BIG-SECTOR-SIZE erase   0 BPBsectorNumber !
+   FSIbuffer        MAX-BIG-SECTOR-SIZE erase   0 FSIsectorNumber !
+   FATbuffer        MAX-BIG-SECTOR-SIZE erase   0 FATsectorNumber !
+   RootBuffer       MAX-BIG-SECTOR-SIZE erase   0 RootSectorNumber !
+   MySectorBuffer   MAX-BIG-SECTOR-SIZE erase
+   0 SectorZeroIsBPB !  \ a defined initial state - we will find out if this is a BPB ...
+   0 SectorZeroAnalysed !
+   0 BPBanalysed !
+;
+}
+
+: PleaseInsertUSBdriveNow
+      MAGENTA.  cr ."   Please insert a USB device now..."  RESTORE. 
+;
+
+: xxxShowEvent ( -- )
+   EventOut    \ load the variables from the event queue
+
+\ decide which device type and GUID we are going to show
+   devint.devicetype @ DBT_DEVTYP_DEVICEINTERFACE = 
+\    devint.devicetype @ DBT_DEVTYP_VOLUME = or
+   devint.classguid @ ShortGUID_Disk = 
+   devint.classguid @ ShortGUID_Volume = or
+   devint.classguid @ ShortGUID_Floppy = or
+   and
+   if
+      devBroadcastWparam @ DBT_DEVICEARRIVAL = if 
+         devint.classguid @ ShortGUID_Volume = if
+            LastDevintVolume.name[] $100 erase  \ for null terminator
+            devint.name zcount LastDevintVolume.name[] place
+         else
+            \ This event is when a DeviceInterface Disk has been plugged in
+            \ so we save everything for display later by ShowDeviceDetails
+            LastDevint.name[] $100 erase  \ for null terminator
+            devint.name zcount LastDevint.name[] place
+            devBroadcastWparam @ LastDevBroadcastWparam !
+            devint.devicetype  @ LastDevint.devicetype !
+            devint.classguid @ LastDevint.classguid !
+            -1 DeviceInserted !     \ and note that the disk has been inserted
+\            0 SectorSourceFile !    \ display data from the inserted device, not from a file
+\            0 SectorDestinationFloppy !
+ \           page 
+            ShowDeviceDetails
+\            ShowSectorZero
+\            cr cr ."   Press 'H' for Help options..."
+         then
+      else
+\         InitBuffers
+         0 DeviceInserted !
+ \        Get-XY  0 1 At-XY RED.  ." -" RESTORE.  1- 0 max At-XY
+\         PleaseInsertUSBdriveNow
+      then        
+   else
+ \     cr ." >>>"
+   then
+;
+
+: ShowEvents
+   begin  #Events while  ShowEvent  repeat
+;
+
+
+\ Add 16 bytes to the structure, using the 16 hex ASCII words following, then ignore the rest of the line
+\ This allows captured packet data to be copied and pasted...
+: 16c,   base @ >r  hex 
+   16 0 do   bl word  count number  c,  loop 
+   r> base ! 
+   postpone \ 
+;  
+
+\ Add n bytes to the structure, using the n hex ASCII words following, then ignore the rest of the line
+\ This allows captured packet data to be copied and pasted...
+: nc, ( -- )  base @ >r  hex 
+   ( n -- ) 0 do   bl word  count number  c,  loop 
+   r> base ! 
+   postpone \ 
+;  
+
+\ *****************************************************************************
+\ Titles
+\ *****************************************************************************
+
+: stars ( n -- )   0 ?do  ." *"  loop ;
+
+variable LengthSoFar
+120 constant TITLE_WIDTH
+
+: ShowTitle ( $ -- ) 
+   cr TITLE_WIDTH stars
+   cr  -Trailing  dup 4 + LengthSoFar !   \ the text plus 2 spaces before and two after
+   TITLE_WIDTH LengthSoFar @ -            \ room left for stars
+   2/ dup stars                           \ half of them before
+   LengthSoFar +!
+   2 spaces 
+   BLUE.  type  RESTORE.
+   2 spaces 
+   TITLE_WIDTH LengthSoFar @ - stars      \ room left for stars at the end
+   cr TITLE_WIDTH stars
+;
+
+: ShowHeader
+   MAGENTA.
+   HostVersion ShowTitle
+   cr TITLE_WIDTH 18 - 0 max 2/ spaces  ." www.inventio.co.uk"
+   RESTORE.
+
+   MAGENTA.
+   cr ."                        Insert or remove USB devices, drives or media to view information"
+   cr ."        Press Esc to exit the program, <cr> to view the full filename or the space bar to clear the screen"
+   cr
+   RESTORE.
+
+   INVERSE.
+\        012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789 120 wide
+\     +  DEVICEINTERFACE  USB            1357  P&E Microcomputer Systems     0089                                   SDA62FB1E4E
+   ."    Interface        Name           VID   Vendor ID name                PID   Product ID name                  Serial#    "
+\   ."    Interface        Name          Vendor name        Product name       "
+   RESTORE.
+;
+
+: KeyAction ( c -- f )
+   case
+      ( ctrlF ) $06 of  cr ."  ok " cr  quit  0  endof
+      (  <cr> ) $0D of  BLUE.  cr 3 spaces  LastDevint.name[] count type  RESTORE.  0  endof
+      ( Esc ) #27 of  -1  endof
+      page  ShowHeader  0 swap   
+   endcase
+;
+
+\ displays in the SwiftForth console Window
+: USBclarify
+   page 
+   ShowHeader
+   InitEvents
+   InitRegisterForDeviceNotifications
+   RegisterForDeviceNotifications
+   begin
+      pause 1 Sleep DROP 
+   ShowEvents 
+   key? if  
+      key KeyAction
+   else
+      0
+   then
+   until
+   UnregisterForDeviceNotifications
+;
+
+cr
+cr .( Type  USBclarify  to run the program )
+cr
+
+starter USBclarify  program USBclarify
+
+\\
+
+int HID_API_EXPORT HID_API_CALL hid_write(hid_device *dev, const unsigned char *data, size_t length)
+{
+	DWORD bytes_written;
+	BOOL res;
+
+	OVERLAPPED ol;
+	memset(&ol, 0, sizeof(ol));
+
+	res = WriteFile(dev->device_handle, data, length, NULL, &ol);
+	
+	if (!res) {
+		if (GetLastError() != ERROR_IO_PENDING) {
+			// WriteFile() failed. Return error.
+			register_error(dev, "WriteFile");
+			return -1;
+		}
+	}
+
+	// Wait here until the write is done. This makes
+	// hid_write() synchronous.
+	res = GetOverlappedResult(dev->device_handle, &ol, &bytes_written, TRUE/*wait*/);
+	if (!res) {
+		// The Write operation failed.
+		register_error(dev, "WriteFile");
+		return -1;
+	}
+
+	return bytes_written;
+}
+
+
+int HID_API_EXPORT HID_API_CALL hid_read_timeout(hid_device *dev, unsigned char *data, size_t length, int milliseconds)
+{
+	DWORD bytes_read = 0;
+	BOOL res;
+
+	// Copy the handle for convenience.
+	HANDLE ev = dev->ol.hEvent;
+
+	if (!dev->read_pending) {
+		// Start an Overlapped I/O read.
+		dev->read_pending = TRUE;
+		ResetEvent(ev);
+		res = ReadFile(dev->device_handle, dev->read_buf, dev->input_report_length, &bytes_read, &dev->ol);
+		
+		if (!res) {
+			if (GetLastError() != ERROR_IO_PENDING) {
+				// ReadFile() has failed.
+				// Clean up and return error.
+				CancelIo(dev->device_handle);
+				dev->read_pending = FALSE;
+				goto end_of_function;
+			}
+		}
+	}
+
+	if (milliseconds >= 0) {
+		// See if there is any data yet.
+		res = WaitForSingleObject(ev, milliseconds);
+		if (res != WAIT_OBJECT_0) {
+			// There was no data this time. Return zero bytes available,
+			// but leave the Overlapped I/O running.
+			return 0;
+		}
+	}
+
+	// Either WaitForSingleObject() told us that ReadFile has completed, or
+	// we are in non-blocking mode. Get the number of bytes read. The actual
+	// data has been copied to the data[] array which was passed to ReadFile().
+	res = GetOverlappedResult(dev->device_handle, &dev->ol, &bytes_read, TRUE/*wait*/);
+	
+	// Set pending back to false, even if GetOverlappedResult() returned error.
+	dev->read_pending = FALSE;
+
+	if (res && bytes_read > 0) {
+		if (dev->read_buf[0] == 0x0) {
+			/* If report numbers aren't being used, but Windows sticks a report
+			   number (0x0) on the beginning of the report anyway. To make this
+			   work like the other platforms, and to make it work more like the
+			   HID spec, we'll skip over this byte. */
+			bytes_read--;
+			memcpy(data, dev->read_buf+1, length);
+		}
+		else {
+			/* Copy the whole buffer, report number and all. */
+			memcpy(data, dev->read_buf, length);
+		}
+	}
+	
+end_of_function:
+	if (!res) {
+		register_error(dev, "GetOverlappedResult");
+		return -1;
+	}
+	
+	return bytes_read;
+}
+
+int HID_API_EXPORT HID_API_CALL hid_read(hid_device *dev, unsigned char *data, size_t length)
+{
+	return hid_read_timeout(dev, data, length, (dev->blocking)? -1: 0);
+}
+
+\\
+create HIDname1     ," HID\VID_2047&PID_0302&MI_02\8&15f0dd4f&0&0000"
+create HIDname2 ," \\?\HID#VID_2047&PID_0302&MI_02#8&15f0dd4f&0&0000#{4d1e55b2-f16f-11cf-88cb-001111000030}"
+create HIDname3 ,"HID\VID_2047&PID_0302&REV_0200&MI_02 HID\VID_2047&PID_0302&MI_02 HID_DEVICE_UP:FF00_U:0001"
+\ HID\VID_2047&PID_0302&REV_0200&MI_02 
+\ HID\VID_2047&PID_0302&MI_02
+\ HID_DEVICE_UP:FF00_U:0001
+\ HID_DEVICE
